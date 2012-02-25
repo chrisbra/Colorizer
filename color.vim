@@ -885,7 +885,7 @@ function! s:DoHlGroup(group, clr) "{{{1
     endif
     let hi = printf('hi %s guifg=%s guibg=#%s', a:group, 
 	    \ s:FGforBG(a:clr), a:clr)
-    if (&t_Co == 256)
+    if !has("gui_running")
 	let hi.= printf(' ctermfg=%s ctermbg=%s',
 	    \ s:Rgb2xterm(s:FGforBG(a:clr)), s:Rgb2xterm(a:clr))
     endif
@@ -978,7 +978,7 @@ function! s:Rgb2xterm(color) "{{{1
         endif
 
         " Grey scale ?
-        if ( r == g &&  r == b )
+        if ( r == g &&  r == b && &t_Co == 256 )
             " 0 and 15 have already been take care of
             if r == 229
                 return 7 " from 16 color xterm
@@ -1006,18 +1006,30 @@ function! s:RoundColor(...) "{{{1
     let result = []
     let minlist = []
     let min    = 1000
-    for item in a:000
-        for val in s:valuerange6
-            let t = abs(val - item)
-            if (min > t)
-                let min = t
-                let r   = val
+    if &t_Co > 16
+        for item in a:000
+            if &t_Co > 88
+                for val in s:valuerange6
+                    let t = abs(val - item)
+                    if (min > t)
+                        let min = t
+                        let r   = val
+                    endif
+                endfor
+            else "88 color term
+                for val in s:valuerange4
+                    let t = abs(val - item)
+                    if (min > t)
+                        let min = t
+                        let r   = val
+                    endif
+                endfor
             endif
+            call add(result, r)
+            call add(minlist, min)
+            let min = 1000
         endfor
-        call add(result, r)
-        call add(minlist, min)
-        let min = 1000
-    endfor
+    endif
     " Check with the values from the 16 color xterm, if the difference
     " is lower
     let result = s:Check16ColorTerm(result, minlist)
@@ -1029,15 +1041,28 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
 " We only check those values here:
 " [205,0,0] [0,205,0] [205,205,0] [205,0,205] [0,205,205] [0,0,238] [92,92,255]
 " The other values are already included in the s:colortable list
-  let min = a:minlist[0] + a:minlist[1] + a:minlist[2]
-  for value in [[205,0,0], [0,205,0], [205,205,0], [205,0,205], [0,205,205], [0,0,238], [92,92,255]]
-      let t = abs(value[0] - a:minlist[0]) +
-            \ abs(value[1] - a:minlist[1]) +
-            \ abs(value[2] - a:minlist[2])
-      if min > t
-          return value
-      endif
-  endfor
+    let min = a:minlist[0] + a:minlist[1] + a:minlist[2]
+    if &t_Co == 256
+        for value in [[205,0,0], [0,205,0], [205,205,0], [205,0,205], [0,205,205], [0,0,238], [92,92,255]]
+            let t = abs(value[0] - a:minlist[0]) +
+                    \ abs(value[1] - a:minlist[1]) +
+                    \ abs(value[2] - a:minlist[2])
+            if min > t
+                return value
+            endif
+        endfor
+    elseif &t_Co == 88
+        for value in [[0,0,238], [229,229,229], [127,127,127], [92,92,255]]
+            let t = abs(value[0] - a:minlist[0]) +
+                    \ abs(value[1] - a:minlist[1]) +
+                    \ abs(value[2] - a:minlist[2])
+            if min > t
+                return value
+            endif
+        endfor
+    else " 16 color terminal
+        " Check for values from 16 color terminal
+    endfor
   return a:rgblist
 endfunction
 
@@ -1052,24 +1077,6 @@ function! s:Modifylists(la, lb, op) "{{{1
             \    a:la[2] - a:lb[2]]
     endif
 endfu
-
-function! s:Rgb2xterm_New(color) "{{{1
-    if ( a:color == '000000')
-	return 0
-    elseif (a:color == 'FFFFFF')
-	return 15
-    else
-        let r='0x'.a:color[0:1]+0
-        let g='0x'.a:color[2:3]+0
-        let b='0x'.a:color[4:5]+0
-        let rgb = [ r, g, b ]
-        let table = copy(s:colortable)
-"        call map(table, 's:Modifylists(v:val, rgb, "-")')
-        call sort(table, 's:MySortColorTable', {'r': g, 'g': g, 'b': b})
-        let t = table[0]
-"        let t = s:Modifylists( t, rgb, '+')
-        return index(s:colortable, t)
-endfunction
 
 
 function! s:MySortColorTable(a, b) dict "{{{1
@@ -1133,7 +1140,7 @@ function! s:Init(...) "{{{1
     elseif s:force_hl
         call s:ColorOff()
     endif
-    if has("gui_running") || &t_Co==256
+    if has("gui_running") || &t_Co >= 16
 	" The list of available match() patterns
 	let s:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
