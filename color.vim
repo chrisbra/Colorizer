@@ -18,7 +18,10 @@ set cpo&vim
 " enable debug functions
 let s:debug = 1
 "" the 6 value iterations in the xterm color cube "{{{2
-let s:valuerange = [ 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF ]
+let s:valuerange6 = [ 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF ]
+
+"" the 4 value iterations in the 88 color xterm cube "{{{2
+let s:valuerange4 = [ 0x00, 0x8B, 0xCD, 0xFF ]
 "
 "" 16 basic colors "{{{2
 let s:basic16 = [
@@ -889,26 +892,63 @@ function! s:DoHlGroup(group, clr) "{{{1
     exe hi
 endfunction
 
-function! s:Xterm2rgb(color)  "{{{1
+function! s:Xterm2rgb16(color) "{{{1
+        " 16 basic colors
+    let r=0
+    let g=0
+    let b=0
+    let r = s:basic16[a:color][0]
+    let g = s:basic16[a:color][1]
+    let b = s:basic16[a:color][2]
+    return [ r, g, b ]
+endfunction
+
+function! s:Xterm2rgb88(color) "{{{1
+    " 16 basic colors
+    let r=0
+    let g=0
+    let b=0
+    if a:color < 16
+       return s:Xterm2rgb16(a:color)
+
+    " 4x4x4 color cube
+    elseif a:color >= 16 && a:color < 80
+        let color=a:color-16
+        let r = s:valuerange4[(color/16)%4]
+        let g = s:valuerange4[(color/4)%4]
+        let b = s:valuerange4[color%4]
+    " gray tone
+    elseif a:color >= 80 && a:color <= 87
+      let color = (a:color-80) + 0.0
+      let r = 46.36363636 + color * 23.18181818 +
+            \ (color > 0.0 ? 23.18181818 : 0.0) +  0.0
+      let r = float2nr(r)
+      let g = r
+      let b = r
+   endif
+
+    let rgb=[r,g,b]
+    return rgb
+endfunction
+
+function! s:Xterm2rgb256(color)  "{{{1
     " 16 basic colors
    let r=0
    let g=0
    let b=0
-   if a:color<16
-      let r = s:basic16[a:color][0]
-      let g = s:basic16[a:color][1]
-      let b = s:basic16[a:color][2]
+   if a:color < 16
+       return s:Xterm2rgb16(a:color)
 
     " color cube color
     elseif a:color >= 16 && a:color < 232
       let color=a:color-16
-      let r = s:valuerange[(color/36)%6]
-      let g = s:valuerange[(color/6)%6]
-      let b = s:valuerange[color%6]
+      let r = s:valuerange6[(color/36)%6]
+      let g = s:valuerange6[(color/6)%6]
+      let b = s:valuerange6[color%6]
 
     " gray tone
     elseif a:color >= 232 && a:color <= 255
-      let r = 8 + (a:color-232) * 0x0a
+      let r = 8 + (a:color-80) * 0x0a
       let g = r
       let b = r
    endif
@@ -957,34 +997,17 @@ function! s:Rgb2xterm(color) "{{{1
         if i > -1
             return 16+i
         endif
-
-        " iterate over the resulting 16 colors matrix
-        " and calculate the difference
-	let best_match=0
-	let smallest_distance = 10000000000
-        " 16 basic colors
-	for c in range(0,15)
-            let r1 = s:colortable[c][0]-r
-            let g1 = s:colortable[c][1]-g
-            let b1 = s:colortable[c][2]-b
-	    let d = pow(r1,2) + pow(g1,2) + pow(b1,2)
-	    if d < smallest_distance
-		let smallest_distance = d
-		let best_match = c
-                if d == 0
-                    return c
-                endif
-	    endif
-	endfor
-	return best_match
+        " not reached
+        return -1
     endif
 endfunction
 
 function! s:RoundColor(...) "{{{1
     let result = []
+    let minlist = []
     let min    = 1000
     for item in a:000
-        for val in s:valuerange
+        for val in s:valuerange6
             let t = abs(val - item)
             if (min > t)
                 let min = t
@@ -992,9 +1015,30 @@ function! s:RoundColor(...) "{{{1
             endif
         endfor
         call add(result, r)
+        call add(minlist, min)
         let min = 1000
     endfor
+    " Check with the values from the 16 color xterm, if the difference
+    " is lower
+    let result = s:Check16ColorTerm(result, minlist)
+
     return result
+endfunction
+
+function! s:Check16ColorTerm(rgblist, minlist) "{{{1
+" We only check those values here:
+" [205,0,0] [0,205,0] [205,205,0] [205,0,205] [0,205,205] [0,0,238] [92,92,255]
+" The other values are already included in the s:colortable list
+  let min = a:minlist[0] + a:minlist[1] + a:minlist[2]
+  for value in [[205,0,0], [0,205,0], [205,205,0], [205,0,205], [0,205,205], [0,0,238], [92,92,255]]
+      let t = abs(value[0] - a:minlist[0]) +
+            \ abs(value[1] - a:minlist[1]) +
+            \ abs(value[2] - a:minlist[2])
+      if min > t
+          return value
+      endif
+  endfor
+  return a:rgblist
 endfunction
 
 function! s:Modifylists(la, lb, op) "{{{1
@@ -1074,13 +1118,17 @@ function! s:Init(...) "{{{1
     if !exists("s:init_css") || !exists("s:colortable") ||
         \ empty(s:colortable)
 	" Only calculate the colortable when running
-	" in a terminal with more than 88 colors (e.g. 256 colors)
-	if &t_Co == 256
-	    let s:colortable = map(range(0,255), 's:Xterm2rgb(v:val)')
-            if s:debug
-                let g:colortable = s:colortable
-            endif
+        if &t_Co == 16
+	    let s:colortable = map(range(0,15), 's:Xterm2rgb16(v:val)')
+        elseif &t_Co == 88
+	    let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
+	" terminal with 256 colors:
+        elseif &t_Co == 256
+	    let s:colortable = map(range(0,255), 's:Xterm2rgb256(v:val)')
 	endif
+        if s:debug
+            let g:colortable = s:colortable
+        endif
         let s:init_css = 1
     elseif s:force_hl
         call s:ColorOff()
@@ -1110,17 +1158,17 @@ function! s:Init(...) "{{{1
 	"endfor
         let a=winsaveview()
 	let save = s:SaveOptions(['mod', 'ro', 'ma', 'lz'])
-	" highlight Colornames
-        "
-	let s_cmd =
-	    \ printf(":sil %%s/%s/\\=s:PreviewColorName(submatch(0))/egi",
-	    \ s:GetColorPattern(keys(s:colors)))
-"	exe s_cmd
 	" highlight Hex Codes:
         "
 	" The :%s command is a lot faster than this:
 	":g/#\x\{3,6}\>/call s:ColorMatchingLines(line('.'))
 	:sil %s/#\x\{3,6}\>/\=s:ColorMatchingLines1(submatch(0))/egi
+	" highlight Colornames
+        "
+	let s_cmd =
+	    \ printf(":sil %%s/%s/\\=s:PreviewColorName(submatch(0))/egi",
+	    \ s:GetColorPattern(keys(s:colors)))
+	exe s_cmd
 	for [key, value] in items(save)
 	    call setbufvar('', '&'. key, value)
 	endfor
@@ -1188,13 +1236,13 @@ endif
 
 
 fu! Test1()
-    return map(range(0,254), 's:Xterm2rgb(v:val)')
+    return map(range(0,254), 's:Xterm2rgb256(v:val)')
 endfu
 "
 fu! Test2()
     let list=[]
     for c in range(0, 254)
-        let css_color = s:Xterm2rgb(c)
+        let css_color = s:Xterm2rgb256(c)
         call add(list, css_color)
     endfor
    return list
