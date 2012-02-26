@@ -967,7 +967,6 @@ function! s:Rgb2xterm(color) "{{{1
     elseif (color == 'FFFFFF')
 	return 15
     else
-        let color = (a:color[0] == '#' ? a:color[1:] : a:color)
 	let r = '0x'.color[0:1]+0
 	let g = '0x'.color[2:3]+0
 	let b = '0x'.color[4:5]+0
