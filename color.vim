@@ -872,15 +872,16 @@ endfu
 function! s:SetMatcher(clr) "{{{1
     let group = 'Color'. a:clr
     call s:DoHlGroup(group, a:clr)
-    let clr = '\<#'.a:clr.'\>\c'
+    let clr = '#'.a:clr.'\>\c'
     if s:DidColor(clr)
         return
     endif
     call matchadd(group, clr)
+    call add(s:match_list, clr)
 endfunction
 
 function! s:DoHlGroup(group, clr) "{{{1
-    if !s:force_hl
+    if !s:force_hl && !empty(synIDattr(hlID(a:group), 'fg'))
 	return
     endif
     let hi = printf('hi %s guifg=%s guibg=#%s', a:group, 
@@ -948,7 +949,7 @@ function! s:Xterm2rgb256(color)  "{{{1
 
     " gray tone
     elseif a:color >= 232 && a:color <= 255
-      let r = 8 + (a:color-80) * 0x0a
+      let r = 8 + (a:color-232) * 0x0a
       let g = r
       let b = r
    endif
@@ -978,24 +979,39 @@ function! s:Rgb2xterm(color) "{{{1
         endif
 
         " Grey scale ?
-        if ( r == g &&  r == b && &t_Co == 256 )
-            " 0 and 15 have already been take care of
-            if r == 229
-                return 7 " from 16 color xterm
-            elseif r == 127
-                return 8 " from 16 color xterm
-            elseif r > 239
-                let r = 239
+        if ( r == g &&  r == b )
+            if &t_Co == 256
+                " 0 and 15 have already been take care of
+                if r < 5
+                    return 0 " black
+    "            elseif r == 127
+    "                return 8 " from 16 color xterm
+    "            elseif r == 229
+    "                return 7 " from 16 color xterm
+                elseif r > 244
+                    return 15 " white
+                endif
+                " grey cube starts at index 232
+                return 232+(r-5)/10
+            elseif &t_Co == 88
+                if r < 23
+                    return 0 " black
+                elseif r < 69
+                    return 80
+                elseif r > 250
+                    return 15 " white
+                else
+                    " should be good enough
+                    return 80 + (r-69)/23
+                endif
             endif
-            " grey cube starts at index 232
-            return 232+(r/10)
         endif
 
         " Round to the next step in the xterm color cube
         let round = s:RoundColor(r, g, b)
-        let i = index(s:colortable[16:], round)
+        let i = index(s:colortable, round)
         if i > -1
-            return 16+i
+            return i
         endif
         " not reached
         return -1
@@ -1006,29 +1022,23 @@ function! s:RoundColor(...) "{{{1
     let result = []
     let minlist = []
     let min    = 1000
+    let list = (&t_Co == 256 ? s:valuerange6 : s:valuerange4)
     if &t_Co > 16
         for item in a:000
-            if &t_Co > 88
-                for val in s:valuerange6
-                    let t = abs(val - item)
-                    if (min > t)
-                        let min = t
-                        let r   = val
-                    endif
-                endfor
-            else "88 color term
-                for val in s:valuerange4
-                    let t = abs(val - item)
-                    if (min > t)
-                        let min = t
-                        let r   = val
-                    endif
-                endfor
-            endif
+            for val in list
+                let t = abs(val - item)
+                if (min > t)
+                    let min = t
+                    let r   = val
+                endif
+            endfor
             call add(result, r)
             call add(minlist, min)
             let min = 1000
         endfor
+    endif
+    if &t_Co == 16
+        let minlist = [255, 255, 255]
     endif
     " Check with the values from the 16 color xterm, if the difference
     " is lower
@@ -1038,31 +1048,44 @@ function! s:RoundColor(...) "{{{1
 endfunction
 
 function! s:Check16ColorTerm(rgblist, minlist) "{{{1
-" We only check those values here:
-" [205,0,0] [0,205,0] [205,205,0] [205,0,205] [0,205,205] [0,0,238] [92,92,255]
+" We only check those values for 256 color terminals here:
+" [205,0,0] [0,205,0] [205,205,0] [205,0,205]
+" [0,205,205] [0,0,238] [92,92,255]
 " The other values are already included in the s:colortable list
     let min = a:minlist[0] + a:minlist[1] + a:minlist[2]
     if &t_Co == 256
-        for value in [[205,0,0], [0,205,0], [205,205,0], [205,0,205], [0,205,205], [0,0,238], [92,92,255]]
-            let t = abs(value[0] - a:minlist[0]) +
-                    \ abs(value[1] - a:minlist[1]) +
-                    \ abs(value[2] - a:minlist[2])
+        for value in [[205,0,0], [0,205,0], [205,205,0], [205,0,205],
+                \ [0,205,205], [0,0,238], [92,92,255]]
+            let t = abs(value[0] - a:rgblist[0]) +
+                    \ abs(value[1] - a:rgblist[1]) +
+                    \ abs(value[2] - a:rgblist[2])
             if min > t
                 return value
             endif
         endfor
     elseif &t_Co == 88
         for value in [[0,0,238], [229,229,229], [127,127,127], [92,92,255]]
-            let t = abs(value[0] - a:minlist[0]) +
-                    \ abs(value[1] - a:minlist[1]) +
-                    \ abs(value[2] - a:minlist[2])
+            let t = abs(value[0] - a:rgblist[0]) +
+                    \ abs(value[1] - a:rgblist[1]) +
+                    \ abs(value[2] - a:rgblist[2])
             if min > t
                 return value
             endif
         endfor
     else " 16 color terminal
         " Check for values from 16 color terminal
-    endfor
+        let best = []
+        for value in s:basic16
+            let t = abs(value[0] - a:rgblist[0]) +
+                    \ abs(value[1] - a:rgblist[1]) +
+                    \ abs(value[2] - a:rgblist[2])
+            if min > t
+                let min = t
+                let best = value
+            endif
+        endfor
+        return best
+    endif
   return a:rgblist
 endfunction
 
@@ -1094,6 +1117,7 @@ function! s:SetNamedColor(clr, name) "{{{1
         return
     endif
     call matchadd(group, name)
+    call add(s:match_list, name)
 endfunction
 
 function! s:PreviewColorName(color) "{{{1
@@ -1122,6 +1146,13 @@ endfunction
 
 function! s:Init(...) "{{{1
     let s:force_hl = !empty(a:1)
+    if !exists("s:old_tCo")
+        let s:old_tCo = &t_Co
+    endif
+    " User manually changed the &t_Co option, so reset it
+    if s:old_tCo != &t_Co
+        unlet! s:colortable
+    endif
     if !exists("s:init_css") || !exists("s:colortable") ||
         \ empty(s:colortable)
 	" Only calculate the colortable when running
@@ -1133,7 +1164,7 @@ function! s:Init(...) "{{{1
         elseif &t_Co == 256
 	    let s:colortable = map(range(0,255), 's:Xterm2rgb256(v:val)')
 	endif
-        if s:debug
+        if s:debug && exists("s:colortable")
             let g:colortable = s:colortable
         endif
         let s:init_css = 1
@@ -1145,7 +1176,7 @@ function! s:Init(...) "{{{1
 	let s:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
 	let s:hl = copy(s:match_list)
-	if !s:force_hl && (empty(s:hl) || !hlexists(s:hl[0].group) || 
+	if (empty(s:hl) || !hlexists(s:hl[0].group) || 
 	    \ empty(synIDattr(hlID(s:hl[0].group), 'fg')))
 	    let s:force_hl = 1
 	endif
