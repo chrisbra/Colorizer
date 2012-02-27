@@ -862,35 +862,38 @@ function! s:FGforBG(bg) "{{{1
    end
 endfunction
 
-function! s:DidColor(clr) "{{{1
-    if index(s:match_list, a:clr) > -1
-        return 1
+function! s:DidColor(clr, pat) "{{{1
+    let idx = index(s:match_list, a:clr)
+    if idx > -1
+        if a:pat[0] == '#' ||
+        \ get(get(s:hl, idx, []), 'pattern', '') == a:pat
+            return 1
+        endif
     endif
     return 0
 endfu
 
-function! s:SetMatcher(clr) "{{{1
-    let group = 'Color'. a:clr
-    call s:DoHlGroup(group, a:clr)
-    let clr = '#'.a:clr.'\>\c'
-    if s:DidColor(clr)
-        return
-    endif
-    call matchadd(group, clr)
-    call add(s:match_list, clr)
-endfunction
-
-function! s:DoHlGroup(group, clr) "{{{1
-    if !s:force_hl && !empty(synIDattr(hlID(a:group), 'fg'))
+function! s:DoHlGroup(clr) "{{{1
+    if !s:force_hl && !empty(synIDattr(hlID(a:clr), 'fg'))
 	return
     endif
-    let hi = printf('hi %s guifg=%s guibg=#%s', a:group, 
+    let hi = printf('hi %s guifg=%s guibg=#%s', a:clr, 
 	    \ s:FGforBG(a:clr), a:clr)
     if !has("gui_running")
 	let hi.= printf(' ctermfg=%s ctermbg=%s',
 	    \ s:Rgb2xterm(s:FGforBG(a:clr)), s:Rgb2xterm(a:clr))
     endif
     exe hi
+endfunction
+
+function! s:SetMatcher(clr, pattern) "{{{1
+    let color = a:clr[0] == '#' ? a:clr[1:] : a:clr
+    call s:DoHlGroup(color)
+    if s:DidColor('#'.color.'\>\c', a:pattern)
+        return
+    endif
+    call matchadd(color, a:pattern)
+    call add(s:match_list, a:pattern)
 endfunction
 
 function! s:Xterm2rgb16(color) "{{{1
@@ -1008,12 +1011,8 @@ function! s:Rgb2xterm(color) "{{{1
 
         " Round to the next step in the xterm color cube
         let round = s:RoundColor(r, g, b)
-        let i = index(s:colortable, round)
-        if i > -1
-            return i
-        endif
-        " not reached
-        return -1
+        " Return closest match or -1 if not found
+        return index(s:colortable, round)
     endif
 endfunction
 
@@ -1101,37 +1100,38 @@ function! s:Modifylists(la, lb, op) "{{{1
 endfu
 
 
-function! s:MySortColorTable(a, b) dict "{{{1
-    return abs(a:a[0] + a:a[1] + a:a[2] - self.r - self.g - self.b)
-        \ - abs(a:b[0] + a:b[1] + a:b[2] - self.r - self.g - self.b)
-endfunction
+"function! s:MySortColorTable(a, b) dict "{{{1
+"    return abs(a:a[0] + a:a[1] + a:a[2] - self.r - self.g - self.b)
+"        \ - abs(a:b[0] + a:b[1] + a:b[2] - self.r - self.g - self.b)
+"endfunction
 
 
-function! s:SetNamedColor(clr, name) "{{{1
-    let color = (a:clr[0] == '#' ? a:clr[1:] : a:clr)
-    let group = 'Color'.color
-    let name  = '\<'.a:name.'\>\c'
-    call s:DoHlGroup(group, color)
-    if s:DidColor(name)
-        return
-    endif
-    call matchadd(group, name)
-    call add(s:match_list, name)
-endfunction
+"function! s:SetNamedColor(clr, name) "{{{1
+"    let color = (a:clr[0] == '#' ? a:clr[1:] : a:clr)
+"    let name  = '\<'.a:name.'\>\c'
+"    call s:DoHlGroup(color)
+"    if s:DidColor(color, name)
+"        return
+"    endif
+"    call matchadd(group, name)
+"    call add(s:match_list, name)
+"endfunction
 
 function! s:PreviewColorName(color) "{{{1
     let name=tolower(a:color)
-    call s:SetNamedColor(s:colors[name], name)
+    let clr = s:colors[name]
+    call s:SetMatcher(clr, '\<'.name.'\>\c')
     return a:color
 endfu
 
-function! s:PreviewColorInLine(match) "{{{1
-    let color = a:match
-    let color = (color[0] == '#' ? color[1:] : color)
+function! s:PreviewColorHex(match, ...) "{{{1
+    let color = (a:match[0] == '#' ? a:match[1:] : a:match)
     if len(color) == 3
         let color = substitute(color, '.', '&&', 'g')
     endif
-    call s:SetMatcher(color)
+    let pattern = !a:0 ? color : a:1
+    call s:SetMatcher(color, '#'.pattern.'\>\c')
+    return a:match
 endfunction
 
 function! s:GetColorPattern(list) "{{{1
@@ -1140,7 +1140,7 @@ function! s:GetColorPattern(list) "{{{1
 endfunction
 
 function! s:GetMatchList() "{{{1
-    return filter(getmatches(), 'v:val.group =~ ''^Color\x\{6}$''')
+    return filter(getmatches(), 'v:val.group =~ ''^\x\{6}$''')
 endfunction
 
 function! s:Init(...) "{{{1
@@ -1155,7 +1155,7 @@ function! s:Init(...) "{{{1
     if !exists("s:init_css") || !exists("s:colortable") ||
         \ empty(s:colortable)
 	" Only calculate the colortable when running
-        if &t_Co == 16
+        if &t_Co == 16 || &t_Co == 8
 	    let s:colortable = map(range(0,15), 's:Xterm2rgb16(v:val)')
         elseif &t_Co == 88
 	    let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
@@ -1194,24 +1194,45 @@ function! s:Init(...) "{{{1
 	"    call s:ColorMatchingLines(line)
 	"endfor
         let a=winsaveview()
-	let save = s:SaveOptions(['mod', 'ro', 'ma', 'lz'])
+        let save = s:SaveRestoreOptions(1, {}, ['mod', 'ro', 'ma', 'lz'])
 	" highlight Hex Codes:
         "
 	" The :%s command is a lot faster than this:
 	":g/#\x\{3,6}\>/call s:ColorMatchingLines(line('.'))
-	:sil %s/#\x\{3,6}\>/\=s:ColorMatchingLines1(submatch(0))/egi
+	:sil %s/#\x\{3,6}\>/\=s:PreviewColorHex(submatch(0))/egi
+        " Also support something like
+        " CSS rgb(255,0,0)
+        "     rgba(255,0,0,1)
+        "     rgb(10%,0,100%)
+        "     hvl(0,100%,50%) -> hvl2rgb conversion RED
+        "     hvla(120,100%,50%,1) Lime
+        "     hvl(120,100%,25%) Darkgreen
+        "     hvl(120, 100%, 75%) light green
+        "     hvl(120, 75%, 75%) pastel green
+        " highlight rgb(X,X,X) values
+	:sil %s/rgba\?(\s*\zs\%(\d\+%\?\D*\)\{3,4}\ze)/\=s:ColorRGBValues(submatch(0))/egi
+        " highlight hvl(X,X,X) values
+	:sil %s/hvla\?(\s*\zs\%(\d\+%\?\D*\)\{3,4}\ze)/\=s:ColorHSLValues(submatch(0))/egi
 	" highlight Colornames
         "
 	let s_cmd =
 	    \ printf(":sil %%s/%s/\\=s:PreviewColorName(submatch(0))/egi",
 	    \ s:GetColorPattern(keys(s:colors)))
 	exe s_cmd
-	for [key, value] in items(save)
-	    call setbufvar('', '&'. key, value)
-	endfor
+        call s:SaveRestoreOptions(0, save, [])
         call winrestview(a)
     endif
 endfu
+
+function! s:SaveRestoreOptions(save, dict, list) "{{{1
+    if a:save
+        return s:SaveOptions(a:list)
+    else
+	for [key, value] in items(a:dict)
+	    call setbufvar('', '&'. key, value)
+	endfor
+    endif
+endfun
 
 function! s:SaveOptions(list) "{{{1
     let save = {}
@@ -1228,31 +1249,75 @@ function! s:SaveOptions(list) "{{{1
     return save
 endfunction
 
-function! s:ColorMatchingLines1(color) "{{{1
-    " This function is used together with a :s/pat/\=/ command
-    " so it must return the matching pattern
-    " This is faster thane the approach at s:ColorMatchingLines
-    call s:PreviewColorInLine(a:color)
-    return a:color
-endfu
+function! s:ColorRGBValues(val) "{{{1
+    " strip parantheses and split on comma
+    let rgb = split(a:val, '\s*,')
+    if len(rgb) == 4
+        " drop alpha channel
+        call remove(rgb, 3)
+    endif
+    for i in range(3)
+        if rgb[i][-1:-1] == '%'
+            let val = matchstr(rgb[i], '\d\+')
+            if (val + 0 > 100)
+                let rgb[1] = 100
+            endif
+            let rgb[i] = float2nr((val + 0.0)*255/100)
+        else
+            if rgb[i] + 0 > 255
+                let rgb[i] = 255
+            endif
+        endif
+    endfor
+    let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
+    "call s:PreviewColorHex(clr, a:val)
+    call s:SetMatcher(clr, a:val)
+    return a:val
+endfunction
 
-function! s:ColorMatchingLines(line) "{{{1
-    " Programmatic approach to highlight all hex values as colors.
-    " Surprisingly a lot slower than calling 
-    " :s/#\x\{3,6}/\=s:ColorMatchingLines1(submatch(0))/g
-    let cnt = 0
-    let pat = '#\x\{3,6\}\>'
-    let line = getline(a:line)
-    while 1
-	let color = matchstr(line, pat, cnt)
-	if empty(color)
-	    return
-	else
-            call s:PreviewColorInLine(color)
-	    let cnt  += 1
-	endif
-    endw
-endfu
+function! s:ColorHSLValues(val) "{{{1
+    " strip parantheses and split on comma
+    let hsl = split(a:val, '\s*,')
+    if len(hsl) == 4
+        " drop alpha channel
+        call remove(hsl, 3)
+    endif
+    let hsl[0] = ((hsl[0]+360)%360 + 0.0)/100
+    let hsl[1] = (matchstr(hsl[1], '\d\+') + 0.0)/100
+    let hsl[2] = (matchstr(hsl[2], '\d\+') + 0.0)/100
+
+    "call s:PreviewColorHex(clr, a:val)
+    let str = s:HVL2RGB(hsl[0], hsl[1], hsl[2])
+    call s:SetMatcher(s:HVL2RGB(hsl[0], hsl[1], hsl[2]), a:val)
+    return a:val
+endfunction
+
+function! s:HVL2RGB(h, s, l) "{{{1
+    let h = a:h + 0.0
+    let s = a:s + 0.0
+    let l = a:l + 0.0
+    if l <= 0.5
+        let m2 = l * (s + 1)
+    else
+        let m2 = l + s - l * s
+    endif
+    let m1 = l * 2 - m2
+    let r = float2nr(s:Hue2RGB(m1, m2, h + 1/3))
+    let g = float2nr(s:Hue2RGB(m1, m2, h))
+    let b = float2nr(s:Hue2RGB(m1, m2, h - 1/3))
+    return printf("%02X%02X%02X", r, g, b)
+endfunction
+
+function! s:Hue2RGB(m1, m2, h) "{{{1
+    let h = (a:h < 0 ? a:h + 1 : a:h - 1)
+    if h * 6 < 1
+        return a:m1 + (a:m2 - a:m1) * h * 6
+    elseif h * 2 < 1
+        return a:m2
+    else
+        return a:m1 + (a:m2 - a:m1)*(2.0/3.0 - h) * 6
+    endif
+endfunction
 
 function! s:ColorOff() "{{{1
     for _match in s:GetMatchList()
@@ -1261,8 +1326,9 @@ function! s:ColorOff() "{{{1
 endfu
 
 " define commands {{{1
-command! -bang ColorCodes :call s:Init(<q-bang>)
-command! -bang NoColor    :call s:ColorOff()
+command! -bang  ColorCodes :call s:Init(<q-bang>)
+command! -bang  NoColor    :call s:ColorOff()
+command! -nargs=1 Rgb2Xterm  :echo s:Rgb2xterm(<q-args>)
 
 " DEBUG TEST "{{{2
 if !s:debug
@@ -1285,24 +1351,22 @@ fu! Test2()
    return list
 endfu
 
-fu! GenerateMatchaddColors()
-    " This pregenerates all available colors and hi definitions for the
-    " complete RGB range and puts it in the current buffer. This is slow!
-    for r in range(0,255)
-	for g in range(0,255)
-	    for b in range(0,255)
-	    let code  = printf('%02X%02X%02X', r,g,b)
-	    let clr   = '#'.code
-	    let group = 'Color'.code
-	    let hi = printf(':hi %s guifg=%s guibg=%s ctermfg=%s ctermbg=%s',
-			\ group, s:FGforBG(clr), clr,
-			\ s:Rgb2xterm(s:FGforBG(clr)), s:Rgb2xterm(clr))
-	    let matchadd = printf(":call matchadd('%s', '\\<%s\\>\\c')",
-			\ group, clr)
-	    call append('.', [hi, matchadd])
-	    endfor
-	endfor
-    endfor
+function! s:ColorMatchingLines(line) "{{{1
+    " Programmatic approach to highlight all hex values as colors.
+    " Surprisingly a lot slower than calling 
+    " :s/#\x\{3,6}/\=s:ColorMatchingLines1(submatch(0))/g
+    let cnt = 0
+    let pat = '#\x\{3,6\}\>'
+    let line = getline(a:line)
+    while 1
+	let color = matchstr(line, pat, cnt)
+	if empty(color)
+	    return
+	else
+            call s:PreviewColorHex(color)
+	    let cnt  += 1
+	endif
+    endw
 endfu
 
 function! Substitute1(clr) "{{{1
