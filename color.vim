@@ -866,7 +866,8 @@ function! s:DidColor(clr, pat) "{{{1
     let idx = index(s:match_list, a:clr)
     if idx > -1
         if a:pat[0] == '#' ||
-        \ get(get(s:hl, idx, []), 'pattern', '') == a:pat
+        \ !empty(synIDattr(hlID(a:clr), 'fg'))
+"        \ get(get(s:hl, idx, []), 'pattern', '') == a:pat
             return 1
         endif
     endif
@@ -1174,9 +1175,8 @@ function! s:Init(...) "{{{1
 	" The list of available match() patterns
 	let s:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
-	let s:hl = copy(s:match_list)
-	if (empty(s:hl) || !hlexists(s:hl[0].group) || 
-	    \ empty(synIDattr(hlID(s:hl[0].group), 'fg')))
+	if (empty(s:match_list) || !hlexists(s:match_list[0].group) || 
+	    \ empty(synIDattr(hlID(s:match_list[0].group), 'fg')))
 	    let s:force_hl = 1
 	endif
 	let s:colors = (exists("g:color_x11_names") ? s:x11_color_names :
@@ -1204,15 +1204,15 @@ function! s:Init(...) "{{{1
         " CSS rgb(255,0,0)
         "     rgba(255,0,0,1)
         "     rgb(10%,0,100%)
-        "     hvl(0,100%,50%) -> hvl2rgb conversion RED
-        "     hvla(120,100%,50%,1) Lime
-        "     hvl(120,100%,25%) Darkgreen
-        "     hvl(120, 100%, 75%) light green
-        "     hvl(120, 75%, 75%) pastel green
+        "     hsl(0,100%,50%) -> hvl2rgb conversion RED
+        "     hsla(120,100%,50%,1) Lime
+        "     hsl(120,100%,25%) Darkgreen
+        "     hsl(120, 100%, 75%) light green
+        "     hsl(120, 75%, 75%) pastel green
         " highlight rgb(X,X,X) values
 	:sil %s/rgba\?(\s*\zs\%(\d\+%\?\D*\)\{3,4}\ze)/\=s:ColorRGBValues(submatch(0))/egi
         " highlight hvl(X,X,X) values
-	:sil %s/hvla\?(\s*\zs\%(\d\+%\?\D*\)\{3,4}\ze)/\=s:ColorHSLValues(submatch(0))/egi
+	:sil %s/hsla\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorHSLValues(submatch(0))/egi
 	" highlight Colornames
         "
 	let s_cmd =
@@ -1277,23 +1277,70 @@ endfunction
 
 function! s:ColorHSLValues(val) "{{{1
     " strip parantheses and split on comma
-    let hsl = split(a:val, '\s*,')
+    let val = matchstr(a:val, '^hsla\?(\zs.*\ze)$')
+    let hsl = split(val, '\s*,')
     if len(hsl) == 4
         " drop alpha channel
         call remove(hsl, 3)
     endif
-    let hsl[0] = ((hsl[0]+360)%360 + 0.0)/100
+    let hsl[0] = (hsl[0]+360)%360
     let hsl[1] = (matchstr(hsl[1], '\d\+') + 0.0)/100
     let hsl[2] = (matchstr(hsl[2], '\d\+') + 0.0)/100
 
     "call s:PreviewColorHex(clr, a:val)
-    let str = s:HVL2RGB(hsl[0], hsl[1], hsl[2])
-    call s:SetMatcher(s:HVL2RGB(hsl[0], hsl[1], hsl[2]), a:val)
+    let str = s:HSL2RGB(hsl[0], hsl[1], hsl[2])
+    call s:SetMatcher(str, a:val)
     return a:val
 endfunction
 
-function! s:HVL2RGB(h, s, l) "{{{1
-    let h = a:h + 0.0
+function! s:HSL2RGB1(h, s, l) "{{{1
+    let c = (1 - abs(2 * a:l-1)) * a:s
+    let hp = a:h / 60
+    let x = c * (1 - (abs(hp/2)-floor(hp/2) - 1))
+    let m = a:l - (c/2)
+    if hp >= 0 && hp < 1
+        let r = c
+        let b = x
+        let g = 0
+    elseif hp >= 1 && hp < 2
+        let r = x
+        let b = c
+        let g = 0
+    elseif hp >= 2 && hp < 3
+        let r = 0
+        let b = c
+        let g = x
+    elseif hp >= 3 && hp < 4
+        let r = 0
+        let b = x
+        let g = c
+    elseif hp >= 4 && hp < 5
+        let r = x
+        let b = 0
+        let g = c
+    elseif hp >= 5 && hp < 6
+        let r = c
+        let b = 0
+        let g = 0
+    else
+        let r = 0
+        let b = 0
+        let g = 0
+    endif
+
+    let r += m 
+    let g += m
+    let b += m
+
+    let r = r * 255
+    let g = g * 255
+    let b = b * 255
+
+    return [ float2nr(r), float2nr(g), float2nr(b) ]
+
+
+endfunction
+function! s:HSL2RGB(h, s, l) "{{{1
     let s = a:s + 0.0
     let l = a:l + 0.0
     if l <= 0.5
@@ -1302,21 +1349,23 @@ function! s:HVL2RGB(h, s, l) "{{{1
         let m2 = l + s - l * s
     endif
     let m1 = l * 2 - m2
-    let r = float2nr(s:Hue2RGB(m1, m2, h + 1/3))
-    let g = float2nr(s:Hue2RGB(m1, m2, h))
-    let b = float2nr(s:Hue2RGB(m1, m2, h - 1/3))
+    let r = float2nr(s:Hue2RGB(m1, m2, a:h + 120))
+    let g = float2nr(s:Hue2RGB(m1, m2, a:h))
+    let b = float2nr(s:Hue2RGB(m1, m2, a:h - 120))
     return printf("%02X%02X%02X", r, g, b)
 endfunction
 
 function! s:Hue2RGB(m1, m2, h) "{{{1
-    let h = (a:h < 0 ? a:h + 1 : a:h - 1)
-    if h * 6 < 1
-        return a:m1 + (a:m2 - a:m1) * h * 6
-    elseif h * 2 < 1
-        return a:m2
+    if a:h < 60
+        let r = (a:m1 + (a:m2 - a:m1) * a:h / 60) * 255
+    elseif a:h <  180
+        let r = a:m2
+    elseif a:h < 240
+        let r = a:m1 + (a:m2 - a:m1)*(240 - a:h) / 60
     else
-        return a:m1 + (a:m2 - a:m1)*(2.0/3.0 - h) * 6
+        let r = a:m1
     endif
+    return float2nr(r*255)
 endfunction
 
 function! s:ColorOff() "{{{1
@@ -1329,6 +1378,7 @@ endfu
 command! -bang  ColorCodes :call s:Init(<q-bang>)
 command! -bang  NoColor    :call s:ColorOff()
 command! -nargs=1 Rgb2Xterm  :echo s:Rgb2xterm(<q-args>)
+command! -nargs=1 HSL2RGB  :echo s:ColorHSLValues(<q-args>)
 
 " DEBUG TEST "{{{2
 if !s:debug
