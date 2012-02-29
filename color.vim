@@ -43,6 +43,37 @@ let s:basic16 = [
     \ [ 0xFF, 0xFF, 0xFF ]
     \ ]
 
+" xterm-16 colors "{{{2
+let s:xterm_16colors = {
+\ 'black':          '#000000',
+\ 'darkblue':       '#00008B',
+\ 'darkgreen':      '#00CD00',
+\ 'darkcyan':       '#00CDCD',
+\ 'darkred':        '#CD0000',
+\ 'darkmagenta':    '#8B008B',
+\ 'brown':          '#CDCD00',
+\ 'darkyellow':     '#CDCD00',
+\ 'lightgrey':      '#E5E5E5',
+\ 'lightgray':      '#E5E5E5',
+\ 'gray':           '#E5E5E5',
+\ 'grey':           '#E5E5E5',
+\ 'darkgrey':       '#7F7F7F',
+\ 'darkgray':       '#7F7F7F',
+\ 'blue':           '#5C5CFF',
+\ 'lightblue':      '#5C5CFF',
+\ 'green':          '#00FF00',
+\ 'lightgreen':     '#00FF00',
+\ 'cyan':           '#00FFFF',
+\ 'lightcyan':      '#00FFFF',
+\ 'red':            '#FF0000',
+\ 'lightred':       '#FF0000',
+\ 'magenta':        '#FF00FF',
+\ 'lightmagenta':   '#FF00FF',
+\ 'yellow':         '#FFFF00',
+\ 'lightyellow':    '#FFFF00',
+\ 'white':          '#FFFFFF',
+\ }
+
 " W3C Colors "{{{2
 let s:w3c_color_names = {
 \ 'aliceblue': '#F0F8FF',
@@ -863,11 +894,10 @@ function! s:FGforBG(bg) "{{{1
 endfunction
 
 function! s:DidColor(clr, pat) "{{{1
-    let idx = index(s:match_list, a:clr)
+    let idx = index(s:match_list, a:pat)
     if idx > -1
         if a:pat[0] == '#' ||
         \ !empty(synIDattr(hlID(a:clr), 'fg'))
-"        \ get(get(s:hl, idx, []), 'pattern', '') == a:pat
             return 1
         endif
     endif
@@ -875,14 +905,18 @@ function! s:DidColor(clr, pat) "{{{1
 endfu
 
 function! s:DoHlGroup(clr) "{{{1
-    if !s:force_hl && !empty(synIDattr(hlID(a:clr), 'fg'))
-	return
+    if !s:force_hl 
+        let syn = synIDattr(hlID(a:clr), 'fg')
+        if !empty(syn) && syn > -1
+            return
+        endif
     endif
+    let fg = s:FGforBG(a:clr)
     let hi = printf('hi %s guifg=%s guibg=#%s', a:clr, 
-	    \ s:FGforBG(a:clr), a:clr)
+	    \ fg, a:clr)
     if !has("gui_running")
 	let hi.= printf(' ctermfg=%s ctermbg=%s',
-	    \ s:Rgb2xterm(s:FGforBG(a:clr)), s:Rgb2xterm(a:clr))
+	    \ s:Rgb2xterm(fg), s:Rgb2xterm(a:clr))
     endif
     exe hi
 endfunction
@@ -890,7 +924,7 @@ endfunction
 function! s:SetMatcher(clr, pattern) "{{{1
     let color = a:clr[0] == '#' ? a:clr[1:] : a:clr
     call s:DoHlGroup(color)
-    if s:DidColor('#'.color.'\>\c', a:pattern)
+    if s:DidColor(color, a:pattern)
         return
     endif
     call matchadd(color, a:pattern)
@@ -1036,8 +1070,9 @@ function! s:RoundColor(...) "{{{1
             let min = 1000
         endfor
     endif
-    if &t_Co == 16
-        let minlist = [255, 255, 255]
+    if &t_Co <= 16
+        let result  = [ a:1, a:2, a:3 ]
+        let minlist = [ 255, 255, 255 ]
     endif
     " Check with the values from the 16 color xterm, if the difference
     " is lower
@@ -1055,6 +1090,8 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
     if &t_Co == 256
         for value in [[205,0,0], [0,205,0], [205,205,0], [205,0,205],
                 \ [0,205,205], [0,0,238], [92,92,255]]
+            " euclidian distance would be needed, but this works good enough
+            " and is faster.
             let t = abs(value[0] - a:rgblist[0]) +
                     \ abs(value[1] - a:rgblist[1]) +
                     \ abs(value[2] - a:rgblist[2])
@@ -1074,7 +1111,9 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
     else " 16 color terminal
         " Check for values from 16 color terminal
         let best = []
-        for value in s:basic16
+        let min  = 100000
+        let list = (&t_Co == 16 ? s:basic16 : s:basic16[:7])
+        for value in list
             let t = abs(value[0] - a:rgblist[0]) +
                     \ abs(value[1] - a:rgblist[1]) +
                     \ abs(value[2] - a:rgblist[2])
@@ -1087,36 +1126,6 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
     endif
   return a:rgblist
 endfunction
-
-function! s:Modifylists(la, lb, op) "{{{1
-    if a:op == '+'
-        return [ a:la[0] + a:lb[0], 
-            \    a:la[1] + a:lb[1],
-            \    a:la[2] + a:lb[2]]
-    else
-        return [ a:la[0] - a:lb[0], 
-            \    a:la[1] - a:lb[1],
-            \    a:la[2] - a:lb[2]]
-    endif
-endfu
-
-
-"function! s:MySortColorTable(a, b) dict "{{{1
-"    return abs(a:a[0] + a:a[1] + a:a[2] - self.r - self.g - self.b)
-"        \ - abs(a:b[0] + a:b[1] + a:b[2] - self.r - self.g - self.b)
-"endfunction
-
-
-"function! s:SetNamedColor(clr, name) "{{{1
-"    let color = (a:clr[0] == '#' ? a:clr[1:] : a:clr)
-"    let name  = '\<'.a:name.'\>\c'
-"    call s:DoHlGroup(color)
-"    if s:DidColor(color, name)
-"        return
-"    endif
-"    call matchadd(group, name)
-"    call add(s:match_list, name)
-"endfunction
 
 function! s:PreviewColorName(color) "{{{1
     let name=tolower(a:color)
@@ -1156,7 +1165,9 @@ function! s:Init(...) "{{{1
     if !exists("s:init_css") || !exists("s:colortable") ||
         \ empty(s:colortable)
 	" Only calculate the colortable when running
-        if &t_Co == 16 || &t_Co == 8
+        if &t_Co == 8
+	    let s:colortable = map(range(0,7), 's:Xterm2rgb16(v:val)')
+        elseif &t_Co == 16
 	    let s:colortable = map(range(0,15), 's:Xterm2rgb16(v:val)')
         elseif &t_Co == 88
 	    let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
@@ -1171,7 +1182,7 @@ function! s:Init(...) "{{{1
     elseif s:force_hl
         call s:ColorOff()
     endif
-    if has("gui_running") || &t_Co >= 16
+    if has("gui_running") || &t_Co >= 8
 	" The list of available match() patterns
 	let s:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
@@ -1179,8 +1190,12 @@ function! s:Init(...) "{{{1
 	    \ empty(synIDattr(hlID(s:match_list[0].group), 'fg')))
 	    let s:force_hl = 1
 	endif
-	let s:colors = (exists("g:color_x11_names") ? s:x11_color_names :
-	    \ s:w3c_color_names )
+        if &t_Co > 16 || has("gui_running")
+            let s:colors = (exists("g:color_x11_names") ? s:x11_color_names : s:w3c_color_names)
+        else
+            " should work with 8 and 16 colors
+            let s:colors = s:xterm_16colors
+        endif
     "    let s:colors = {}
 	call map(s:match_list, 'v:val.pattern')
 
@@ -1200,6 +1215,7 @@ function! s:Init(...) "{{{1
 	" The :%s command is a lot faster than this:
 	":g/#\x\{3,6}\>/call s:ColorMatchingLines(line('.'))
 	:sil %s/#\x\{3,6}\>/\=s:PreviewColorHex(submatch(0))/egi
+        if &t_Co > 16
         " Also support something like
         " CSS rgb(255,0,0)
         "     rgba(255,0,0,1)
@@ -1209,10 +1225,11 @@ function! s:Init(...) "{{{1
         "     hsl(120,100%,25%) Darkgreen
         "     hsl(120, 100%, 75%) light green
         "     hsl(120, 75%, 75%) pastel green
-        " highlight rgb(X,X,X) values
-	:sil %s/rgba\?(\s*\zs\%(\d\+%\?\D*\)\{3,4}\ze)/\=s:ColorRGBValues(submatch(0))/egi
-        " highlight hvl(X,X,X) values
-	:sil %s/hsla\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorHSLValues(submatch(0))/egi
+            " highlight rgb(X,X,X) values
+            :sil %s/rgba\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorRGBValues(submatch(0))/egi
+            " highlight hvl(X,X,X) values
+            :sil %s/hsla\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorHSLValues(submatch(0))/egi
+        endif
 	" highlight Colornames
         "
 	let s_cmd =
@@ -1249,9 +1266,13 @@ function! s:SaveOptions(list) "{{{1
     return save
 endfunction
 
+function! s:StripParantheses(val) "{{{1
+    return split(matchstr(a:val, '^\(hsl\|rgb\)a\?(\zs.*\ze)$'), '\s*,')
+endfunction
+
 function! s:ColorRGBValues(val) "{{{1
     " strip parantheses and split on comma
-    let rgb = split(a:val, '\s*,')
+    let rgb = s:StripParantheses(a:val)
     if len(rgb) == 4
         " drop alpha channel
         call remove(rgb, 3)
@@ -1270,15 +1291,13 @@ function! s:ColorRGBValues(val) "{{{1
         endif
     endfor
     let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
-    "call s:PreviewColorHex(clr, a:val)
     call s:SetMatcher(clr, a:val)
     return a:val
 endfunction
 
 function! s:ColorHSLValues(val) "{{{1
     " strip parantheses and split on comma
-    let val = matchstr(a:val, '^hsla\?(\zs.*\ze)$')
-    let hsl = split(val, '\s*,')
+    let hsl = s:StripParantheses(a:val)
     if len(hsl) == 4
         " drop alpha channel
         call remove(hsl, 3)
@@ -1293,53 +1312,6 @@ function! s:ColorHSLValues(val) "{{{1
     return a:val
 endfunction
 
-function! s:HSL2RGB1(h, s, l) "{{{1
-    let c = (1 - abs(2 * a:l-1)) * a:s
-    let hp = a:h / 60
-    let x = c * (1 - (abs(hp/2)-floor(hp/2) - 1))
-    let m = a:l - (c/2)
-    if hp >= 0 && hp < 1
-        let r = c
-        let b = x
-        let g = 0
-    elseif hp >= 1 && hp < 2
-        let r = x
-        let b = c
-        let g = 0
-    elseif hp >= 2 && hp < 3
-        let r = 0
-        let b = c
-        let g = x
-    elseif hp >= 3 && hp < 4
-        let r = 0
-        let b = x
-        let g = c
-    elseif hp >= 4 && hp < 5
-        let r = x
-        let b = 0
-        let g = c
-    elseif hp >= 5 && hp < 6
-        let r = c
-        let b = 0
-        let g = 0
-    else
-        let r = 0
-        let b = 0
-        let g = 0
-    endif
-
-    let r += m 
-    let g += m
-    let b += m
-
-    let r = r * 255
-    let g = g * 255
-    let b = b * 255
-
-    return [ float2nr(r), float2nr(g), float2nr(b) ]
-
-
-endfunction
 function! s:HSL2RGB(h, s, l) "{{{1
     let s = a:s + 0.0
     let l = a:l + 0.0
@@ -1356,15 +1328,17 @@ function! s:HSL2RGB(h, s, l) "{{{1
 endfunction
 
 function! s:Hue2RGB(m1, m2, h) "{{{1
-    if a:h < 60
-        let r = (a:m1 + (a:m2 - a:m1) * a:h / 60) * 255
+    let h = a:h
+    if h < 60
+        let r = (a:m1 + (a:m2 - a:m1) * h / 60) * 255
     elseif a:h <  180
         let r = a:m2
     elseif a:h < 240
-        let r = a:m1 + (a:m2 - a:m1)*(240 - a:h) / 60
+        let r = a:m1 + (a:m2 - a:m1)*(240 - h) / 60
     else
         let r = a:m1
     endif
+    let r = ( r < 0 ? 0 : r)
     return float2nr(r*255)
 endfunction
 
@@ -1419,9 +1393,39 @@ function! s:ColorMatchingLines(line) "{{{1
     endw
 endfu
 
+"function! s:SetNamedColor(clr, name) "{{{1
+"    let color = (a:clr[0] == '#' ? a:clr[1:] : a:clr)
+"    let name  = '\<'.a:name.'\>\c'
+"    call s:DoHlGroup(color)
+"    if s:DidColor(color, name)
+"        return
+"    endif
+"    call matchadd(group, name)
+"    call add(s:match_list, name)
+"endfunction
+
+"function! s:MySortColorTable(a, b) dict "{{{1
+"    return abs(a:a[0] + a:a[1] + a:a[2] - self.r - self.g - self.b)
+"        \ - abs(a:b[0] + a:b[1] + a:b[2] - self.r - self.g - self.b)
+"endfunction
+
 function! Substitute1(clr) "{{{1
     return 'Color'.substitute(a:clr, '^#', '', '')
 endfu
+function! s:Modifylists(la, lb, op) "{{{1
+    if a:op == '+'
+        return [ a:la[0] + a:lb[0], 
+            \    a:la[1] + a:lb[1],
+            \    a:la[2] + a:lb[2]]
+    else
+        return [ a:la[0] - a:lb[0], 
+            \    a:la[1] - a:lb[1],
+            \    a:la[2] - a:lb[2]]
+    endif
+endfu
+
+
+
 function! Substitute2(clr) "{{{1
     let group = 'Color'. (a:clr[0] == '#' ? a:clr[1:] : a:clr)
 endfu
