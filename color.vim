@@ -1225,49 +1225,67 @@ function! s:Init(...) "{{{1
         else
             let s:colors = s:xterm_8colors
         endif
-    "    let s:colors = {}
-	call map(s:match_list, 'v:val.pattern')
-
-	" too slow
-        "for name in keys(s:colors)
-        "    call s:PreviewColorName(name)
-        "endfor
-	
-	" too slow:
-	"for line in range(1,line('$'))
-	"    call s:ColorMatchingLines(line)
-	"endfor
-        let a=winsaveview()
-        let save = s:SaveRestoreOptions(1, {}, ['mod', 'ro', 'ma', 'lz'])
-	" highlight Hex Codes:
-        "
-	" The :%s command is a lot faster than this:
-	":g/#\x\{3,6}\>/call s:ColorMatchingLines(line('.'))
-	:sil %s/#\x\{3,6}\>/\=s:PreviewColorHex(submatch(0))/egi
-        if &t_Co > 16
-        " Also support something like
-        " CSS rgb(255,0,0)
-        "     rgba(255,0,0,1)
-        "     rgb(10%,0,100%)
-        "     hsl(0,100%,50%) -> hvl2rgb conversion RED
-        "     hsla(120,100%,50%,1) Lime
-        "     hsl(120,100%,25%) Darkgreen
-        "     hsl(120, 100%, 75%) light green
-        "     hsl(120, 75%, 75%) pastel green
-            " highlight rgb(X,X,X) values
-            :sil %s/rgba\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorRGBValues(submatch(0))/egi
-            " highlight hvl(X,X,X) values
-            :sil %s/hsla\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorHSLValues(submatch(0))/egi
-        endif
-	" highlight Colornames
-        "
-	let s_cmd =
-	    \ printf(":sil %%s/%s/\\=s:PreviewColorName(submatch(0))/egi",
-	    \ s:GetColorPattern(keys(s:colors)))
-	exe s_cmd
-        call s:SaveRestoreOptions(0, save, [])
-        call winrestview(a)
+        call map(s:match_list, 'v:val.pattern')
+    else
+        throw "nocolor"
     endif
+endfu
+
+function! s:DoColor(force, line1, line2) "{{{1
+    " initialize plugin
+    try
+        call s:Init(a:force)
+    catch /nocolor/
+        " nothing to do
+        return
+    endtry
+
+    " too slow
+    "for name in keys(s:colors)
+    "    call s:PreviewColorName(name)
+    "endfor
+    
+    " too slow:
+    "for line in range(1,line('$'))
+    "    call s:ColorMatchingLines(line)
+    "endfor
+    let a=winsaveview()
+    let save = s:SaveRestoreOptions(1, {}, ['mod', 'ro', 'ma', 'lz'])
+    " highlight Hex Codes:
+    "
+    " The :%s command is a lot faster than this:
+    ":g/#\x\{3,6}\>/call s:ColorMatchingLines(line('.'))
+    let cmd = printf(':sil %d,%ds/#\x\{3,6}\>/'.
+        \ '\=s:PreviewColorHex(submatch(0))/egi', a:line1, a:line2)
+    exe cmd
+    if &t_Co > 16
+    " Also support something like
+    " CSS rgb(255,0,0)
+    "     rgba(255,0,0,1)
+    "     rgb(10%,0,100%)
+    "     hsl(0,100%,50%) -> hvl2rgb conversion RED
+    "     hsla(120,100%,50%,1) Lime
+    "     hsl(120,100%,25%) Darkgreen
+    "     hsl(120, 100%, 75%) light green
+    "     hsl(120, 75%, 75%) pastel green
+        " highlight rgb(X,X,X) values
+        ":sil %s/rgba\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorRGBValues(submatch(0))/egi
+        let cmd = printf(':sil %d,%ds/rgba\=(\s*\%%(\d\+%%\?\D*\)\{3,4})/'. 
+            \ '\=s:ColorRGBValues(submatch(0))/egi', a:line1, a:line2)
+        exe cmd
+        " highlight hvl(X,X,X) values
+        let cmd = printf(':sil %d,%ds/hsla\=(\s*\%%(\d\+%%\?\D*\)\{3,4})'.
+            \'/\=s:ColorHSLValues(submatch(0))/egi', a:line1, a:line2)
+        exe cmd
+    endif
+    " highlight Colornames
+    "
+    let s_cmd =
+        \ printf(':sil %d,%ds/%s/\=s:PreviewColorName(submatch(0))/egi',
+        \ a:line1, a:line2, s:GetColorPattern(keys(s:colors)))
+    exe s_cmd
+    call s:SaveRestoreOptions(0, save, [])
+    call winrestview(a)
 endfu
 
 function! s:SaveRestoreOptions(save, dict, list) "{{{1
@@ -1378,7 +1396,7 @@ function! s:ColorOff() "{{{1
 endfu
 
 " define commands {{{1
-command! -bang  ColorCodes :call s:Init(<q-bang>)
+command! -bang -range=%  ColorCodes :call s:DoColor(<q-bang>, <q-line1>, <q-line2>)
 command! -bang  NoColor    :call s:ColorOff()
 command! -nargs=1 Rgb2Xterm  :echo s:Rgb2xterm(<q-args>)
 command! -nargs=1 HSL2RGB  :echo s:ColorHSLValues(<q-args>)
