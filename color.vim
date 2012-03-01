@@ -74,6 +74,21 @@ let s:xterm_16colors = {
 \ 'white':          '#FFFFFF',
 \ }
 
+" xterm-8 colors "{{{2
+let s:xterm_8colors = {
+\ 'black':          '#000000',
+\ 'darkblue':       '#00008B',
+\ 'darkgreen':      '#00CD00',
+\ 'darkcyan':       '#00CDCD',
+\ 'darkred':        '#CD0000',
+\ 'darkmagenta':    '#8B008B',
+\ 'brown':          '#CDCD00',
+\ 'darkyellow':     '#CDCD00',
+\ 'lightgrey':      '#E5E5E5',
+\ 'lightgray':      '#E5E5E5',
+\ 'gray':           '#E5E5E5',
+\ 'grey':           '#E5E5E5'
+\ }
 " W3C Colors "{{{2
 let s:w3c_color_names = {
 \ 'aliceblue': '#F0F8FF',
@@ -1140,6 +1155,17 @@ function! s:PreviewColorHex(match, ...) "{{{1
         let color = substitute(color, '.', '&&', 'g')
     endif
     let pattern = !a:0 ? color : a:1
+    if &t_Co == 8 && !has("gui_running")
+        " The first 12 color names, can be displayed by 8 color terminals
+        let list = values(s:xterm_8colors)
+        let idx = match(list, a:match)
+        if idx == -1
+            " Color can't be displayed by 8 color terminal
+            return a:match
+        else
+            let color = list[idx]
+        endif
+    endif
     call s:SetMatcher(color, '#'.pattern.'\>\c')
     return a:match
 endfunction
@@ -1191,10 +1217,13 @@ function! s:Init(...) "{{{1
 	    let s:force_hl = 1
 	endif
         if &t_Co > 16 || has("gui_running")
-            let s:colors = (exists("g:color_x11_names") ? s:x11_color_names : s:w3c_color_names)
-        else
-            " should work with 8 and 16 colors
+            let s:colors = (exists("g:color_x11_names") ? s:x11_color_names
+                \ : s:w3c_color_names)
+        elseif &t_Co == 16
+            " should work with 16 colors terminals
             let s:colors = s:xterm_16colors
+        else
+            let s:colors = s:xterm_8colors
         endif
     "    let s:colors = {}
 	call map(s:match_list, 'v:val.pattern')
