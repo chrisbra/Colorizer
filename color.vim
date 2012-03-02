@@ -1423,7 +1423,7 @@ function! s:SetUp() "{{{1
 endfu
 
 function! s:Commands() "{{{1
-    " define commands {{{1
+    " define commands
     command! -bang -range=%  ColorCodes
             \ :call s:DoColor(<q-bang>, <q-line1>, <q-line2>)
     command! -bang  NoColor    :call s:ColorOff()
@@ -1431,6 +1431,7 @@ function! s:Commands() "{{{1
     command! -nargs=1 HSL2RGB  :echo s:ColorHSLValues(<q-args>)
 endfu
 
+" Setup everything
 call s:SetUp()
 
 " DEBUG TEST "{{{2
