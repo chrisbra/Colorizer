@@ -1,10 +1,18 @@
-" Language:    Colored CSS Color Preview
-" Maintainer:  Niklas Hofer <niklas+vim@lanpartei.de>
-" URL:         svn://lanpartei.de/vimrc/after/syntax/css.vim
-" Last Change: 2008 Feb 12
-" Licence:     No Warranties. Do whatever you want with this.
-"              But please tell me!
-" Version:     0.6
+" Plugin:       Highlight Colornames and Values
+" Maintainer:   Christian Brabandt <cb@256bit.org>
+" URL:          http://www.github.com/chrisbra/color_highlight
+" Last Change:  2012 Mar 02
+" Licence:      No Warranties. Do whatever you want with this.
+"               But please tell me!
+" Version:      0.2
+"
+" This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
+" Changes made: - make terminal colors work more reliably and with all
+"                 color terminals
+"               - performance improvements, colorins is almost instantenously
+"               - detect rgb colors like this: rgb(R,G,B)
+"               - detect hvl coloring: hvl(H,V,L)
+"               - fix small bugs
 
 " Init some variables "{{{1
 " Plugin folklore "{{{2
@@ -43,8 +51,8 @@ let s:basic16 = [
     \ [ 0xFF, 0xFF, 0xFF ]
     \ ]
 
-" xterm-16 colors "{{{2
-let s:xterm_16colors = {
+" xterm-8 colors "{{{2
+let s:xterm_8colors = {
 \ 'black':          '#000000',
 \ 'darkblue':       '#00008B',
 \ 'darkgreen':      '#00CD00',
@@ -56,7 +64,11 @@ let s:xterm_16colors = {
 \ 'lightgrey':      '#E5E5E5',
 \ 'lightgray':      '#E5E5E5',
 \ 'gray':           '#E5E5E5',
-\ 'grey':           '#E5E5E5',
+\ 'grey':           '#E5E5E5'
+\ }
+
+" xterm-16 colors "{{{2
+let s:xterm_16colors = {
 \ 'darkgrey':       '#7F7F7F',
 \ 'darkgray':       '#7F7F7F',
 \ 'blue':           '#5C5CFF',
@@ -73,22 +85,9 @@ let s:xterm_16colors = {
 \ 'lightyellow':    '#FFFF00',
 \ 'white':          '#FFFFFF',
 \ }
+" add the items from the 8 color xterm variable to the 16 color xterm
+call extend(s:xterm_16colors, s:xterm_8colors)
 
-" xterm-8 colors "{{{2
-let s:xterm_8colors = {
-\ 'black':          '#000000',
-\ 'darkblue':       '#00008B',
-\ 'darkgreen':      '#00CD00',
-\ 'darkcyan':       '#00CDCD',
-\ 'darkred':        '#CD0000',
-\ 'darkmagenta':    '#8B008B',
-\ 'brown':          '#CDCD00',
-\ 'darkyellow':     '#CDCD00',
-\ 'lightgrey':      '#E5E5E5',
-\ 'lightgray':      '#E5E5E5',
-\ 'gray':           '#E5E5E5',
-\ 'grey':           '#E5E5E5'
-\ }
 " W3C Colors "{{{2
 let s:w3c_color_names = {
 \ 'aliceblue': '#F0F8FF',
@@ -1105,8 +1104,8 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
     if &t_Co == 256
         for value in [[205,0,0], [0,205,0], [205,205,0], [205,0,205],
                 \ [0,205,205], [0,0,238], [92,92,255]]
-            " euclidian distance would be needed, but this works good enough
-            " and is faster.
+            " euclidian distance would be needed,
+            " but this works good enough and is faster.
             let t = abs(value[0] - a:rgblist[0]) +
                     \ abs(value[1] - a:rgblist[1]) +
                     \ abs(value[2] - a:rgblist[2])
@@ -1440,25 +1439,6 @@ function! s:ColorMatchingLines(line) "{{{1
     endw
 endfu
 
-"function! s:SetNamedColor(clr, name) "{{{1
-"    let color = (a:clr[0] == '#' ? a:clr[1:] : a:clr)
-"    let name  = '\<'.a:name.'\>\c'
-"    call s:DoHlGroup(color)
-"    if s:DidColor(color, name)
-"        return
-"    endif
-"    call matchadd(group, name)
-"    call add(s:match_list, name)
-"endfunction
-
-"function! s:MySortColorTable(a, b) dict "{{{1
-"    return abs(a:a[0] + a:a[1] + a:a[2] - self.r - self.g - self.b)
-"        \ - abs(a:b[0] + a:b[1] + a:b[2] - self.r - self.g - self.b)
-"endfunction
-
-function! Substitute1(clr) "{{{1
-    return 'Color'.substitute(a:clr, '^#', '', '')
-endfu
 function! s:Modifylists(la, lb, op) "{{{1
     if a:op == '+'
         return [ a:la[0] + a:lb[0], 
@@ -1471,13 +1451,7 @@ function! s:Modifylists(la, lb, op) "{{{1
     endif
 endfu
 
-
-
-function! Substitute2(clr) "{{{1
-    let group = 'Color'. (a:clr[0] == '#' ? a:clr[1:] : a:clr)
-endfu
-
+" Plugin folklore and Vim Modeline " {{{1
 let &cpo = s:cpo_save
 unlet s:cpo_save
-" Vim Modeline " {{{2
 " vim: set foldmethod=marker et fdl=0:
