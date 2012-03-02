@@ -9,22 +9,23 @@
 " This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
 " Changes made: - make terminal colors work more reliably and with all
 "                 color terminals
-"               - performance improvements, colorins is almost instantenously
+"               - performance improvements, coloring is almost instantenously
 "               - detect rgb colors like this: rgb(R,G,B)
 "               - detect hvl coloring: hvl(H,V,L)
 "               - fix small bugs
 
 " Init some variables "{{{1
 " Plugin folklore "{{{2
-if v:version < 700 
+if v:version < 700 || exists("g:loaded_color_codes") || &cp
   finish
 endif
+let g:loaded_color_codes = 1
 
 let s:cpo_save = &cpo
 set cpo&vim
 
 " enable debug functions
-let s:debug = 1
+let s:debug = 0
 "" the 6 value iterations in the xterm color cube "{{{2
 let s:valuerange6 = [ 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF ]
 
@@ -1059,6 +1060,8 @@ function! s:Rgb2xterm(color) "{{{1
         endif
 
         " Round to the next step in the xterm color cube
+        " euclidian distance would be needed,
+        " but this works good enough and is faster.
         let round = s:RoundColor(r, g, b)
         " Return closest match or -1 if not found
         return index(s:colortable, round)
@@ -1265,8 +1268,8 @@ function! s:DoColor(force, line1, line2) "{{{1
     "     hsl(0,100%,50%) -> hvl2rgb conversion RED
     "     hsla(120,100%,50%,1) Lime
     "     hsl(120,100%,25%) Darkgreen
-    "     hsl(120, 100%, 75%) light green
-    "     hsl(120, 75%, 75%) pastel green
+    "     hsl(120, 100%, 75%) lightgreen
+    "     hsl(120, 75%, 75%) pastelgreen
         " highlight rgb(X,X,X) values
         ":sil %s/rgba\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorRGBValues(submatch(0))/egi
         let cmd = printf(':sil %d,%ds/rgba\=(\s*\%%(\d\+%%\?\D*\)\{3,4})/'. 
@@ -1394,11 +1397,41 @@ function! s:ColorOff() "{{{1
     endfor
 endfu
 
-" define commands {{{1
-command! -bang -range=%  ColorCodes :call s:DoColor(<q-bang>, <q-line1>, <q-line2>)
-command! -bang  NoColor    :call s:ColorOff()
-command! -nargs=1 Rgb2Xterm  :echo s:Rgb2xterm(<q-args>)
-command! -nargs=1 HSL2RGB  :echo s:ColorHSLValues(<q-args>)
+function! s:AutoCmds(enable) "{{{1
+    if a:enable
+        aug ColorCodes
+            au!
+            au CursorHold,CursorHoldI,InsertLeave * silent call s:DoColor('',
+                        \ line('.'), line('.'))
+            au BufEnter * silent call s:DoColor('', 1, line('$'))
+            au ColorScheme * silent call s:DoColor('!', 1, line('$'))
+        aug END
+    else
+        aug ColorCodes
+            au!
+        aug END
+        aug! ColorCodes
+    endif
+endfu
+
+function! s:SetUp() "{{{1
+    call s:Init("")
+    if exists("g:auto_color") && g:auto_color == 1
+        call s:AutoCmds(1)
+    endif
+    call s:Commands()
+endfu
+
+function! s:Commands() "{{{1
+    " define commands {{{1
+    command! -bang -range=%  ColorCodes
+            \ :call s:DoColor(<q-bang>, <q-line1>, <q-line2>)
+    command! -bang  NoColor    :call s:ColorOff()
+    command! -nargs=1 Rgb2Xterm  :echo s:Rgb2xterm(<q-args>)
+    command! -nargs=1 HSL2RGB  :echo s:ColorHSLValues(<q-args>)
+endfu
+
+call s:SetUp()
 
 " DEBUG TEST "{{{2
 if !s:debug
