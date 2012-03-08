@@ -1014,6 +1014,9 @@ function! s:Rgb2xterm(color) "{{{1
 " selects the nearest xterm color for a rgb value like #FF0000
 " hard code values for 000000 and FFFFFF, they will be called many times
 " so make this fast
+    if !exists("s:colortable")
+        call s:Init('')
+    endif
     let color = (a:color[0] == '#' ? a:color[1:] : a:color)
     if ( color == '000000')
 	return 0
@@ -1200,7 +1203,7 @@ function! s:Init(...) "{{{1
         elseif &t_Co == 88
 	    let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
 	" terminal with 256 colors:
-        elseif &t_Co == 256
+        elseif &t_Co == 256 || empty(&t_Co)
 	    let s:colortable = map(range(0,255), 's:Xterm2rgb256(v:val)')
 	endif
         if s:debug && exists("s:colortable")
