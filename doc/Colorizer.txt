@@ -1,0 +1,128 @@
+*Colorizer.txt*   A plugin to color colornames and codes
+
+Author:     Christian Brabandt <cb@256bit.org>
+Version:    0.2 Mar, 02 2012 
+Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
+            The VIM LICENSE applies to Colorizer.txt
+            (see |copyright|) except use NrrwRgnPlugin instead of "Vim".
+            NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK.
+
+
+==============================================================================
+1. Contents                                                  *Colorizer*
+
+        1.  Colorizer Manual.............................: |Colorizer-manual|
+                1.1 :ColorCodes..........................: |:ColorCodes|
+                1.2 :NoColor.............................: |:NoColor|
+                1.3 :Rgb2Xterm...........................: |:Rgb2Xterm|
+                1.4 :HSL2RGB.............................: |:HSL2RGB|
+        2.  Configuration................................: |Colorizer-config|
+                2.1 Automatic loading....................: |Colorizer-auto|
+                2.2 Use X11 colornames...................: |Colorizer-names|
+        3.  Colorizer Feedback...........................: |Colorizer-feedback|
+        4.  Colorizer History............................: |Colorizer-history|
+
+==============================================================================
+2. Colorizer Manual                                       *Colorizer-manual*
+
+Functionality
+
+This plugin is based on the css_color plugin by Nikolaus Hofer. The idea is to
+highlight color names and codes in the same color that they represent.
+
+The plugin understands the W3-Colors (used for CSS files for example), the
+Color names from the X11 Window System and also codes in hex notation, like
+#FF0000 (which represents Red in the RGB color system). Additionally, it
+supports the CSS color specifications, e.g. rgb(RR,GG,BB) color representation
+in either absolutely values or as percentage and also the HVL Color
+representation like hvl(H,V,L)
+
+It works best in the gui version of Vim, but the plugin also supports 256 and
+88 color terminals and translates the colors to those supported by the
+terminal. 16 and 8 color terminals should work theoretically too, but hasn't
+been widely tested. Note, that translating the colors to the terminal might
+impose a performance penalty, depending on the terminal type and the number of
+matches in the file.
+
+This plugin defines the following commands:
+
+                                                                 *:ColorCodes*
+:[range]ColorCodes[!]       Scan the lines given by [range] for color codes
+                            names and highlight those. If [range] is omitted,
+                            the whole file will be scanned. If the ! is used,
+                            the plugin will redefine all highlighting groups.
+
+                                                                 *:NoColor*
+:NoColor                    Turn off Color highlighting.
+
+                                                                 *:Rgb2Xterm*
+:Rgb2Xterm #RRGGBB          Translate the color code given as argument to a
+                            the closest color, that can be displayed by the
+                            terminal. Note, the color must be given in the
+                            format #RRGGBB (a '#' followed by the hex format
+                            of the colors reg, green and blue)
+
+                                                                *:HSL2RGB*
+:HSL2RGB hsl(h,v,l)         Translate the HVL color defined by the string
+                            'hsl(h,v%,l%)' into a color that the current
+                            terminal can display. Note, that the color must be
+                            given in the format 'hsl(HH, V, L)' where HH
+                            defines the Hue as absolute value between 0 and
+                            255 and V and L represent a percentage for value
+                            and Lightness.
+
+
+2 Colorizer Configuration                                    Colorizer-config*
+------------------------
+
+2.1 Automatic loading                                       *Colorizer-auto*
+---------------------
+The Colorizer plugin can be configured to automatically load when opening a
+new file. Note, that this might slow down the loading process, especially on
+the terminal. To enable this, simply the the variable 'g:auto_color' to 1,
+e.g. by defining it in your |.vimrc| >
+
+    :let g:auto_color = 1
+<
+
+2.2 Use X11 color names                                     *Colorizer-names*
+-----------------------
+
+Colorizer can be configured to support all color names, defined by the X11
+Window System. By default it only supports the colors defined by the W3C for
+the CSS Specification. To use the X11 color names, set the variable
+'g:color_x11_names' to 1, e,g. in your |.vimrc| >
+
+    let g:color_x11_names = 1
+<
+==============================================================================
+3. Colorizer Feedback                                       *Colorizer-feedback*
+
+Feedback is always welcome. If you like the plugin, please rate it at the
+vim-page:
+http://www.vim.org/scripts/script.php?script_id=
+
+You can also follow the development of the plugin at github:
+http://github.com/chrisbra/color_highlight
+
+Please don't hesitate to report any bugs to the maintainer, mentioned in the
+third line of this document.
+
+==============================================================================
+4. Colorizer History                                         *Colorizer-history*
+
+
+0.2: Mar 02, 2012 {{{1
+
+- Initial upload
+- development versions are available at the github repository
+- put plugin on a public repository
+  (http://github.com/chrisbra/color_highlight)
+
+0.1: Mar 02, 2012 {{{1
+- first internal version
+  }}}
+
+==============================================================================
+Modeline:
+vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
