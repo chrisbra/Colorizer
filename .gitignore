@@ -8,3 +8,4 @@ vim_passfile
 # ignore *.orig files
 *.orig
 *.pl
+stuff/*
