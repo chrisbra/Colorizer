@@ -26,6 +26,21 @@ set cpo&vim
 
 " enable debug functions
 let s:debug = 0
+
+"" foreground / background contrast
+let s:predefined_fgcolors = {}
+let s:predefined_fgcolors['dark']  = ['#444444', '#222222', '#000000']
+let s:predefined_fgcolors['light'] = ['#bbbbbb', '#dddddd', '#ffffff']
+if !exists('g:colorizer_fgcontrast')
+    " Default to black / white
+    let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
+elseif g:colorizer_fgcontrast >= len(s:predefined_fgcolors['dark'])
+    echohl WarningMsg
+    echo "g:colorizer_fgcontrast value invalid, using default"
+    echohl None
+    let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
+endif
+
 "" the 6 value iterations in the xterm color cube "{{{2
 let s:valuerange6 = [ 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF ]
 
@@ -901,10 +916,11 @@ function! s:FGforBG(bg) "{{{1
    let r = '0x'.pure[0:1]+0
    let g = '0x'.pure[2:3]+0
    let b = '0x'.pure[4:5]+0
+   let fgc = g:colorizer_fgcontrast
    if r*30 + g*59 + b*11 > 12000
-      return '#000000'
-   else
-      return '#ffffff'
+        return s:predefined_fgcolors['dark'][fgc]
+    else
+        return s:predefined_fgcolors['light'][fgc]
    end
 endfunction
 
@@ -926,7 +942,7 @@ function! s:DoHlGroup(clr) "{{{1
             return
         endif
     endif
-    let fg = s:FGforBG(a:clr)
+    let fg = g:colorizer_fgcontrast < 0 ? '#'.a:clr : s:FGforBG(a:clr)
     let hi = printf('hi %s guifg=%s guibg=#%s', a:clr, 
 	    \ fg, a:clr)
     if !has("gui_running")
