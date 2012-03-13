@@ -1279,7 +1279,7 @@ function! s:DoColor(force, line1, line2) "{{{1
     let cmd = printf(':sil %d,%ds/#\x\{3,6}\>/'.
         \ '\=s:PreviewColorHex(submatch(0))/egi', a:line1, a:line2)
     exe cmd
-    if &t_Co > 16
+    if &t_Co > 16 || has("gui_running")
     " Also support something like
     " CSS rgb(255,0,0)
     "     rgba(255,0,0,1)
