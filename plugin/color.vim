@@ -1396,18 +1396,22 @@ function! s:HSL2RGB(h, s, l) "{{{1
 endfunction
 
 function! s:Hue2RGB(m1, m2, h) "{{{1
-    let h = a:h
-    if h < 60
-        let r = (a:m1 + (a:m2 - a:m1) * h / 60) * 255
-    elseif a:h <  180
-        let r = a:m2
-    elseif a:h < 240
-        let r = a:m1 + (a:m2 - a:m1)*(240 - h) / 60
-    else
-        let r = a:m1
+    let h = (a:h + 0.0)/255
+    if h < 0
+        let h = h + 1
+    elseif h > 1
+        let h = h -1 
     endif
-    let r = ( r < 0 ? 0 : r)
-    return float2nr(r*255)
+    if h * 6 < 1
+        let res = a:m1 + (a:m2 - a:m1) * h * 6
+    elseif h * 2 < 1
+        let res = a:m2
+    elseif h * 3 < 2
+        let res = a:m1 + (a:m2 - a:m1) * (2.0/3.0 - h) * 6
+    else
+       let res = a:m1
+    endif
+    return round(res * 255)
 endfunction
 
 function! s:ColorOff() "{{{1
