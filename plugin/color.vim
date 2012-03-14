@@ -1170,12 +1170,12 @@ function! s:PreviewColorName(color) "{{{1
     return a:color
 endfu
 
-function! s:PreviewColorHex(match, ...) "{{{1
+function! s:PreviewColorHex(match) "{{{1
     let color = (a:match[0] == '#' ? a:match[1:] : a:match)
+    let pattern = color
     if len(color) == 3
         let color = substitute(color, '.', '&&', 'g')
     endif
-    let pattern = !a:0 ? color : a:1
     if &t_Co == 8 && !has("gui_running")
         " The first 12 color names, can be displayed by 8 color terminals
         let list = values(s:xterm_8colors)
@@ -1276,6 +1276,8 @@ function! s:DoColor(force, line1, line2) "{{{1
     "
     " The :%s command is a lot faster than this:
     ":g/#\x\{3,6}\>/call s:ColorMatchingLines(line('.'))
+    " Should color #FF0000
+    "              #F0F
     let cmd = printf(':sil %d,%ds/#\x\{3,6}\>/'.
         \ '\=s:PreviewColorHex(submatch(0))/egi', a:line1, a:line2)
     exe cmd
@@ -1374,7 +1376,6 @@ function! s:ColorHSLValues(val) "{{{1
     let hsl[1] = (matchstr(hsl[1], '\d\+') + 0.0)/100
     let hsl[2] = (matchstr(hsl[2], '\d\+') + 0.0)/100
 
-    "call s:PreviewColorHex(clr, a:val)
     let str = s:HSL2RGB(hsl[0], hsl[1], hsl[2])
     call s:SetMatcher(str, a:val)
     return a:val
