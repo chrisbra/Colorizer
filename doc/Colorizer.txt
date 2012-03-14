@@ -46,21 +46,23 @@ matches in the file.
 
 This plugin defines the following commands:
 
-                                                                 *:ColorCodes*
-:[range]ColorCodes[!]       Scan the lines given by [range] for color codes
+                                                              *:ColorHighlight*
+:[range]ColorHighlight[!]   Scan the lines given by [range] for color codes
                             names and highlight those. If [range] is omitted,
                             the whole file will be scanned. If the ! is used,
                             the plugin will redefine all highlighting groups.
 
-                                                                 *:NoColor*
-:NoColor                    Turn off Color highlighting.
+                                                                 *:ColorClear*
+:ColorClear                 Turn off Color highlighting.
 
                                                                  *:Rgb2Xterm*
-:Rgb2Xterm #RRGGBB          Translate the color code given as argument to a
+:RGB2XTERM [#]RRGGBB        Translate the color code given as argument to a
                             the closest color, that can be displayed by the
                             terminal. Note, the color must be given in the
-                            format #RRGGBB (a '#' followed by the hex format
-                            of the colors reg, green and blue)
+                            format #RRGGBB (the hex format of the colors reg,
+                            green and blue the '#' is optional)
+                            Uses the number of colors your terminal is capable
+                            to handle (or 256 colors for gVim).
 
                                                                 *:HSL2RGB*
 :HSL2RGB hsl(h,v,l)         Translate the HVL color defined by the string
@@ -72,7 +74,7 @@ This plugin defines the following commands:
                             and Lightness.
 
 
-2 Colorizer Configuration                                    Colorizer-config*
+2 Colorizer Configuration                                   *Colorizer-config*
 ------------------------
 
 2.1 Automatic loading                                       *Colorizer-auto*
@@ -95,12 +97,21 @@ the CSS Specification. To use the X11 color names, set the variable
 
     let g:color_x11_names = 1
 <
+
+2.3 Adjust the contrast                                  *Colorizer-contrast*
+
+Colorizer can be adjusted to blur the contrast between foreground and
+background color. For this, the variable 'g:colorizer_fgcontrast' can be used.
+It can be given any value between -1 and 2 with 2 being the default. Each
+smaller value will decrease the contrast a little bit, with -1 being special,
+as there is the foreground color equals the background color.
+
 ==============================================================================
-3. Colorizer Feedback                                       *Colorizer-feedback*
+3. Colorizer Feedback                                      *Colorizer-feedback*
 
 Feedback is always welcome. If you like the plugin, please rate it at the
 vim-page:
-http://www.vim.org/scripts/script.php?script_id=
+http://www.vim.org/scripts/script.php?script_id=3963
 
 You can also follow the development of the plugin at github:
 http://github.com/chrisbra/color_highlight
@@ -109,7 +120,7 @@ Please don't hesitate to report any bugs to the maintainer, mentioned in the
 third line of this document.
 
 ==============================================================================
-4. Colorizer History                                         *Colorizer-history*
+4. Colorizer History                                       *Colorizer-history*
 
 
 0.3: (unreleased) {{{1
@@ -119,6 +130,8 @@ third line of this document.
 - did not correctly highlight 3 letter color codes (issue
   https://github.com/chrisbra/color_highlight/issues/1,
   reported by Taybin Rutkin, thanks!)
+- support autoloading (requested by Ingo Karkat, thanks!)
+- add |GLVS| support
 0.2: Mar 02, 2012 {{{1
 
 - Initial upload
