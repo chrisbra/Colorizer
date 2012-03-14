@@ -5,6 +5,7 @@
 " Licence:      No Warranties. Do whatever you want with this.
 "               But please tell me!
 " Version:      0.2
+" GetLatestVimScripts: 3963 2 :AutoInstall: Colorizer.vim
 "
 " This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
 " Changes made: - make terminal colors work more reliably and with all

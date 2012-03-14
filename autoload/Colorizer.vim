@@ -5,6 +5,7 @@
 " Licence:      No Warranties. Do whatever you want with this.
 "               But please tell me!
 " Version:      0.2
+" GetLatestVimScripts: 3963 2 :AutoInstall: Colorizer.vim
 "
 " This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
 " Changes made: - make terminal colors work more reliably and with all
@@ -1164,7 +1165,7 @@ function! s:Init(...) "{{{1
 	    let s:colortable = map(range(0,15), 's:Xterm2rgb16(v:val)')
         elseif &t_Co == 88
 	    let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
-	" terminal with 256 colors:
+	" terminal with 256 colors or gVim
         elseif &t_Co == 256 || empty(&t_Co)
 	    let s:colortable = map(range(0,255), 's:Xterm2rgb256(v:val)')
 	endif
