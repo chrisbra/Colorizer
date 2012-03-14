@@ -112,6 +112,13 @@ third line of this document.
 4. Colorizer History                                         *Colorizer-history*
 
 
+0.3: (unreleased) {{{1
+- Use the g:colorizer_fgcontrast variable to have lesser contrast between
+  foreground and background colors (patch by Ingo Karkat, thanks!)
+- gvim did not color rgb(...) codes
+- did not correctly highlight 3 letter color codes (issue
+  https://github.com/chrisbra/color_highlight/issues/1,
+  reported by Taybin Rutkin, thanks!)
 0.2: Mar 02, 2012 {{{1
 
 - Initial upload
