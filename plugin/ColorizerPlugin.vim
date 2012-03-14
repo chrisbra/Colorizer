@@ -34,6 +34,7 @@ command! -bang -nargs=1  RGB2Xterm
 command! -bang    ColorClear  :call Colorizer#ColorOff()
 command! -bang    ColorToggle :call Colorizer#ColorToggle()
 command! -nargs=1 HSL2RGB     :echo Colorizer#ColorHSLValues(<q-args>)
+command!          ColorContrast :call Colorizer#SwitchContrast()
 
 " Plugin folklore and Vim Modeline " {{{1
 let &cpo = s:cpo_save

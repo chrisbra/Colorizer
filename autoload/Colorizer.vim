@@ -1402,6 +1402,7 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     ":g/#\x\{3,6}\>/call s:ColorMatchingLines(line('.'))
     " Should color #FF0000
     "              #F0F
+    "              #FFF
     let cmd = printf(':sil %d,%ds/#\x\{3,6}\>/'.
         \ '\=s:PreviewColorHex(submatch(0))/egi', a:line1, a:line2)
     exe cmd
@@ -1475,6 +1476,16 @@ function! Colorizer#AutoCmds(enable) "{{{1
         aug END
         aug! Colorizer
     endif
+endfu
+
+function! Colorizer#SwitchContrast() "{{{1
+    " make sure, g:colorizer_fgcontrast is set up
+    call s:Init(0)
+    let g:colorizer_fgcontrast-=1
+    if g:colorizer_fgcontrast < -1
+        let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
+    endif
+    call Colorizer#DoColor(1, 1, line('$'))
 endfu
 
 " DEBUG TEST "{{{1
