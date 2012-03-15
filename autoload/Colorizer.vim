@@ -1,10 +1,9 @@
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
-" Last Change: Thu, 15 Mar 2012 20:38:44 +0100
-" Licence:      No Warranties. Do whatever you want with this.
-"               But please tell me!
-" Version:      0.2
+" Last Change:  Thu, 15 Mar 2012 20:38:44 +0100
+" Licence:      Vim License (see :h License)
+" Version:      0.3
 " GetLatestVimScripts: 3963 3 :AutoInstall: Colorizer.vim
 "
 " This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
