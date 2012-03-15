@@ -1,7 +1,7 @@
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
-Version:    0.2 Mar, 02 2012 
+Version:    0.3 Thu, 15 Mar 2012 20:38:44 +0100
 Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
             The VIM LICENSE applies to Colorizer.txt
             (see |copyright|) except use NrrwRgnPlugin instead of "Vim".
@@ -128,7 +128,7 @@ third line of this document.
 4. Colorizer History                                       *Colorizer-history*
 
 
-0.3: (unreleased) {{{1
+0.3: Mar 15, 2012 {{{1
 - Use the g:colorizer_fgcontrast variable to have lesser contrast between
   foreground and background colors (patch by Ingo Karkat, thanks!)
 - gvim did not color rgb(...) codes
