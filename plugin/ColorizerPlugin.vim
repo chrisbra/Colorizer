@@ -35,6 +35,13 @@ command! -bang    ColorToggle :call Colorizer#ColorToggle()
 command! -nargs=1 HSL2RGB     :echo Colorizer#ColorHSLValues(<q-args>)
 command!          ColorContrast :call Colorizer#SwitchContrast()
 
+" define mappings "{{{1
+xnoremap <Plug>Colorizer :<C-u>ColorToggle<CR>
+nnoremap <Plug>Colorizer :ColorHighlight<CR>
+nnoremap <Plug>ColorContrast :ColorContrast<CR>
+nmap <Leader>C <Plug>Colorizer
+xmap <Leader>C <Plug>Colorizer
+nmap <Leader>T <Plug>ColorContrast
 " Plugin folklore and Vim Modeline " {{{1
 let &cpo = s:cpo_save
 unlet s:cpo_save
