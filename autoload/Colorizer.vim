@@ -1134,9 +1134,7 @@ function! s:Init(...) "{{{1
         " Default to black / white
         let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
     elseif g:colorizer_fgcontrast >= len(s:predefined_fgcolors['dark'])
-        echohl WarningMsg
-        echo "g:colorizer_fgcontrast value invalid, using default"
-        echohl None
+        call s:Warn("g:colorizer_fgcontrast value invalid, using default")
         let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
     endif
 
@@ -1175,7 +1173,7 @@ function! s:Init(...) "{{{1
     elseif s:force_hl
         call Colorizer#ColorOff()
     endif
-    if has("gui_running") || &t_Co >= 8
+    if has("gui_running") || &t_Co >= 8 || s:HasColorPattern()
 	" The list of available match() patterns
 	let s:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
@@ -1359,6 +1357,31 @@ function! s:Rgb2xterm(color) "{{{1
     endif
 endfunction
 
+function! s:Warn(msg) "{{{1
+    let msg = 'Colorizer: '. a:msg
+    echohl WarningMsg
+    echomsg msg
+    echohl None
+    let v:errmsg = msg
+endfu
+
+function! s:HasColorPattern() "{{{1
+    let _pos    = winsaveview()
+    let pattern = [ '#\x\{3,6}\>', 'rgba\=(\s*\%(\d\+%\?\D*\)\{3,4})',
+                \ 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
+                \ s:GetColorPattern(keys(s:colors))]
+    call cursor(1,1)
+    for pat in pattern
+        let found = search(pat, 'cnW')
+        if found
+            break
+        endif
+    endfor
+
+    call winrestview(_pos)
+    return found
+endfunction
+
 " Autoloadable functions
 function! Colorizer#ColorToggle() "{{{1
     if !exists("s:match_list") || empty(s:match_list)
@@ -1381,6 +1404,8 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
         call s:Init(a:force)
     catch /nocolor/
         " nothing to do
+        call s:Warn("Your terminal doesn't support colors or no colors". 
+                    \ 'found in the current buffer!')
         return
     endtry
 
