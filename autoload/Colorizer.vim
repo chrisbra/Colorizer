@@ -21,7 +21,7 @@ set cpo&vim
 " enable debug functions
 let s:debug = 0
 
-"" the 6 value iterations in the xterm color cube "{{{2
+" the 6 value iterations in the xterm color cube "{{{2
 let s:valuerange6 = [ 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF ]
 
 "" the 4 value iterations in the 88 color xterm cube "{{{2
@@ -927,7 +927,7 @@ function! s:DoHlGroup(clr) "{{{1
     let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(a:clr)
     if s:swap_fg_bg
         let t   = fg
-        let fg  = '#'.clr
+        let fg  = clr
         let bg = t[0] == '#' ? t[1:] : t
     endif
     let hi = printf('hi %s guifg=#%s guibg=#%s', clr, 
@@ -1117,7 +1117,7 @@ function! s:PreviewColorHex(match) "{{{1
 endfunction
 
 function! s:GetColorPattern(list) "{{{1
-    let list = map(copy(a:list), ' ''\<'' . v:val . ''\>'' ')
+    let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>\)'' ')
     return join(list, '\|')
 endfunction
 
@@ -1128,6 +1128,13 @@ endfunction
 
 function! s:Init(...) "{{{1
     let s:force_hl = !empty(a:1)
+
+    " pattern/function dict
+    let s:pat_func = {'#\x\{3,6\}': function('<sid>PreviewColorHex'),
+                \ 'rgba\=(\s*\%(\d\+%\?\D*\)\{3,4})':
+                \ function('<sid>ColorRGBValues'),
+                \ 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})':
+                \ function('Colorizer#ColorHSLValues')}
 
     " Cache old values
     if !exists("s:old_tCo")
@@ -1401,6 +1408,33 @@ function! s:HasColorPattern() "{{{1
     return found
 endfunction
 
+function! s:ColorMatchingLines() "{{{1
+    " Programmatic approach to highlight all hex values as colors.
+    " Surprisingly a lot slower than calling 
+    " :s/#\x\{3,6}/\=s:ColorMatchingLines1(submatch(0))/g
+    let cnt = 0
+    let pat = s:GetColorPattern(keys(s:pat_func)). '\|'.
+            \ s:GetColorPattern(keys(s:colors))
+    let pat = substitute(pat, '\\<#', '#', 'g')
+    for content in range(1, line('$'))
+        let line = getline(content)
+        while 1
+            let color = matchstr(line, pat, cnt)
+            if empty(color)
+                break
+            else
+                let key  = color
+                if color =~ keys(s:pat_func)[0]
+                    let key = keys(s:pat_func)[0]
+                endif
+                let Func = get(s:pat_func, key,
+                            \ function('s:PreviewColorName'))
+                call call(Func, [color])
+                let cnt  += 1
+            endif
+        endw
+    endfor
+endfu
 " Autoloadable functions
 function! Colorizer#ColorToggle() "{{{1
     if !exists("s:match_list") || empty(s:match_list)
@@ -1447,6 +1481,7 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     " Should color #FF0000
     "              #F0F
     "              #FFF
+    "call s:ColorMatchingLines()
     let cmd = printf(':sil %d,%ds/#\x\{3,6}\>/'.
         \ '\=s:PreviewColorHex(submatch(0))/egi', a:line1, a:line2)
     exe cmd
@@ -1538,6 +1573,9 @@ endfu
 function! Colorizer#SwitchFGBG() "{{{1
     " make sure, g:colorizer_fgcontrast is set up
     call s:Init(0)
+    if !exists("g:colorizer_swap_fgbg")
+        let g:colorizer_swap_fgbg = 0
+    endif
     let g:colorizer_swap_fgbg = !g:colorizer_swap_fgbg
     call Colorizer#DoColor(1, 1, line('$'))
 endfu
@@ -1563,23 +1601,6 @@ fu! Test2() "{{{2
 endfu
 
 
-function! s:ColorMatchingLines(line) "{{{2
-    " Programmatic approach to highlight all hex values as colors.
-    " Surprisingly a lot slower than calling 
-    " :s/#\x\{3,6}/\=s:ColorMatchingLines1(submatch(0))/g
-    let cnt = 0
-    let pat = '#\x\{3,6\}\>'
-    let line = getline(a:line)
-    while 1
-	let color = matchstr(line, pat, cnt)
-	if empty(color)
-	    return
-	else
-            call s:PreviewColorHex(color)
-	    let cnt  += 1
-	endif
-    endw
-endfu
 
 " Plugin folklore and Vim Modeline " {{{1
 let &cpo = s:cpo_save
