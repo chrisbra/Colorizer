@@ -30,10 +30,11 @@ command! -bang -range=%  ColorHighlight
 command! -bang -nargs=1  RGB2Xterm  
         \ :call Colorizer#RGB2Term(<q-args>)
 
-command! -bang    ColorClear  :call Colorizer#ColorOff()
-command! -bang    ColorToggle :call Colorizer#ColorToggle()
-command! -nargs=1 HSL2RGB     :echo Colorizer#ColorHSLValues(<q-args>)
+command! -bang    ColorClear    :call Colorizer#ColorOff()
+command! -bang    ColorToggle   :call Colorizer#ColorToggle()
+command! -nargs=1 HSL2RGB       :echo Colorizer#ColorHSLValues(<q-args>)
 command!          ColorContrast :call Colorizer#SwitchContrast()
+command!          ColorSwapFgBG :call Colorizer#SwitchFGBG()
 
 " define mappings "{{{1
 xnoremap <Plug>Colorizer :<C-u>ColorToggle<CR>

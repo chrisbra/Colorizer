@@ -923,9 +923,15 @@ function! s:DoHlGroup(clr) "{{{1
         endif
     endif
     let clr = a:clr
-    let fg = g:colorizer_fgcontrast < 0 ? '#'.clr : s:FGforBG(a:clr)
-    let hi = printf('hi %s guifg=%s guibg=#%s', clr, 
-	    \ fg, clr)
+    let bg  = clr
+    let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(a:clr)
+    if s:swap_fg_bg
+        let t   = fg
+        let fg  = '#'.clr
+        let bg = t[0] == '#' ? t[1:] : t
+    endif
+    let hi = printf('hi %s guifg=#%s guibg=#%s', clr, 
+	    \ fg, bg)
     if !has("gui_running")
 	let hi.= printf(' ctermfg=%s ctermbg=%s',
 	    \ s:Rgb2xterm(fg), s:Rgb2xterm(a:clr))
@@ -934,12 +940,11 @@ function! s:DoHlGroup(clr) "{{{1
 endfunction
 
 function! s:SetMatcher(clr, pattern) "{{{1
-    let color = a:clr[0] == '#' ? a:clr[1:] : a:clr
-    call s:DoHlGroup(color)
-    if s:DidColor(color, a:pattern)
+    call s:DoHlGroup(a:clr)
+    if s:DidColor(a:clr, a:pattern)
         return
     endif
-    call matchadd(color, a:pattern)
+    call matchadd(a:clr, a:pattern)
     call add(s:match_list, a:pattern)
 endfunction
 
@@ -1086,7 +1091,7 @@ endfunction
 function! s:PreviewColorName(color) "{{{1
     let name=tolower(a:color)
     let clr = s:colors[name]
-    call s:SetMatcher(clr, '\<'.name.'\>\c')
+    call s:SetMatcher(clr[1:], '\<'.name.'\>\c')
     return a:color
 endfu
 
@@ -1117,19 +1122,26 @@ function! s:GetColorPattern(list) "{{{1
 endfunction
 
 function! s:GetMatchList() "{{{1
+    " this is buffer-local!
     return filter(getmatches(), 'v:val.group =~ ''^\x\{6}$''')
 endfunction
 
 function! s:Init(...) "{{{1
+    let s:force_hl = !empty(a:1)
+
     " Cache old values
     if !exists("s:old_tCo")
         let s:old_tCo = &t_Co
     endif
 
+    if !exists("s:swap_fg_bg")
+        let s:swap_fg_bg = 0
+    endif
+
     " foreground / background contrast
     let s:predefined_fgcolors = {}
-    let s:predefined_fgcolors['dark']  = ['#444444', '#222222', '#000000']
-    let s:predefined_fgcolors['light'] = ['#bbbbbb', '#dddddd', '#ffffff']
+    let s:predefined_fgcolors['dark']  = ['444444', '222222', '000000']
+    let s:predefined_fgcolors['light'] = ['bbbbbb', 'dddddd', 'ffffff']
     if !exists('g:colorizer_fgcontrast')
         " Default to black / white
         let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
@@ -1144,10 +1156,17 @@ function! s:Init(...) "{{{1
         let s:old_fgcontrast = g:colorizer_fgcontrast
     endif
 
-    let s:force_hl = !empty(a:1)
+    if exists("g:colorizer_swap_fgbg")
+        if s:swap_fg_bg != g:colorizer_swap_fgbg
+            let s:force_hl = 1
+        endif
+        let s:swap_fg_bg = g:colorizer_swap_fgbg
+    endif
+
     if !s:force_hl && s:old_fgcontrast != g:colorizer_fgcontrast
         let s:force_hl = 1
         let s:old_fgcontrast = g:colorizer_fgcontrast
+        let s:old_matches 0 = s:Ret
     endif
     " User manually changed the &t_Co option, so reset it
     if s:old_tCo != &t_Co
@@ -1513,6 +1532,13 @@ function! Colorizer#SwitchContrast() "{{{1
     if g:colorizer_fgcontrast < -1
         let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
     endif
+    call Colorizer#DoColor(1, 1, line('$'))
+endfu
+
+function! Colorizer#SwitchFGBG() "{{{1
+    " make sure, g:colorizer_fgcontrast is set up
+    call s:Init(0)
+    let g:colorizer_swap_fgbg = !g:colorizer_swap_fgbg
     call Colorizer#DoColor(1, 1, line('$'))
 endfu
 
