@@ -10,6 +10,7 @@ Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt
 
 ==============================================================================
 1. Contents                                                  *Colorizer*
+==============================================================================
 
         1.  Colorizer Manual.............................: |Colorizer-manual|
                 1.1 :ColorHighlight......................: |:ColorHighlight|
@@ -17,14 +18,20 @@ Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt
                 1.3 :RGB2Xterm...........................: |:RGB2Xterm|
                 1.4 :HSL2RGB.............................: |:HSL2RGB|
                 1.5 :ColorContrast.......................: |:ColorContrast|
+                1.6 :ColorSwapFgBg.......................: |:ColorSwapFgBg|
         2.  Configuration................................: |Colorizer-config|
                 2.1 Automatic loading....................: |Colorizer-auto|
                 2.2 Use X11 colornames...................: |Colorizer-names|
-        3.  Colorizer Feedback...........................: |Colorizer-feedback|
-        4.  Colorizer History............................: |Colorizer-history|
+                2.3 Adjust the contrast..................: |Colorizer-contrast|
+                2.4 Highlight colornames.................: |Colorizer-hl-names|
+        3.  Colorizer Mappings...........................: |Colorizer-maps|
+        4.  Colorizer Tips...............................: |Colorizer-tips|
+        5.  Colorizer Feedback...........................: |Colorizer-feedback|
+        6.  Colorizer History............................: |Colorizer-history|
 
 ==============================================================================
 2. Colorizer Manual                                       *Colorizer-manual*
+==============================================================================
 
 Functionality
 
@@ -74,22 +81,27 @@ This plugin defines the following commands:
                             255 and V and L represent a percentage for value
                             and Lightness.
 
-                                                                *:ColorContrast*
+                                                               *:ColorContrast*
 :ColorContrast              Switch between all different color contrast
                             settings.
+                                                               *:ColorSwapFgBg*
+:ColorSwapFgBg              Switch between foreground and background colors.
 
 
+
+==============================================================================
 2 Colorizer Configuration                                   *Colorizer-config*
-------------------------
+==============================================================================
 
 2.1 Automatic loading                                       *Colorizer-auto*
 ---------------------
+
 The Colorizer plugin can be configured to automatically load when opening a
 new file. Note, that this might slow down the loading process, especially on
-the terminal. To enable this, simply the the variable 'g:auto_color' to 1,
-e.g. by defining it in your |.vimrc| >
+the terminal. To enable this, simply the the variable 'g:colorizer_auto_color'
+to 1, e.g. by defining it in your |.vimrc| >
 
-    :let g:auto_color = 1
+    :let g:colorizer_auto_color = 1
 <
 
 2.2 Use X11 color names                                     *Colorizer-names*
@@ -98,21 +110,67 @@ e.g. by defining it in your |.vimrc| >
 Colorizer can be configured to support all color names, defined by the X11
 Window System. By default it only supports the colors defined by the W3C for
 the CSS Specification. To use the X11 color names, set the variable
-'g:color_x11_names' to 1, e,g. in your |.vimrc| >
+'g:colorzer_x11_names' to 1, e,g. in your |.vimrc| >
 
-    let g:color_x11_names = 1
+    let g:colorizer_x11_names = 1
 <
 
 2.3 Adjust the contrast                                  *Colorizer-contrast*
+-----------------------
 
 Colorizer can be adjusted to blur the contrast between foreground and
 background color. For this, the variable 'g:colorizer_fgcontrast' can be used.
 It can be given any value between -1 and 2 with 2 being the default. Each
 smaller value will decrease the contrast a little bit, with -1 being special,
-as there is the foreground color equals the background color.
+as there is the foreground color equals the background color. Use
+|:ColorContrast| to toggle the different values.
+
+
+2.4 Highlight colornames                               *Colorizer-hl-names*
+------------------------
+
+If for any reason you don't want the plugin to highlight colornames, you can
+prevent this by setting the g:colorizer_colornames variable to 0, e.g. put >
+
+    :let g:colorizer_names = 0
+<
+into your |.vimrc|
 
 ==============================================================================
-3. Colorizer Feedback                                      *Colorizer-feedback*
+3. Colorizer Mappings                                      *Colorizer-maps*
+==============================================================================
+
+Besides using the commands provided at |Colorizer-manual| the plugin also sets
+up some keymappings. It uses the prefix <leader>c to set all functionality up.
+These mappings are provided:
+
+Keys            Name                Function
+----            ----                --------
+<Leader>cC      <Plug>Colorizer     Toggle Highlighting of Colors, in visual
+                                    mode, only highlights the colors in the
+                                    selected region (normal and visual mode).
+<Leader>cT      <Plug>ColorContrast Toggle contrast setting |:ColorContrast|
+                                    (normal and visual mode)
+<Leader>cF      <Plug>ColorFgBg     Toggle Foreground and Background Color
+                                    |:ColorSwapFgBg|
+
+By default, <Leader> is defined as '\' (|<Leader>|). Use the name provided in
+the column Name to map the function to a different key.
+
+==============================================================================
+4. Colorizer Tips                                           *Colorizer-tips*
+==============================================================================
+
+You can enable the plugin to be loaded for certain filetypes automatically.
+This makes sense for example for CSS files or HTML files. To do so, create the
+following autocommand in your |.vimrc| >
+
+    :au BufNewFile,BufRead *.css,*.html,*.htm  :ColorHighlight!
+<
+
+==============================================================================
+5. Colorizer Feedback                                      *Colorizer-feedback*
+==============================================================================
 
 Feedback is always welcome. If you like the plugin, please rate it at the
 vim-page:
@@ -125,8 +183,19 @@ Please don't hesitate to report any bugs to the maintainer, mentioned in the
 third line of this document.
 
 ==============================================================================
-4. Colorizer History                                       *Colorizer-history*
+6. Colorizer History                                       *Colorizer-history*
+==============================================================================
 
+
+0.4: (unreleased) {{{1
+- |:ColorSwapFgBg| (suggested by teschmitz, in
+  https://github.com/chrisbra/color_highlight/issues/3, thanks!)
+- make automatic color loading work (reported by wedgwood in
+  https://github.com/chrisbra/color_highlight/issues/6, thanks!)
+- more documentation updates
+- added Mappings (suggested by Ingo Karkat, thanks!)
+- prevent highlighting of color names (suggested by Tarlika Schmitz in
+  https://github.com/chrisbra/color_highlight/issues/5, thanks!)
 
 0.3: Mar 15, 2012 {{{1
 - Use the g:colorizer_fgcontrast variable to have lesser contrast between
