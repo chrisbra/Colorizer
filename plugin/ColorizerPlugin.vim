@@ -11,7 +11,7 @@
 "                 color terminals
 "               - performance improvements, coloring is almost instantenously
 "               - detect rgb colors like this: rgb(R,G,B)
-"               - detect hvl coloring: hvl(H,V,L)
+"               - detect hsl coloring: hsl(H,V,L)
 "               - fix small bugs
 
 " Init some variables "{{{1
@@ -34,15 +34,29 @@ command! -bang    ColorClear    :call Colorizer#ColorOff()
 command! -bang    ColorToggle   :call Colorizer#ColorToggle()
 command! -nargs=1 HSL2RGB       :echo Colorizer#ColorHSLValues(<q-args>)
 command!          ColorContrast :call Colorizer#SwitchContrast()
-command!          ColorSwapFgBG :call Colorizer#SwitchFGBG()
+command!          ColorSwapFgBg :call Colorizer#SwitchFGBG()
 
 " define mappings "{{{1
-xnoremap <Plug>Colorizer :<C-u>ColorToggle<CR>
-nnoremap <Plug>Colorizer :ColorHighlight<CR>
-nnoremap <Plug>ColorContrast :ColorContrast<CR>
-nmap <Leader>C <Plug>Colorizer
-xmap <Leader>C <Plug>Colorizer
-nmap <Leader>T <Plug>ColorContrast
+nnoremap <Plug>Colorizer        :<C-U>ColorToggle<CR>
+xnoremap <Plug>Colorizer        :ColorHighlight<CR>
+nnoremap <Plug>ColorContrast    :<C-U>ColorContrast<CR>
+xnoremap <Plug>ColorContrast    :<C-U>ColorContrast<CR>
+nnoremap <Plug>ColorFgBg        :<C-U>ColorSwapFgBg<CR>
+xnoremap <Plug>ColorFgBg        :<C-U>ColorSwapFgBg<CR>
+
+nmap <silent> <Leader>cC <Plug>Colorizer
+xmap <silent> <Leader>cC <Plug>Colorizer
+nmap <silent> <Leader>cT <Plug>ColorContrast
+xmap <silent> <Leader>cT <Plug>ColorContrast
+nmap <silent> <Leader>cF <Plug>ColorFgBg
+xmap <silent> <Leader>cF <Plug>ColorFgBg
+
+" Enable Autocommands
+if exists("g:auto_color")
+    " Prevent autoloading
+    exe "call Colorizer#AutoCmds(g:auto_color)"
+endif
+
 " Plugin folklore and Vim Modeline " {{{1
 let &cpo = s:cpo_save
 unlet s:cpo_save

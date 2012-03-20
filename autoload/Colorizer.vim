@@ -926,15 +926,15 @@ function! s:DoHlGroup(clr) "{{{1
     let bg  = clr
     let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(a:clr)
     if s:swap_fg_bg
-        let t   = fg
         let fg  = clr
-        let bg = t[0] == '#' ? t[1:] : t
+        let bg  = 'NONE'
     endif
-    let hi = printf('hi %s guifg=#%s guibg=#%s', clr, 
-	    \ fg, bg)
+    let hi  = printf('hi %s guifg=#%s', clr, fg)
+    let hi .= printf(' guibg=%s', (bg != 'NONE' ? '#'.bg : bg))
     if !has("gui_running")
-	let hi.= printf(' ctermfg=%s ctermbg=%s',
-	    \ s:Rgb2xterm(fg), s:Rgb2xterm(a:clr))
+        let fg = s:Rgb2xterm(fg)
+        let bg = bg != 'NONE' ? s:Rgb2xterm(bg) : bg
+	let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
     endif
     exe hi
 endfunction
@@ -1130,11 +1130,12 @@ function! s:Init(...) "{{{1
     let s:force_hl = !empty(a:1)
 
     " pattern/function dict
-    let s:pat_func = {'#\x\{3,6\}': function('<sid>PreviewColorHex'),
-                \ 'rgba\=(\s*\%(\d\+%\?\D*\)\{3,4})':
-                \ function('<sid>ColorRGBValues'),
-                \ 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})':
-                \ function('Colorizer#ColorHSLValues')}
+    " Needed for s:ColorMatchingLines(), disabled, as this is too slow.
+    "let s:pat_func = {'#\x\{3,6\}': function('<sid>PreviewColorHex'),
+    "            \ 'rgba\=(\s*\%(\d\+%\?\D*\)\{3,4})':
+    "            \ function('<sid>ColorRGBValues'),
+    "            \ 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})':
+    "            \ function('Colorizer#ColorHSLValues')}
 
     " Cache old values
     if !exists("s:old_tCo")
@@ -1143,6 +1144,11 @@ function! s:Init(...) "{{{1
 
     if !exists("s:swap_fg_bg")
         let s:swap_fg_bg = 0
+    endif
+
+    " Enable Autocommands
+    if exists("g:colorizer_auto_color")
+        call Colorizer#AutoCmds(g:colorizer_auto_color)
     endif
 
     " foreground / background contrast
@@ -1170,11 +1176,19 @@ function! s:Init(...) "{{{1
         let s:swap_fg_bg = g:colorizer_swap_fgbg
     endif
 
+    if exists("g:colorizer_colornames")
+        let s:color_names = g:colorizer_colornames
+    else
+        let s:color_names = 1
+    endif
+
     if !s:force_hl && s:old_fgcontrast != g:colorizer_fgcontrast
+                \ && !s:swap_fg_bg
+        " Doesn't work with swapping fg bg colors
         let s:force_hl = 1
         let s:old_fgcontrast = g:colorizer_fgcontrast
-        let s:old_matches 0 = s:Ret
     endif
+
     " User manually changed the &t_Co option, so reset it
     if s:old_tCo != &t_Co
         unlet! s:colortable
@@ -1208,7 +1222,7 @@ function! s:Init(...) "{{{1
 	    let s:force_hl = 1
 	endif
         if &t_Co > 16 || has("gui_running")
-            let s:colors = (exists("g:color_x11_names") ? s:x11_color_names
+            let s:colors = (exists("g:colorizer_x11_names") ? s:x11_color_names
                 \ : s:w3c_color_names)
         elseif &t_Co == 16
             " should work with 16 colors terminals
@@ -1326,6 +1340,10 @@ function! s:Rgb2xterm(color) "{{{1
 " selects the nearest xterm color for a rgb value like #FF0000
 " hard code values for 000000 and FFFFFF, they will be called many times
 " so make this fast
+    if len(a:color) <= 3
+        " a:color is already a terminal color
+        return a:color
+    endif
     if !exists("s:colortable")
         call s:Init('')
     endif
@@ -1408,34 +1426,6 @@ function! s:HasColorPattern() "{{{1
     return found
 endfunction
 
-function! s:ColorMatchingLines() "{{{1
-    " Programmatic approach to highlight all hex values as colors.
-    " Surprisingly a lot slower than calling 
-    " :s/#\x\{3,6}/\=s:ColorMatchingLines1(submatch(0))/g
-    let cnt = 0
-    let pat = s:GetColorPattern(keys(s:pat_func)). '\|'.
-            \ s:GetColorPattern(keys(s:colors))
-    let pat = substitute(pat, '\\<#', '#', 'g')
-    for content in range(1, line('$'))
-        let line = getline(content)
-        while 1
-            let color = matchstr(line, pat, cnt)
-            if empty(color)
-                break
-            else
-                let key  = color
-                if color =~ keys(s:pat_func)[0]
-                    let key = keys(s:pat_func)[0]
-                endif
-                let Func = get(s:pat_func, key,
-                            \ function('s:PreviewColorName'))
-                call call(Func, [color])
-                let cnt  += 1
-            endif
-        endw
-    endfor
-endfu
-" Autoloadable functions
 function! Colorizer#ColorToggle() "{{{1
     if !exists("s:match_list") || empty(s:match_list)
         call Colorizer#DoColor(0, 1, line('$'))
@@ -1495,8 +1485,8 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "     hsl(120,100%,25%) Darkgreen
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
-        " highlight rgb(X,X,X) values
-        ":sil %s/rgba\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorRGBValues(submatch(0))/egi
+    " highlight rgb(X,X,X) values
+    ":sil %s/rgba\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorRGBValues(submatch(0))/egi
         let cmd = printf(':sil %d,%ds/rgba\=(\s*\%%(\d\+%%\?\D*\)\{3,4})/'. 
             \ '\=s:ColorRGBValues(submatch(0))/egi', a:line1, a:line2)
         exe cmd
@@ -1506,11 +1496,12 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
         exe cmd
     endif
     " highlight Colornames
-    "
-    let s_cmd =
-        \ printf(':sil %d,%ds/%s/\=s:PreviewColorName(submatch(0))/egi',
-        \ a:line1, a:line2, s:GetColorPattern(keys(s:colors)))
-    exe s_cmd
+    if exists("s:color_names") && s:color_names
+        let s_cmd =
+            \ printf(':sil %d,%ds/%s/\=s:PreviewColorName(submatch(0))/egi',
+            \ a:line1, a:line2, s:GetColorPattern(keys(s:colors)))
+        exe s_cmd
+    endif
     call s:SaveRestoreOptions(0, save, [])
     if _cnr < changenr()
         exe 'sil'. _cnr. 'u'
@@ -1549,7 +1540,7 @@ function! Colorizer#AutoCmds(enable) "{{{1
             au!
             au CursorHold,CursorHoldI,InsertLeave * silent call
                         \ Colorizer#DoColor('', line('.'), line('.'))
-            au BufEnter * silent call Colorizer#DoColor('', 1, line('$'))
+            au BufWinEnter * silent call Colorizer#DoColor('', 1, line('$'))
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
         aug END
     else
@@ -1561,8 +1552,15 @@ function! Colorizer#AutoCmds(enable) "{{{1
 endfu
 
 function! Colorizer#SwitchContrast() "{{{1
+    if exists("s:swap_fg_bg") && s:swap_fg_bg
+        call s:Warn('Contrast Adjustment does not work with swapped foreground colors!')
+        return
+    endif
     " make sure, g:colorizer_fgcontrast is set up
-    call s:Init(0)
+    if !exists('g:colorizer_fgcontrast')
+        " Default to black / white
+        let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
+    endif
     let g:colorizer_fgcontrast-=1
     if g:colorizer_fgcontrast < -1
         let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
@@ -1571,12 +1569,7 @@ function! Colorizer#SwitchContrast() "{{{1
 endfu
 
 function! Colorizer#SwitchFGBG() "{{{1
-    " make sure, g:colorizer_fgcontrast is set up
-    call s:Init(0)
-    if !exists("g:colorizer_swap_fgbg")
-        let g:colorizer_swap_fgbg = 0
-    endif
-    let g:colorizer_swap_fgbg = !g:colorizer_swap_fgbg
+    let s:swap_fg_bg = exists("s:swap_fg_bg") ? !s:swap_fg_bg : 0
     call Colorizer#DoColor(1, 1, line('$'))
 endfu
 
@@ -1586,6 +1579,35 @@ if !s:debug
     unlet s:cpo_save
     finish
 endif
+
+function! s:ColorMatchingLines() "{{{2
+    " Programmatic approach to highlight all hex values as colors.
+    " Surprisingly a lot slower than calling 
+    " :s/#\x\{3,6}/\=s:ColorMatchingLines1(submatch(0))/g
+    let pat = s:GetColorPattern(keys(s:pat_func)). '\|'.
+            \ s:GetColorPattern(keys(s:colors))
+    let pat = substitute(pat, '\\<#', '#', 'g')
+    for content in range(1, line('$'))
+        let line = getline(content)
+        let cnt  = 0
+        while 1
+            let color = matchstr(line, pat, 0, cnt)
+            if empty(color)
+                break
+            else
+                let key  = color
+                if color =~ keys(s:pat_func)[0]
+                    let key = keys(s:pat_func)[0]
+                endif
+                let Func = get(s:pat_func, key,
+                            \ function('s:PreviewColorName'))
+                call call(Func, [color])
+                let cnt  += 1
+            endif
+        endw
+    endfor
+endfu
+" Autoloadable functions
 
 fu! Test1() "{{{2
     return map(range(0,254), 's:Xterm2rgb256(v:val)')
