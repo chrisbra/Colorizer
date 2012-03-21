@@ -24,6 +24,7 @@ Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt
                 2.2 Use X11 colornames...................: |Colorizer-names|
                 2.3 Adjust the contrast..................: |Colorizer-contrast|
                 2.4 Highlight colornames.................: |Colorizer-hl-names|
+                2.5 Automatically highlight filetypes....: |Colorizer-hl-ft|
         3.  Colorizer Mappings...........................: |Colorizer-maps|
         4.  Colorizer Tips...............................: |Colorizer-tips|
         5.  Colorizer Feedback...........................: |Colorizer-feedback|
@@ -103,6 +104,7 @@ to 1, e.g. by defining it in your |.vimrc| >
 
     :let g:colorizer_auto_color = 1
 <
+(Not recommended)
 
 2.2 Use X11 color names                                     *Colorizer-names*
 -----------------------
@@ -132,9 +134,21 @@ as there is the foreground color equals the background color. Use
 If for any reason you don't want the plugin to highlight colornames, you can
 prevent this by setting the g:colorizer_colornames variable to 0, e.g. put >
 
-    :let g:colorizer_names = 0
+    :let g:colorizer_colornames = 0
 <
 into your |.vimrc|
+
+2.5 Automatically highlight filetypes                     *Colorizer-hl-ft*
+-------------------------------------
+
+If you want to have certain filetypes automaticaly highlighted, you can use
+the variable g:colorizer_auto_filetype, e.g. say you want to enable color
+highlighting for html and CSS files, put into your |.vimrc| the following: >
+
+    :let g:colorizer_auto_filetype='css,html'
+<
+After restarting Vim, the plugin will become active, whenever the filetype is
+set to either html or css.
 
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
@@ -168,6 +182,13 @@ following autocommand in your |.vimrc| >
     :au BufNewFile,BufRead *.css,*.html,*.htm  :ColorHighlight!
 <
 
+This will automatically highlight all existing color codes and names if you
+edit either a html file or a css file. Note, that this does not update the
+highlighting, after you have been updating the file.
+
+The better way to do this, is to use the g:colorizer_auto_filetype
+variable and set this to the desired filetypes. |Colorizer-hl-ft|
+
 ==============================================================================
 5. Colorizer Feedback                                      *Colorizer-feedback*
 ==============================================================================
@@ -192,10 +213,15 @@ third line of this document.
   https://github.com/chrisbra/color_highlight/issues/3, thanks!)
 - make automatic color loading work (reported by wedgwood in
   https://github.com/chrisbra/color_highlight/issues/6, thanks!)
+  |Colorizer-auto| and |Colorizer-hl-ft|
 - more documentation updates
-- added Mappings (suggested by Ingo Karkat, thanks!)
+- added Mappings (suggested by Ingo Karkat, thanks!) |Colorizer-maps|
 - prevent highlighting of color names (suggested by Tarlika Schmitz in
   https://github.com/chrisbra/color_highlight/issues/5, thanks!)
+  |Colorizer-hl-names|
+- enable filetype specific autocommands, so that for certain filetypes
+  colors are highlighted automatically |Colorizer-hl-ft|
+  (suggested by Tarlika Schmitz, thanks!)
 
 0.3: Mar 15, 2012 {{{1
 - Use the g:colorizer_fgcontrast variable to have lesser contrast between
