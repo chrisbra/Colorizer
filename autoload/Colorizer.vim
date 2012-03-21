@@ -1503,7 +1503,7 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
         exe s_cmd
     endif
     call s:SaveRestoreOptions(0, save, [])
-    if _cnr < changenr()
+    if _cnr < changenr() && _cnr > 0
         exe 'sil'. _cnr. 'u'
     endif
     call winrestview(_a)
@@ -1540,7 +1540,8 @@ function! Colorizer#AutoCmds(enable) "{{{1
             au!
             au CursorHold,CursorHoldI,InsertLeave * silent call
                         \ Colorizer#DoColor('', line('.'), line('.'))
-            au BufWinEnter * silent call Colorizer#DoColor('', 1, line('$'))
+            au GUIEnter,BufWinEnter * silent call
+                        \ Colorizer#DoColor('', 1, line('$'))
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
         aug END
     else
@@ -1548,6 +1549,32 @@ function! Colorizer#AutoCmds(enable) "{{{1
             au!
         aug END
         aug! Colorizer
+    endif
+endfu
+
+function! Colorizer#LocalFTAutoCmds(enable) "{{{1
+    if a:enable
+        aug FTColorizer
+            au!
+            au CursorHold,CursorHoldI,InsertLeave <buffer> silent call
+                        \ Colorizer#DoColor('', line('.'), line('.'))
+            au GUIEnter,ColorScheme <buffer> silent
+                        \ call Colorizer#DoColor('!', 1, line('$'))
+        aug END
+        if !exists("b:undo_ftplugin")
+            " simply unlet a dummy variable
+            let b:undo_ftplugin = 'unlet! b:Colorizer_foobar'
+        endif
+        " Delete specific auto commands, because the filetype
+        " has been changed.
+        let b:undo_ftplugin .= '| exe "sil! au! FTColorizer"'  
+        let b:undo_ftplugin .= '| exe "sil! aug! FTColorizer"'  
+        let b:undo_ftplugin .= '| exe ":ColorClear"'
+    else
+        aug FTColorizer
+            au!
+        aug END
+        aug! FTColorizer
     endif
 endfu
 

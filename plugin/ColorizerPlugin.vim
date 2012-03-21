@@ -51,10 +51,20 @@ xmap <silent> <Leader>cT <Plug>ColorContrast
 nmap <silent> <Leader>cF <Plug>ColorFgBg
 xmap <silent> <Leader>cF <Plug>ColorFgBg
 
-" Enable Autocommands
-if exists("g:auto_color")
+" Enable Autocommands "{{{1
+if exists("g:colorizer_auto_color")
     " Prevent autoloading
-    exe "call Colorizer#AutoCmds(g:auto_color)"
+    exe "call Colorizer#AutoCmds(g:colorizer_auto_color)"
+endif
+
+if exists("g:colorizer_auto_filetype")
+    " Setup some autocommands for specific filetypes.
+    aug FT_ColorizerPlugin
+        au!
+        exe "au Filetype" g:colorizer_auto_filetype 
+                    \ "call Colorizer#LocalFTAutoCmds(1)\|
+                    \ :ColorHighlight"
+    aug END
 endif
 
 " Plugin folklore and Vim Modeline " {{{1
