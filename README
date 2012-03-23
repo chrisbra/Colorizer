@@ -1,7 +1,7 @@
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
-Version:    0.3 Thu, 15 Mar 2012 20:38:44 +0100
+Version:    0.4 Fri, 23 Mar 2012 21:14:16 +0100
 Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
             The VIM LICENSE applies to Colorizer.txt
             (see |copyright|) except use NrrwRgnPlugin instead of "Vim".
@@ -87,6 +87,10 @@ This plugin defines the following commands:
                             settings.
                                                                *:ColorSwapFgBg*
 :ColorSwapFgBg              Switch between foreground and background colors.
+                            This will toggle in 3 ways. From Swapping
+                            foreground and background colors, to only
+                            highlight the foreground color back to normal
+                            forground background color.
 
 
 
