@@ -925,9 +925,14 @@ function! s:DoHlGroup(clr) "{{{1
     let clr = a:clr
     let bg  = clr
     let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(a:clr)
-    if s:swap_fg_bg
+    if s:swap_fg_bg > 0
         let fg  = clr
         let bg  = 'NONE'
+    elseif s:swap_fg_bg == -1
+        let t   = fg
+        let fg  = clr
+        let bg  = t
+        unlet t
     endif
     let hi  = printf('hi %s guifg=#%s', clr, fg)
     let hi .= printf(' guibg=%s', (bg != 'NONE' ? '#'.bg : bg))
@@ -1183,7 +1188,7 @@ function! s:Init(...) "{{{1
     endif
 
     if !s:force_hl && s:old_fgcontrast != g:colorizer_fgcontrast
-                \ && !s:swap_fg_bg
+                \ && s:swap_fg_bg == 0
         " Doesn't work with swapping fg bg colors
         let s:force_hl = 1
         let s:old_fgcontrast = g:colorizer_fgcontrast
@@ -1596,7 +1601,13 @@ function! Colorizer#SwitchContrast() "{{{1
 endfu
 
 function! Colorizer#SwitchFGBG() "{{{1
-    let s:swap_fg_bg = exists("s:swap_fg_bg") ? !s:swap_fg_bg : 0
+    if !exists("s:round")
+        let s:round = 1
+    else
+        let s:round += 1
+    endif
+    let range = [ 1, -1, 0]
+    let s:swap_fg_bg = range[s:round % 3]
     call Colorizer#DoColor(1, 1, line('$'))
 endfu
 
