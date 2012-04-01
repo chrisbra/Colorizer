@@ -941,7 +941,8 @@ function! s:DoHlGroup(clr) "{{{1
         let bg = bg != 'NONE' ? s:Rgb2xterm(bg) : bg
 	let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
     endif
-    exe hi
+    "Don't error out for invalid colors
+    sil! exe hi
 endfunction
 
 function! s:SetMatcher(clr, pattern) "{{{1
@@ -1477,7 +1478,7 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "              #F0F
     "              #FFF
     "call s:ColorMatchingLines()
-    let cmd = printf(':sil %d,%ds/#\x\{3,6}\>/'.
+    let cmd = printf(':sil %d,%ds/#\%(\x\{3}\|\x\{6}\)\>/'.
         \ '\=s:PreviewColorHex(submatch(0))/egi', a:line1, a:line2)
     exe cmd
     if &t_Co > 16 || has("gui_running")

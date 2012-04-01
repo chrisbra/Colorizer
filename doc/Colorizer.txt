@@ -212,6 +212,9 @@ third line of this document.
 ==============================================================================
 
 
+0.5: (unreleased) {{{1
+- Fix issue 7 (reported by teschmitz in
+  https://github.com/chrisbra/color_highlight/issues/7, thanks!)
 0.4: Mar, 23, 2012 {{{1
 - |:ColorSwapFgBg| (suggested by teschmitz, in
   https://github.com/chrisbra/color_highlight/issues/3, thanks!)
