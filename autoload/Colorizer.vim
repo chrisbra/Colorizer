@@ -942,7 +942,14 @@ function! s:DoHlGroup(clr) "{{{1
 	let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
     endif
     "Don't error out for invalid colors
-    sil! exe hi
+    try 
+        exe hi
+    catch 
+        " Only report errors, when debugging info is turned on
+        if s:debug
+            call s:Warn("Invalid color: ".hi)
+        endif
+    endtry
 endfunction
 
 function! s:SetMatcher(clr, pattern) "{{{1
@@ -1155,6 +1162,10 @@ function! s:Init(...) "{{{1
     " Enable Autocommands
     if exists("g:colorizer_auto_color")
         call Colorizer#AutoCmds(g:colorizer_auto_color)
+    endif
+
+    if exists("g:colorizer_debug")
+        let s:debug = 1
     endif
 
     " foreground / background contrast
