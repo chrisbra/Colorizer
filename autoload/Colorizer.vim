@@ -1479,7 +1479,6 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "    call s:ColorMatchingLines(line)
     "endfor
     let _a   = winsaveview()
-    let _cnr = changenr()
     let save = s:SaveRestoreOptions(1, {}, ['mod', 'ro', 'ma', 'lz'])
     " highlight Hex Codes:
     "
@@ -1520,9 +1519,6 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
         exe s_cmd
     endif
     call s:SaveRestoreOptions(0, save, [])
-    if _cnr < changenr() && _cnr > 0
-        exe 'sil'. _cnr. 'u'
-    endif
     call winrestview(_a)
 endfu
 
