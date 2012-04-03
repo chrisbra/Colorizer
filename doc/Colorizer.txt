@@ -1,7 +1,7 @@
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
-Version:    0.4 Fri, 23 Mar 2012 21:14:16 +0100
+Version:    0.5 Tue, 03 Apr 2012 15:19:30 +0200
 Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
             The VIM LICENSE applies to Colorizer.txt
             (see |copyright|) except use NrrwRgnPlugin instead of "Vim".
