@@ -212,7 +212,10 @@ third line of this document.
 ==============================================================================
 
 
-0.5: (Apr 03, 2012) {{{1
+0.6: (unreleased) {{{1
+- Fix various issues with hsl coloring (reported by teschmitz in 
+  https://github.com/chrisbra/color_highlight/issues/9, thanks!)
+0.5: Apr 03, 2012 {{{1
 - Fix issue 7 (reported by teschmitz in
   https://github.com/chrisbra/color_highlight/issues/7, thanks!)
 0.4: Mar, 23, 2012 {{{1

@@ -32,7 +32,7 @@ command! -bang -nargs=1  RGB2Xterm
 
 command! -bang    ColorClear    :call Colorizer#ColorOff()
 command! -bang    ColorToggle   :call Colorizer#ColorToggle()
-command! -nargs=1 HSL2RGB       :echo Colorizer#ColorHSLValues(<q-args>)
+command! -nargs=1 HSL2RGB       :call Colorizer#HSL2Term(<q-args>)
 command!          ColorContrast :call Colorizer#SwitchContrast()
 command!          ColorSwapFgBg :call Colorizer#SwitchFGBG()
 

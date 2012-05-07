@@ -1279,13 +1279,16 @@ function! s:SaveOptions(list) "{{{1
 endfunction
 
 function! s:StripParantheses(val) "{{{1
-    return split(matchstr(a:val, '^\(hsl\|rgb\)a\?(\zs.*\ze)$'), '\s*,')
+    return split(matchstr(a:val, '^\(hsl\|rgb\)a\?(\zs[^)]*\ze)'), '\s*,')
 endfunction
 
 function! s:ColorRGBValues(val) "{{{1
     " strip parantheses and split on comma
     let rgb = s:StripParantheses(a:val)
-    if len(rgb) == 4
+    if empty(rgb)
+        call s:Warn("Error evaluating expression". a:val. "! Please report as bug.")
+        return
+    elseif len(rgb) == 4
         " drop alpha channel
         call remove(rgb, 3)
     endif
@@ -1310,7 +1313,7 @@ endfunction
 function! s:HSL2RGB(h, s, l) "{{{1
     let s = a:s + 0.0
     let l = a:l + 0.0
-    if l <= 0.5
+    if  l <= 0.5
         let m2 = l * (s + 1)
     else
         let m2 = l + s - l * s
@@ -1323,11 +1326,11 @@ function! s:HSL2RGB(h, s, l) "{{{1
 endfunction
 
 function! s:Hue2RGB(m1, m2, h) "{{{1
-    let h = (a:h + 0.0)/255
+    let h = (a:h + 0.0)/360
     if h < 0
         let h = h + 1
     elseif h > 1
-        let h = h -1 
+        let h = h - 1
     endif
     if h * 6 < 1
         let res = a:m1 + (a:m2 - a:m1) * h * 6
@@ -1443,6 +1446,17 @@ function! s:HasColorPattern() "{{{1
     return found
 endfunction
 
+function! s:PrepareHSLArgs(list) "{{{1
+    let hsl=a:list
+    if len(hsl) == 4
+        " drop alpha channel
+        call remove(hsl, 3)
+    endif
+    let hsl[0] = (matchstr(hsl[0], '\d\+') + 360)%360
+    let hsl[1] = (matchstr(hsl[1], '\d\+') + 0.0)/100
+    let hsl[2] = (matchstr(hsl[2], '\d\+') + 0.0)/100
+    return s:HSL2RGB(hsl[0], hsl[1], hsl[2])
+endfu
 function! Colorizer#ColorToggle() "{{{1
     if !exists("s:match_list") || empty(s:match_list)
         call Colorizer#DoColor(0, 1, line('$'))
@@ -1503,11 +1517,11 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
     ":sil %s/rgba\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorRGBValues(submatch(0))/egi
-        let cmd = printf(':sil %d,%ds/rgba\=(\s*\%%(\d\+%%\?\D*\)\{3,4})/'. 
+        let cmd = printf(':sil %d,%ds/rgba\=(\s*\%%(\d\+%%\?[^0-9)]*\)\{3,4})/'. 
             \ '\=s:ColorRGBValues(submatch(0))/egi', a:line1, a:line2)
         exe cmd
         " highlight hvl(X,X,X) values
-        let cmd = printf(':sil %d,%ds/hsla\=(\s*\%%(\d\+%%\?\D*\)\{3,4})'.
+        let cmd = printf(':sil %d,%ds/hsla\=(\s*\%%(\d\+%%\?[^0-9)]*\)\{3,4})'.
             \'/\=Colorizer#ColorHSLValues(submatch(0))/egi', a:line1, a:line2)
         exe cmd
     endif
@@ -1525,24 +1539,42 @@ endfu
 function! Colorizer#ColorHSLValues(val) "{{{1
     " strip parantheses and split on comma
     let hsl = s:StripParantheses(a:val)
-    if len(hsl) == 4
-        " drop alpha channel
-        call remove(hsl, 3)
+    if empty(hsl)
+        call s:Warn("Error evaluating expression". a:val. "! Please report as bug.")
+        return a:val
     endif
-    let hsl[0] = (hsl[0]+360)%360
-    let hsl[1] = (matchstr(hsl[1], '\d\+') + 0.0)/100
-    let hsl[2] = (matchstr(hsl[2], '\d\+') + 0.0)/100
+    let str = s:PrepareHSLArgs(hsl)
 
-    let str = s:HSL2RGB(hsl[0], hsl[1], hsl[2])
     call s:SetMatcher(str, a:val)
     return a:val
 endfu
 
 function! Colorizer#RGB2Term(arg) "{{{1
-    let color  = a:arg[0] == '#' ? a:arg : '#'. a:arg
+    if a:arg =~ '^rgb'
+        let clr    = s:StripParantheses(a:arg)
+        let color  = printf("#%02X%02X%02X", clr[0], clr[1], clr[2])
+    else
+        let color  = a:arg[0] == '#' ? a:arg : #.a:arg
+    endif
+
     let tcolor = s:Rgb2xterm(color)
     call s:DoHlGroup(color[1:])
     exe "echohl" color[1:]
+    echo a:arg. " => ". tcolor
+    echohl None
+endfu
+
+function! Colorizer#HSL2Term(arg) "{{{1
+    let hsl = s:StripParantheses(a:arg)
+    if empty(hsl)
+        call s:Warn("Error evaluating expression". a:val. "! Please report as bug.")
+        return a:val
+    endif
+    let str = s:PrepareHSLArgs(hsl)
+
+    let tcolor = s:Rgb2xterm('#'.str)
+    call s:DoHlGroup(str)
+    exe "echohl" str
     echo a:arg. " => ". tcolor
     echohl None
 endfu
