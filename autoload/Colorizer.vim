@@ -1211,6 +1211,10 @@ function! s:Init(...) "{{{1
     endif
 
     if exists("g:colorizer_colornames")
+        if exists("s:color_names") &&
+        \ s:color_names != g:colorizer_colornames
+            let s:force_hl = 1
+        endif
         let s:color_names = g:colorizer_colornames
     else
         let s:color_names = 1
