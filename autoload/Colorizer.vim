@@ -957,7 +957,8 @@ function! s:SetMatcher(clr, pattern) "{{{1
     if s:DidColor(a:clr, a:pattern)
         return
     endif
-    call matchadd(a:clr, a:pattern)
+    " let 'hls' overrule our syntax highlighting
+    call matchadd(a:clr, a:pattern, -1)
     call add(s:match_list, a:pattern)
 endfunction
 
