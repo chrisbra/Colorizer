@@ -1298,7 +1298,7 @@ function! s:SaveOptions(list) "{{{1
 endfunction
 
 function! s:StripParantheses(val) "{{{1
-    return split(matchstr(a:val, '^\(hsl\|rgb\)a\?(\zs[^)]*\ze)'), '\s*,')
+    return split(matchstr(a:val, '^\(hsl\|rgb\)a\?\s*(\zs[^)]*\ze)'), '\s*,')
 endfunction
 
 function! s:ColorRGBValues(val) "{{{1
@@ -1562,7 +1562,7 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
         let cmd = printf(':sil %d,%ds/rgba\='. pat. '/'. 
             \ '\=s:ColorRGBValues(submatch(0))/egi', a:line1, a:line2)
         exe cmd
-        " highlight hvl(X,X,X) values
+        " highlight hsl(X,X,X) values
         let cmd = printf(':sil %d,%ds/hsla\='. pat. '/'.
             \'\=s:ColorHSLValues(submatch(0))/egi', a:line1, a:line2)
         exe cmd
