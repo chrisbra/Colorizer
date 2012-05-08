@@ -1148,7 +1148,7 @@ function! s:Init(...) "{{{1
     "            \ 'rgba\=(\s*\%(\d\+%\?\D*\)\{3,4})':
     "            \ function('<sid>ColorRGBValues'),
     "            \ 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})':
-    "            \ function('Colorizer#ColorHSLValues')}
+    "            \ function('s:ColorHSLValues')}
 
     " Cache old values
     if !exists("s:old_tCo")
@@ -1286,8 +1286,8 @@ function! s:ColorRGBValues(val) "{{{1
     " strip parantheses and split on comma
     let rgb = s:StripParantheses(a:val)
     if empty(rgb)
-        call s:Warn("Error evaluating expression". a:val. "! Please report as bug.")
-        return
+        call s:Warn("Error in expression". a:val. "! Please report as bug.")
+        return a:val
     elseif len(rgb) == 4
         " drop alpha channel
         call remove(rgb, 3)
@@ -1309,6 +1309,19 @@ function! s:ColorRGBValues(val) "{{{1
     call s:SetMatcher(clr, a:val)
     return a:val
 endfunction
+
+function! s:ColorHSLValues(val) "{{{1
+    " strip parantheses and split on comma
+    let hsl = s:StripParantheses(a:val)
+    if empty(hsl)
+        call s:Warn("Error in expression". a:val. "! Please report as bug.")
+        return a:val
+    endif
+    let str = s:PrepareHSLArgs(hsl)
+
+    call s:SetMatcher(str, a:val)
+    return a:val
+endfu
 
 function! s:HSL2RGB(h, s, l) "{{{1
     let s = a:s + 0.0
@@ -1516,13 +1529,13 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-    ":sil %s/rgba\?(\s*\%(\d\+%\?\D*\)\{3,4})/\=s:ColorRGBValues(submatch(0))/egi
-        let cmd = printf(':sil %d,%ds/rgba\=(\s*\%%(\d\+%%\?[^0-9)]*\)\{3,4})/'. 
+        let pat = '\s*(\s*\%%(\d\+%%\?[^0-9)]*\)\{3,4})'
+        let cmd = printf(':sil %d,%ds/rgba\='. pat. '/'. 
             \ '\=s:ColorRGBValues(submatch(0))/egi', a:line1, a:line2)
         exe cmd
         " highlight hvl(X,X,X) values
-        let cmd = printf(':sil %d,%ds/hsla\=(\s*\%%(\d\+%%\?[^0-9)]*\)\{3,4})'.
-            \'/\=Colorizer#ColorHSLValues(submatch(0))/egi', a:line1, a:line2)
+        let cmd = printf(':sil %d,%ds/hsla\='. pat. '/'.
+            \'\=s:ColorHSLValues(submatch(0))/egi', a:line1, a:line2)
         exe cmd
     endif
     " highlight Colornames
@@ -1534,19 +1547,6 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     endif
     call s:SaveRestoreOptions(0, save, [])
     call winrestview(_a)
-endfu
-
-function! Colorizer#ColorHSLValues(val) "{{{1
-    " strip parantheses and split on comma
-    let hsl = s:StripParantheses(a:val)
-    if empty(hsl)
-        call s:Warn("Error evaluating expression". a:val. "! Please report as bug.")
-        return a:val
-    endif
-    let str = s:PrepareHSLArgs(hsl)
-
-    call s:SetMatcher(str, a:val)
-    return a:val
 endfu
 
 function! Colorizer#RGB2Term(arg) "{{{1
