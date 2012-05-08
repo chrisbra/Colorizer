@@ -1102,6 +1102,11 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
 endfunction
 
 function! s:PreviewColorName(color) "{{{1
+    if s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+        " skip coloring comments
+        return a:color
+    endif
     let name=tolower(a:color)
     let clr = s:colors[name]
     call s:SetMatcher(clr[1:], '\<'.name.'\>\c')
@@ -1109,6 +1114,11 @@ function! s:PreviewColorName(color) "{{{1
 endfu
 
 function! s:PreviewColorHex(match) "{{{1
+    if s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == 'Comment'
+        " skip coloring comments
+        return a:match
+    endif
     let color = (a:match[0] == '#' ? a:match[1:] : a:match)
     let pattern = color
     if len(color) == 3
@@ -1168,6 +1178,12 @@ function! s:Init(...) "{{{1
         let s:debug = 1
     endif
 
+    if exists("g:colorizer_skip_comments")
+        let s:skip_comments = g:colorizer_skip_comments
+    else
+        let s:skip_comments = 0
+    endif
+
     " foreground / background contrast
     let s:predefined_fgcolors = {}
     let s:predefined_fgcolors['dark']  = ['444444', '222222', '000000']
@@ -1210,6 +1226,7 @@ function! s:Init(...) "{{{1
     if s:old_tCo != &t_Co
         unlet! s:colortable
     endif
+
     if !exists("s:init_css") || !exists("s:colortable") ||
         \ empty(s:colortable)
 	" Only calculate the colortable when running
@@ -1235,12 +1252,13 @@ function! s:Init(...) "{{{1
 	let s:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
 	if ((empty(s:match_list) || !hlexists(s:match_list[0].group) ||  
-	    \ empty(synIDattr(hlID(s:match_list[0].group), 'fg'))) && !s:force_hl)
+	    \ empty(synIDattr(hlID(s:match_list[0].group), 'fg'))) &&
+            \ !s:force_hl)
 	    let s:force_hl = 1
 	endif
         if &t_Co > 16 || has("gui_running")
-            let s:colors = (exists("g:colorizer_x11_names") ? s:x11_color_names
-                \ : s:w3c_color_names)
+            let s:colors = (exists("g:colorizer_x11_names") ?
+                \ s:x11_color_names : s:w3c_color_names)
         elseif &t_Co == 16
             " should work with 16 colors terminals
             let s:colors = s:xterm_16colors
@@ -1283,6 +1301,11 @@ function! s:StripParantheses(val) "{{{1
 endfunction
 
 function! s:ColorRGBValues(val) "{{{1
+    if s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+        " skip coloring comments
+        return a:val
+    endif
     " strip parantheses and split on comma
     let rgb = s:StripParantheses(a:val)
     if empty(rgb)
@@ -1311,6 +1334,11 @@ function! s:ColorRGBValues(val) "{{{1
 endfunction
 
 function! s:ColorHSLValues(val) "{{{1
+    if s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+        " skip coloring comments
+        return a:val
+    endif
     " strip parantheses and split on comma
     let hsl = s:StripParantheses(a:val)
     if empty(hsl)
@@ -1523,7 +1551,7 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     " CSS rgb(255,0,0)
     "     rgba(255,0,0,1)
     "     rgb(10%,0,100%)
-    "     hsl(0,100%,50%) -> hvl2rgb conversion RED
+    "     hsl(0,100%,50%) -> hsl2rgb conversion RED
     "     hsla(120,100%,50%,1) Lime
     "     hsl(120,100%,25%) Darkgreen
     "     hsl(120, 100%, 75%) lightgreen
