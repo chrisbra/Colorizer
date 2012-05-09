@@ -44,7 +44,7 @@ The plugin understands the W3-Colors (used for CSS files for example), the
 Color names from the X11 Window System and also codes in hex notation, like
 #FF0000 (which represents Red in the RGB color system). Additionally, it
 supports the CSS color specifications, e.g. rgb(RR,GG,BB) color representation
-in either absolutely values or as percentage and also the HVL Color
+in either absolute or percentage values and also the HVL Color
 representation like hvl(H,V,L)
 
 It works best in the gui version of Vim, but the plugin also supports 256 and

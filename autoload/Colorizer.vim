@@ -1301,7 +1301,7 @@ function! s:SaveOptions(list) "{{{1
     return save
 endfunction
 
-function! s:StripParantheses(val) "{{{1
+function! s:StripParentheses(val) "{{{1
     return split(matchstr(a:val, '^\(hsl\|rgb\)a\?\s*(\zs[^)]*\ze)'), '\s*,')
 endfunction
 
@@ -1312,7 +1312,7 @@ function! s:ColorRGBValues(val) "{{{1
         return a:val
     endif
     " strip parantheses and split on comma
-    let rgb = s:StripParantheses(a:val)
+    let rgb = s:StripParentheses(a:val)
     if empty(rgb)
         call s:Warn("Error in expression". a:val. "! Please report as bug.")
         return a:val
@@ -1345,7 +1345,7 @@ function! s:ColorHSLValues(val) "{{{1
         return a:val
     endif
     " strip parantheses and split on comma
-    let hsl = s:StripParantheses(a:val)
+    let hsl = s:StripParentheses(a:val)
     if empty(hsl)
         call s:Warn("Error in expression". a:val. "! Please report as bug.")
         return a:val
@@ -1584,7 +1584,7 @@ endfu
 
 function! Colorizer#RGB2Term(arg) "{{{1
     if a:arg =~ '^rgb'
-        let clr    = s:StripParantheses(a:arg)
+        let clr    = s:StripParentheses(a:arg)
         let color  = printf("#%02X%02X%02X", clr[0], clr[1], clr[2])
     else
         let color  = a:arg[0] == '#' ? a:arg : #.a:arg
@@ -1598,7 +1598,7 @@ function! Colorizer#RGB2Term(arg) "{{{1
 endfu
 
 function! Colorizer#HSL2Term(arg) "{{{1
-    let hsl = s:StripParantheses(a:arg)
+    let hsl = s:StripParentheses(a:arg)
     if empty(hsl)
         call s:Warn("Error evaluating expression". a:val. "! Please report as bug.")
         return a:val
