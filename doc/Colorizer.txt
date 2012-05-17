@@ -1,7 +1,7 @@
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
-Version:    0.5 Tue, 03 Apr 2012 15:19:30 +0200
+Version:    0.6 Thu, 17 May 2012 21:03:52 +0200
 Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
             The VIM LICENSE applies to Colorizer.txt
             (see |copyright|) except use NrrwRgnPlugin instead of "Vim".
@@ -236,7 +236,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
-0.6: (unreleased) {{{1
+0.6: May 17, 2012 {{{1
 - Fix various issues with hsl coloring (reported by teschmitz in 
   https://github.com/chrisbra/color_highlight/issues/9, thanks!)
 - Make it possible, to skip coloring comments (reported by teschmitz in 
