@@ -1281,7 +1281,12 @@ function! s:SaveRestoreOptions(save, dict, list) "{{{1
         return s:SaveOptions(a:list)
     else
 	for [key, value] in items(a:dict)
-	    call setbufvar('', '&'. key, value)
+            if key !~ '@'
+                call setbufvar('', '&'. key, value)
+            else
+                call call('setreg', [key[1]] + value)
+            endif
+            unlet value
 	endfor
     endif
 endfun
@@ -1289,7 +1294,13 @@ endfun
 function! s:SaveOptions(list) "{{{1
     let save = {}
     for item in a:list
-        exe "let save.". item. " = &l:". item
+        if item !~ '^@'
+            exe "let save.". item. " = &l:". item
+        else
+            let save[item] = []
+            call add(save[item], getreg(item[1]))
+            call add(save[item], getregtype(item))
+        endif
 	if item == 'ma' && !&l:ma
 	    setl ma
 	elseif item == 'ro' && &l:ro
@@ -1539,7 +1550,8 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "    call s:ColorMatchingLines(line)
     "endfor
     let _a   = winsaveview()
-    let save = s:SaveRestoreOptions(1, {}, ['mod', 'ro', 'ma', 'lz'])
+    let hist = 0
+    let save = s:SaveRestoreOptions(1, {}, ['mod', 'ro', 'ma', 'lz', '@/'])
     " highlight Hex Codes:
     "
     " The :%s command is a lot faster than this:
@@ -1577,8 +1589,12 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
             \ printf(':sil %d,%ds/%s/\=s:PreviewColorName(submatch(0))/egi',
             \ a:line1, a:line2, s:GetColorPattern(keys(s:colors)))
         exe s_cmd
+        let hist=1
     endif
     call s:SaveRestoreOptions(0, save, [])
+    if hist
+        call histdel('/', -1)
+    endif
     call winrestview(_a)
 endfu
 
