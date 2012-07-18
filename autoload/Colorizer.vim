@@ -1302,7 +1302,7 @@ function! s:SaveOptions(list) "{{{1
 endfunction
 
 function! s:StripParentheses(val) "{{{1
-    return split(matchstr(a:val, '^\(hsl\|rgb\)a\?\s*(\zs[^)]*\ze)'), '\s*,')
+    return split(matchstr(a:val, '^\(hsl\|rgb\)a\?\s*(\zs[^)]*\ze)'), '\s*,\s*')
 endfunction
 
 function! s:ColorRGBValues(val) "{{{1
