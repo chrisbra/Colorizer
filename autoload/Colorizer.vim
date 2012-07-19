@@ -1307,6 +1307,10 @@ function! s:SaveOptions(list) "{{{1
 	    setl noro
 	elseif item == 'lz' && &l:lz
 	    setl lz
+        elseif item == 'ed' && &g:ed
+            setl noed
+        elseif item == 'gd' && &g:gd
+            setl nogd
 	endif
     endfor
     return save
@@ -1551,7 +1555,7 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "endfor
     let _a   = winsaveview()
     let hist = 0
-    let save = s:SaveRestoreOptions(1, {}, ['mod', 'ro', 'ma', 'lz', '@/'])
+    let save = s:SaveRestoreOptions(1, {}, ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
     " highlight Hex Codes:
     "
     " The :%s command is a lot faster than this:
