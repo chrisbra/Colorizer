@@ -1554,7 +1554,6 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "    call s:ColorMatchingLines(line)
     "endfor
     let _a   = winsaveview()
-    let hist = 0
     let save = s:SaveRestoreOptions(1, {}, ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
     " highlight Hex Codes:
     "
@@ -1593,12 +1592,11 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
             \ printf(':sil %d,%ds/%s/\=s:PreviewColorName(submatch(0))/egi',
             \ a:line1, a:line2, s:GetColorPattern(keys(s:colors)))
         exe s_cmd
-        let hist=1
-    endif
-    call s:SaveRestoreOptions(0, save, [])
-    if hist
+        " Somehow, when performing above search, the pattern remains in the
+        " search history and this can be disturbing, so delete it from there.
         call histdel('/', -1)
     endif
+    call s:SaveRestoreOptions(0, save, [])
     call winrestview(_a)
 endfu
 
