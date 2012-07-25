@@ -236,6 +236,12 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
+0.7: Jul 25, 2012 {{{1
+- Highlight rgb colors with whitespace after comma (reported by sergey-vlasov
+  in https://github.com/chrisbra/color_highlight/issues/12, thanks!)
+- Save and restore the search register, so the plugin doesn't clobber it
+- check for 'ed' and 'gd' defaults
+
 0.6: May 17, 2012 {{{1
 - Fix various issues with hsl coloring (reported by teschmitz in 
   https://github.com/chrisbra/color_highlight/issues/9, thanks!)
