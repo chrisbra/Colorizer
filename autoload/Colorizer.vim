@@ -1554,7 +1554,10 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "    call s:ColorMatchingLines(line)
     "endfor
     let _a   = winsaveview()
-    let save = s:SaveRestoreOptions(1, {}, ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
+    let save = s:SaveRestoreOptions(1, {},
+            \ ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
+
+    let n_flag = v:version > 703 || ( v:version == 703 && has("patch627"))
     " highlight Hex Codes:
     "
     " The :%s command is a lot faster than this:
@@ -1564,7 +1567,8 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "              #FFF
     "call s:ColorMatchingLines()
     let cmd = printf(':sil %d,%ds/#\%(\x\{3}\|\x\{6}\)\>/'.
-        \ '\=s:PreviewColorHex(submatch(0))/egi', a:line1, a:line2)
+        \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
+        \ n_flag ? 'n' : '')
     exe cmd
     if &t_Co > 16 || has("gui_running")
     " Also support something like
@@ -1579,18 +1583,21 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     " highlight rgb(X,X,X) values
         let pat = '\s*(\s*\%%(\d\+%%\?[^0-9)]*\)\{3,4})'
         let cmd = printf(':sil %d,%ds/rgba\='. pat. '/'. 
-            \ '\=s:ColorRGBValues(submatch(0))/egi', a:line1, a:line2)
+            \ '\=s:ColorRGBValues(submatch(0))/egi%s', a:line1, a:line2,
+            \ n_flag ? 'n' : '')
         exe cmd
         " highlight hsl(X,X,X) values
         let cmd = printf(':sil %d,%ds/hsla\='. pat. '/'.
-            \'\=s:ColorHSLValues(submatch(0))/egi', a:line1, a:line2)
+            \'\=s:ColorHSLValues(submatch(0))/egi%s', a:line1, a:line2,
+            \ n_flag ? 'n' : '')
         exe cmd
     endif
     " highlight Colornames
     if exists("s:color_names") && s:color_names
         let s_cmd =
-            \ printf(':sil %d,%ds/%s/\=s:PreviewColorName(submatch(0))/egi',
-            \ a:line1, a:line2, s:GetColorPattern(keys(s:colors)))
+            \ printf(':sil %d,%ds/%s/\=s:PreviewColorName(submatch(0))/egi%s',
+            \ a:line1, a:line2, s:GetColorPattern(keys(s:colors)),
+            \ n_flag ? 'n' : '')
         exe s_cmd
         " Somehow, when performing above search, the pattern remains in the
         " search history and this can be disturbing, so delete it from there.
