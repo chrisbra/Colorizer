@@ -1220,7 +1220,7 @@ function! s:Init(...) "{{{1
         let s:color_names = 1
     endif
 
-    if exists("g:colorizer_persist")
+    if exists("g:colorizer_syntax") && g:colorizer_syntax
         let s:color_syntax = 1
     endif
 
