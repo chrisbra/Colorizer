@@ -1136,7 +1136,7 @@ function! s:PreviewColorHex(match) "{{{1
             let color = list[idx]
         endif
     endif
-    call s:SetMatcher(color, '#'.pattern.'\>\c')
+    call s:SetMatcher(color, '#'.pattern.'\c')
     return a:match
 endfunction
 
@@ -1568,7 +1568,7 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
     "
     " Hexcodes should be word-bounded, but could also be delimited by [-_], so
     " allow those to delimit the end of the pattern
-    let cmd = printf(':sil %d,%ds/#\%(\x\{3}\|\x\{6}\)\%(\>\|[-_]\)/'.
+    let cmd = printf(':sil %d,%ds/#\%(\x\{3}\|\x\{6}\)\%(\>\|[-_]\)\@=/'.
         \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
         \ n_flag ? 'n' : '')
     exe cmd
