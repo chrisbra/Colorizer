@@ -1541,7 +1541,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " initialize plugin
     try
         call s:Init(a:force)
-        if exists("a:1")
+        if exists("a:1") && !empty(a:1)
             if a:1 =~# '^\%(syntax\|nomatch\)$'
                 let s:color_syntax = 1
             elseif a:1 =~# '^\%(nosyntax\|match\)$'
@@ -1623,6 +1623,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             if hi.group !~# '\x\{6\}'
                 continue
             endif
+            " Clear highlighting so we don't define them several times
+            " syntax group might not yet exists, so ignore errors
+            exe "sil! syn clear" hi.group
             exe "syn match" hi.group "excludenl /". hi.pattern. "/ display containedin=ALL"
             " We have syntax highlighting, can clear the matching
             call matchdelete(hi.id)
