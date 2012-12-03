@@ -236,6 +236,10 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
+0.8: (unreleased) {{{1
+- https://github.com/chrisbra/color_highlight/issues/13 (colorizing should not
+  stop at word-boundaries
+
 0.7: Jul 25, 2012 {{{1
 - Highlight rgb colors with whitespace after comma (reported by sergey-vlasov
   in https://github.com/chrisbra/color_highlight/issues/12, thanks!)
