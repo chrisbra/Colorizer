@@ -1220,6 +1220,10 @@ function! s:Init(...) "{{{1
         let s:color_names = 1
     endif
 
+    if exists("g:colorizer_persist")
+        let s:color_syntax = 1
+    endif
+
     if !s:force_hl && s:old_fgcontrast != g:colorizer_fgcontrast
                 \ && s:swap_fg_bg == 0
         " Doesn't work with swapping fg bg colors
@@ -1533,10 +1537,17 @@ function! Colorizer#ColorOff() "{{{1
     unlet! s:match_list
 endfu
 
-function! Colorizer#DoColor(force, line1, line2) "{{{1
+function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " initialize plugin
     try
         call s:Init(a:force)
+        if exists("a:1")
+            if a:1 =~# '^\%(syntax\|nomatch\)$'
+                let s:color_syntax = 1
+            elseif a:1 =~# '^\%(nosyntax\|match\)$'
+                let s:color_syntax = 0
+            endif
+        endif
     catch /nocolor/
         " nothing to do
         call s:Warn("Your terminal doesn't support colors or no colors". 
@@ -1604,6 +1615,18 @@ function! Colorizer#DoColor(force, line1, line2) "{{{1
         " Somehow, when performing above search, the pattern remains in the
         " search history and this can be disturbing, so delete it from there.
         call histdel('/', -1)
+    endif
+    if exists("s:color_syntax") && s:color_syntax
+        " convert matches into synatx highlighting, so TOhtml can display it
+        " correctly
+        for hi in getmatches()
+            if hi.group !~# '\x\{6\}'
+                continue
+            endif
+            exe "syn match" hi.group "excludenl /". hi.pattern. "/ display containedin=ALL"
+            " We have syntax highlighting, can clear the matching
+            call matchdelete(hi.id)
+        endfor
     endif
     call s:SaveRestoreOptions(0, save, [])
     call winrestview(_a)

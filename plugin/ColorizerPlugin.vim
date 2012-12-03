@@ -24,9 +24,14 @@ let g:loaded_colorizer = 1
 let s:cpo_save = &cpo
 set cpo&vim
 
+" helper functions "{{{1
+fu! ColorHiArgs(A,L,P)
+    return "syntax\nmatch\nnosyntax\nnomatch"
+endfu
+
 " define commands "{{{1
-command! -bang -range=%  ColorHighlight
-        \ :call Colorizer#DoColor(<q-bang>, <q-line1>, <q-line2>)
+command! -bang -range=%  -nargs=? -complete=custom,ColorHiArgs ColorHighlight
+        \ :call Colorizer#DoColor(<q-bang>, <q-line1>, <q-line2>, <q-args>)
 command! -bang -nargs=1  RGB2Xterm  
         \ :call Colorizer#RGB2Term(<q-args>)
 
