@@ -19,6 +19,7 @@ Contents                                                        *Colorizer*
                 1.4 :HSL2RGB.............................|:HSL2RGB|
                 1.5 :ColorContrast.......................|:ColorContrast|
                 1.6 :ColorSwapFgBg.......................|:ColorSwapFgBg|
+                1.7 :ColorToggle.........................|:ColorToggle|
         2.  Configuration................................|Colorizer-config|
                 2.1 Automatic loading....................|Colorizer-auto|
                 2.2 Automatically highlight filetypes....|Colorizer-hl-ft|
@@ -26,6 +27,7 @@ Contents                                                        *Colorizer*
                 2.4 Adjust the contrast..................|Colorizer-contrast|
                 2.5 Highlight colornames.................|Colorizer-hl-names|
                 2.6 Use X11 colornames...................|Colorizer-names|
+                2.7 Use syntax highlighting..............|Colorizer-syntax|
         3.  Colorizer Mappings...........................|Colorizer-maps|
         4.  Colorizer Tips...............................|Colorizer-tips|
         5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -57,10 +59,17 @@ matches in the file.
 This plugin defines the following commands:
 
                                                               *:ColorHighlight*
-:[range]ColorHighlight[!]   Scan the lines given by [range] for color codes
-                            names and highlight those. If [range] is omitted,
-                            the whole file will be scanned. If the ! is used,
-                            the plugin will redefine all highlighting groups.
+:[range]ColorHighlight[!] [args]
+
+Scan the lines given by [range] for color codes names and highlight those. If
+[range] is omitted, the whole file will be scanned. If the ! is used, the
+plugin will redefine all highlighting groups.
+
+[args] can by any of "syntax" or "match". Syntax means to convert the
+highlighting to syntax highlighting. This is useful, so a plugin like
+|2html.vim| can convert the colors correctly to website. The default is
+"match", which means to use the |matchadd()| function. (Prepending a "no" is
+allowed, to disable that setting and use the opposite).
 
                                                                  *:ColorClear*
 :ColorClear                 Turn off Color highlighting.
@@ -72,7 +81,7 @@ This plugin defines the following commands:
                             format #RRGGBB (the hex format of the colors reg,
                             green and blue the '#' is optional or
                             alternatively like rgb(X,X,X)
-                            
+
                             Uses the number of colors your terminal is capable
                             to handle (or 256 colors for gVim).
 
@@ -95,7 +104,9 @@ This plugin defines the following commands:
                             highlight the foreground color back to normal
                             forground background color.
 
-
+                                                               *:ColorToggle*
+:ColorToggle                Switch between highlighting colors and no
+                            highlighting.
 
 ==============================================================================
 2 Colorizer Configuration                                   *Colorizer-config*
@@ -172,6 +183,23 @@ the CSS Specification. To use the X11 color names, set the variable
     let g:colorizer_x11_names = 1
 <
 
+2.7 Use syntax highlighting                                     *Colorizer-syntax*
+---------------------------
+
+The plugin by default uses the |matchadd()| functions for highlighting colors
+on the fly. Unfortunately, this is a problem, if you want to have the result
+successfully transformed to html file with the |2html.vim| plugin. Therefore,
+the Colorizer plugin can also convert the highlighting to correct syntax
+highlighting. Use either the >
+
+    :ColorHighlight syntax
+<
+command (see |:ColorHighlight|) or set the variable 'g:colorizer_syntax' to 1,
+e.g. in your |.vimrc| put >
+
+    let g:colorizer_syntax = 1
+<
+
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
 ==============================================================================
@@ -238,7 +266,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 
 0.8: (unreleased) {{{1
 - https://github.com/chrisbra/color_highlight/issues/13 (colorizing should not
-  stop at word-boundaries
+  stop at word-boundaries, reported by teschmitz, thanks!)
+- https://github.com/chrisbra/color_highlight/issues/14 (convert highlighting
+  to syntax groups, so TOhtml works, reported by teschmitz, thanks!)
 
 0.7: Jul 25, 2012 {{{1
 - Highlight rgb colors with whitespace after comma (reported by sergey-vlasov

@@ -916,9 +916,11 @@ function! s:DidColor(clr, pat) "{{{1
 endfu
 
 function! s:DoHlGroup(clr) "{{{1
+    let group = 'Color_'. a:clr
     if !s:force_hl 
-        let syn = synIDattr(hlID(a:clr), 'fg')
+        let syn = synIDattr(hlID(group), 'fg')
         if !empty(syn) && syn > -1
+            " highlighting already exists
             return
         endif
     endif
@@ -934,7 +936,7 @@ function! s:DoHlGroup(clr) "{{{1
         let bg  = t
         unlet t
     endif
-    let hi  = printf('hi %s guifg=#%s', clr, fg)
+    let hi  = printf('hi %s guifg=#%s', group, fg)
     let hi .= printf(' guibg=%s', (bg != 'NONE' ? '#'.bg : bg))
     if !has("gui_running")
         let fg = s:Rgb2xterm(fg)
@@ -953,12 +955,13 @@ function! s:DoHlGroup(clr) "{{{1
 endfunction
 
 function! s:SetMatcher(clr, pattern) "{{{1
+    let clr = 'Color_'. a:clr
     call s:DoHlGroup(a:clr)
-    if s:DidColor(a:clr, a:pattern)
+    if s:DidColor(clr, a:pattern)
         return
     endif
     " let 'hls' overrule our syntax highlighting
-    call matchadd(a:clr, a:pattern, -1)
+    call matchadd(clr, a:pattern, -1)
     call add(s:match_list, a:pattern)
 endfunction
 
@@ -1147,7 +1150,7 @@ endfunction
 
 function! s:GetMatchList() "{{{1
     " this is buffer-local!
-    return filter(getmatches(), 'v:val.group =~ ''^\x\{6}$''')
+    return filter(getmatches(), 'v:val.group =~ ''^Color_\x\{6}$''')
 endfunction
 
 function! s:Init(...) "{{{1
@@ -1222,6 +1225,8 @@ function! s:Init(...) "{{{1
 
     if exists("g:colorizer_syntax") && g:colorizer_syntax
         let s:color_syntax = 1
+    else
+        let s:color_syntax = 0
     endif
 
     if !s:force_hl && s:old_fgcontrast != g:colorizer_fgcontrast
@@ -1522,6 +1527,25 @@ function! s:PrepareHSLArgs(list) "{{{1
     let hsl[2] = (matchstr(hsl[2], '\d\+') + 0.0)/100
     return s:HSL2RGB(hsl[0], hsl[1], hsl[2])
 endfu
+function! s:SyntaxMatcher(enable) "{{{1
+    let did_clean = {}
+    for hi in s:GetMatchList()
+        if !get(did_clean, hi.group, 0)
+            let did_clean[hi.group] = 1
+            exe "sil! syn clear" hi.group
+        endif
+        if a:enable
+            exe "syn match" hi.group "excludenl /". hi.pattern. "/ display containedin=ALL"
+            " We have syntax highlighting, can clear the matching
+            " ignore errors (just in case)
+            sil! call matchdelete(hi.id)
+        endif
+    endfor
+"    if a:enable
+"        unlet s:match_list
+"    endif
+endfu
+
 function! Colorizer#ColorToggle() "{{{1
     if !exists("s:match_list") || empty(s:match_list)
         call Colorizer#DoColor(0, 1, line('$'))
@@ -1541,12 +1565,8 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " initialize plugin
     try
         call s:Init(a:force)
-        if exists("a:1") && !empty(a:1)
-            if a:1 =~# '^\%(syntax\|nomatch\)$'
-                let s:color_syntax = 1
-            elseif a:1 =~# '^\%(nosyntax\|match\)$'
-                let s:color_syntax = 0
-            endif
+        if exists("a:1")
+            let s:color_syntax = ( a:1 =~# '^\%(syntax\|nomatch\)$' )
         endif
     catch /nocolor/
         " nothing to do
@@ -1616,21 +1636,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         " search history and this can be disturbing, so delete it from there.
         call histdel('/', -1)
     endif
-    if exists("s:color_syntax") && s:color_syntax
-        " convert matches into synatx highlighting, so TOhtml can display it
-        " correctly
-        for hi in getmatches()
-            if hi.group !~# '\x\{6\}'
-                continue
-            endif
-            " Clear highlighting so we don't define them several times
-            " syntax group might not yet exists, so ignore errors
-            exe "sil! syn clear" hi.group
-            exe "syn match" hi.group "excludenl /". hi.pattern. "/ display containedin=ALL"
-            " We have syntax highlighting, can clear the matching
-            call matchdelete(hi.id)
-        endfor
-    endif
+    " convert matches into synatx highlighting, so TOhtml can display it
+    " correctly
+    call s:SyntaxMatcher(s:color_syntax)
     call s:SaveRestoreOptions(0, save, [])
     call winrestview(_a)
 endfu

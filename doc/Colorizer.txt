@@ -19,6 +19,7 @@ Contents                                                        *Colorizer*
                 1.4 :HSL2RGB.............................|:HSL2RGB|
                 1.5 :ColorContrast.......................|:ColorContrast|
                 1.6 :ColorSwapFgBg.......................|:ColorSwapFgBg|
+                1.7 :ColorToggle.........................|:ColorToggle|
         2.  Configuration................................|Colorizer-config|
                 2.1 Automatic loading....................|Colorizer-auto|
                 2.2 Automatically highlight filetypes....|Colorizer-hl-ft|
@@ -103,7 +104,9 @@ allowed, to disable that setting and use the opposite).
                             highlight the foreground color back to normal
                             forground background color.
 
-
+                                                               *:ColorToggle*
+:ColorToggle                Switch between highlighting colors and no
+                            highlighting.
 
 ==============================================================================
 2 Colorizer Configuration                                   *Colorizer-config*
