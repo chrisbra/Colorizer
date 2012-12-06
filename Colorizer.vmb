@@ -1556,7 +1556,7 @@ function! s:PreviewColorHex(match) "{{{1
             let color = list[idx]
         endif
     endif
-    call s:SetMatcher(color, '#'.pattern.'\c')
+    call s:SetMatcher(color, '#'.pattern.'\%(\>\|[-_]\)\@=\c')
     return a:match
 endfunction
 
