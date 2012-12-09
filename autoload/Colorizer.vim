@@ -1565,7 +1565,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " initialize plugin
     try
         call s:Init(a:force)
-        if exists("a:1")
+        if exists("a:1") && !empty(a:1)
             let s:color_syntax = ( a:1 =~# '^\%(syntax\|nomatch\)$' )
         endif
     catch /nocolor/
