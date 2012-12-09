@@ -1139,7 +1139,7 @@ function! s:PreviewColorHex(match) "{{{1
             let color = list[idx]
         endif
     endif
-    call s:SetMatcher(color, '#'.pattern.'\%(\>\|[-_]\)\@=\c')
+    call s:SetMatcher(color, s:hex_pattern[0]. pattern. s:hex_pattern[2])
     return a:match
 endfunction
 
@@ -1261,6 +1261,13 @@ function! s:Init(...) "{{{1
     elseif s:force_hl
         call Colorizer#ColorOff()
     endif
+
+    if !exists("g:colorizer_hex_pattern")
+        let s:hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@=/']
+    else
+        let s:hex_pattern = g:colorizer_hex_pattern
+    endif
+
     if has("gui_running") || &t_Co >= 8 || s:HasColorPattern()
 	" The list of available match() patterns
 	let s:match_list = s:GetMatchList()
@@ -1599,9 +1606,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "
     " Hexcodes should be word-bounded, but could also be delimited by [-_], so
     " allow those to delimit the end of the pattern
-    let cmd = printf(':sil %d,%ds/#\%(\x\{3}\|\x\{6}\)\%(\>\|[-_]\)\@=/'.
+    let cmd = printf(':sil %d,%ds/%s/'.
         \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
-        \ n_flag ? 'n' : '')
+        \ join(s:hex_pattern, ''), n_flag ? 'n' : '')
     exe cmd
     if &t_Co > 16 || has("gui_running")
     " Also support something like

@@ -28,6 +28,7 @@ Contents                                                        *Colorizer*
                 2.5 Highlight colornames.................|Colorizer-hl-names|
                 2.6 Use X11 colornames...................|Colorizer-names|
                 2.7 Use syntax highlighting..............|Colorizer-syntax|
+                2.8 Specify patterns to highlight........|Colorizer-pattern|
         3.  Colorizer Mappings...........................|Colorizer-maps|
         4.  Colorizer Tips...............................|Colorizer-tips|
         5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -198,6 +199,28 @@ command (see |:ColorHighlight|) or set the variable 'g:colorizer_syntax' to 1,
 e.g. in your |.vimrc| put >
 
     let g:colorizer_syntax = 1
+<
+
+2.8 Specify pattern to highlight                         *Colorizer-pattern*
+--------------------------------
+
+By default, Colorizer detects the following patterns and highlight them as hex
+colors (for better readibility separated into 3 parts by whitespace): >
+
+        #	%(\x\{3}\|\x\{6}\)	\%(\>\|[-_]\)\@=/'
+<
+
+This means it always looks for a '#' followed by either a 3 or 6 hexadecimal
+digits denoting the RGB hex color codes, followed by either the word-boundary
+(|/\>|) or be either a hyphen or a underscore. But highlighted will be only
+the first and middle part (e.g. the RGB color codes).
+
+You can of course specify a different pattern for your needs by setting the
+g:colorizer_hex_pattern variable. e.g. to display '#RRGGBB' and have all of it
+highlighted, use >
+
+        let g:colorizer_hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '']
+
 <
 
 ==============================================================================
