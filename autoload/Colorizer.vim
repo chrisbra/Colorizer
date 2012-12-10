@@ -1263,7 +1263,7 @@ function! s:Init(...) "{{{1
     endif
 
     if !exists("g:colorizer_hex_pattern")
-        let s:hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@=/']
+        let s:hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@=']
     else
         let s:hex_pattern = g:colorizer_hex_pattern
     endif
