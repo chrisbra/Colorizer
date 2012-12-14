@@ -6,10 +6,10 @@ plugin/ColorizerPlugin.vim	[[[1
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
-" Last Change: Wed, 25 Jul 2012 22:37:23 +0200
+" Last Change: Fri, 14 Dec 2012 22:34:20 +0100
 " Licence:      Vim License (see :h License)
-" Version:      0.7
-" GetLatestVimScripts: 3963 7 :AutoInstall: Colorizer.vim
+" Version:      0.8
+" GetLatestVimScripts: 3963 8 :AutoInstall: Colorizer.vim
 "
 " This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
 " Changes made: - make terminal colors work more reliably and with all
@@ -82,11 +82,11 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-330
+353
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
-Version:    0.7 Wed, 25 Jul 2012 22:37:23 +0200
+Version:    0.8 Fri, 14 Dec 2012 22:34:20 +0100
 Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
             The VIM LICENSE applies to Colorizer.txt
             (see |copyright|) except use NrrwRgnPlugin instead of "Vim".
@@ -113,6 +113,7 @@ Contents                                                        *Colorizer*
                 2.5 Highlight colornames.................|Colorizer-hl-names|
                 2.6 Use X11 colornames...................|Colorizer-names|
                 2.7 Use syntax highlighting..............|Colorizer-syntax|
+                2.8 Specify patterns to highlight........|Colorizer-pattern|
         3.  Colorizer Mappings...........................|Colorizer-maps|
         4.  Colorizer Tips...............................|Colorizer-tips|
         5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -285,6 +286,28 @@ e.g. in your |.vimrc| put >
     let g:colorizer_syntax = 1
 <
 
+2.8 Specify pattern to highlight                         *Colorizer-pattern*
+--------------------------------
+
+By default, Colorizer detects the following patterns and highlight them as hex
+colors (for better readibility separated into 3 parts by whitespace): >
+
+        #	%(\x\{3}\|\x\{6}\)	\%(\>\|[-_]\)\@=/'
+<
+
+This means it always looks for a '#' followed by either a 3 or 6 hexadecimal
+digits denoting the RGB hex color codes, followed by either the word-boundary
+(|/\>|) or be either a hyphen or a underscore. But highlighted will be only
+the first and middle part (e.g. the RGB color codes).
+
+You can of course specify a different pattern for your needs by setting the
+g:colorizer_hex_pattern variable. e.g. to display '#RRGGBB' and have all of it
+highlighted, use >
+
+        let g:colorizer_hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '']
+
+<
+
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
 ==============================================================================
@@ -349,7 +372,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
-0.8: (unreleased) {{{1
+0.8: Dec 14, 2012 {{{1
 - https://github.com/chrisbra/color_highlight/issues/13 (colorizing should not
   stop at word-boundaries, reported by teschmitz, thanks!)
 - https://github.com/chrisbra/color_highlight/issues/14 (convert highlighting
@@ -414,14 +437,14 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-1802
+1809
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
-" Last Change: Wed, 25 Jul 2012 22:37:23 +0200
+" Last Change: Fri, 14 Dec 2012 22:34:20 +0100
 " Licence:      Vim License (see :h License)
-" Version:      0.7
-" GetLatestVimScripts: 3963 7 :AutoInstall: Colorizer.vim
+" Version:      0.8
+" GetLatestVimScripts: 3963 8 :AutoInstall: Colorizer.vim
 "
 " This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
 " Changes made: - make terminal colors work more reliably and with all
@@ -1556,7 +1579,7 @@ function! s:PreviewColorHex(match) "{{{1
             let color = list[idx]
         endif
     endif
-    call s:SetMatcher(color, '#'.pattern.'\%(\>\|[-_]\)\@=\c')
+    call s:SetMatcher(color, s:hex_pattern[0]. pattern. s:hex_pattern[2])
     return a:match
 endfunction
 
@@ -1678,6 +1701,13 @@ function! s:Init(...) "{{{1
     elseif s:force_hl
         call Colorizer#ColorOff()
     endif
+
+    if !exists("g:colorizer_hex_pattern")
+        let s:hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@=']
+    else
+        let s:hex_pattern = g:colorizer_hex_pattern
+    endif
+
     if has("gui_running") || &t_Co >= 8 || s:HasColorPattern()
 	" The list of available match() patterns
 	let s:match_list = s:GetMatchList()
@@ -2016,9 +2046,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "
     " Hexcodes should be word-bounded, but could also be delimited by [-_], so
     " allow those to delimit the end of the pattern
-    let cmd = printf(':sil %d,%ds/#\%(\x\{3}\|\x\{6}\)\%(\>\|[-_]\)\@=/'.
+    let cmd = printf(':sil %d,%ds/%s/'.
         \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
-        \ n_flag ? 'n' : '')
+        \ join(s:hex_pattern, ''), n_flag ? 'n' : '')
     exe cmd
     if &t_Co > 16 || has("gui_running")
     " Also support something like

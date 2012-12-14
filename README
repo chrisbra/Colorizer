@@ -1,7 +1,7 @@
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
-Version:    0.7 Wed, 25 Jul 2012 22:37:23 +0200
+Version:    0.8 Fri, 14 Dec 2012 22:34:20 +0100
 Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
             The VIM LICENSE applies to Colorizer.txt
             (see |copyright|) except use NrrwRgnPlugin instead of "Vim".
@@ -28,6 +28,7 @@ Contents                                                        *Colorizer*
                 2.5 Highlight colornames.................|Colorizer-hl-names|
                 2.6 Use X11 colornames...................|Colorizer-names|
                 2.7 Use syntax highlighting..............|Colorizer-syntax|
+                2.8 Specify patterns to highlight........|Colorizer-pattern|
         3.  Colorizer Mappings...........................|Colorizer-maps|
         4.  Colorizer Tips...............................|Colorizer-tips|
         5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -200,6 +201,28 @@ e.g. in your |.vimrc| put >
     let g:colorizer_syntax = 1
 <
 
+2.8 Specify pattern to highlight                         *Colorizer-pattern*
+--------------------------------
+
+By default, Colorizer detects the following patterns and highlight them as hex
+colors (for better readibility separated into 3 parts by whitespace): >
+
+        #	%(\x\{3}\|\x\{6}\)	\%(\>\|[-_]\)\@=/'
+<
+
+This means it always looks for a '#' followed by either a 3 or 6 hexadecimal
+digits denoting the RGB hex color codes, followed by either the word-boundary
+(|/\>|) or be either a hyphen or a underscore. But highlighted will be only
+the first and middle part (e.g. the RGB color codes).
+
+You can of course specify a different pattern for your needs by setting the
+g:colorizer_hex_pattern variable. e.g. to display '#RRGGBB' and have all of it
+highlighted, use >
+
+        let g:colorizer_hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '']
+
+<
+
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
 ==============================================================================
@@ -264,7 +287,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
-0.8: (unreleased) {{{1
+0.8: Dec 14, 2012 {{{1
 - https://github.com/chrisbra/color_highlight/issues/13 (colorizing should not
   stop at word-boundaries, reported by teschmitz, thanks!)
 - https://github.com/chrisbra/color_highlight/issues/14 (convert highlighting
