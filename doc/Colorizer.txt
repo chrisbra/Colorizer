@@ -64,7 +64,8 @@ This plugin defines the following commands:
 
 Scan the lines given by [range] for color codes names and highlight those. If
 [range] is omitted, the whole file will be scanned. If the ! is used, the
-plugin will redefine all highlighting groups.
+plugin will redefine all highlighting groups. If ! is not used, it will also
+skip patterns, that would take too long and make Vim unresponsive.
 
 [args] can by any of "syntax" or "match". Syntax means to convert the
 highlighting to syntax highlighting. This is useful, so a plugin like

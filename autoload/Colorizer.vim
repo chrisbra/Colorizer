@@ -1153,6 +1153,10 @@ function! s:GetMatchList() "{{{1
     return filter(getmatches(), 'v:val.group =~ ''^Color_\x\{6}$''')
 endfunction
 
+function! s:CheckTimeout(pattern, force) "{{{1
+    return (!empty(a:force) || search(a:pattern, 'nW', '', 100))
+endfunction
+
 function! s:Init(...) "{{{1
     let s:force_hl = !empty(a:1)
 
@@ -1606,10 +1610,12 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "
     " Hexcodes should be word-bounded, but could also be delimited by [-_], so
     " allow those to delimit the end of the pattern
-    let cmd = printf(':sil %d,%ds/%s/'.
-        \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
-        \ join(s:hex_pattern, ''), n_flag ? 'n' : '')
-    exe cmd
+    if (s:CheckTimeout(join(s:hex_pattern, ''), a:force))
+        let cmd = printf(':sil %d,%ds/%s/'.
+            \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
+            \ join(s:hex_pattern, ''), n_flag ? 'n' : '')
+        exe cmd
+    endif
     if &t_Co > 16 || has("gui_running")
     " Also support something like
     " CSS rgb(255,0,0)
@@ -1622,22 +1628,30 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
         let pat = '\s*(\s*\%%(\d\+%%\?[^0-9)]*\)\{3,4})'
-        let cmd = printf(':sil %d,%ds/rgba\='. pat. '/'. 
-            \ '\=s:ColorRGBValues(submatch(0))/egi%s', a:line1, a:line2,
-            \ n_flag ? 'n' : '')
-        exe cmd
+        " Check, the pattern isn't too costly...
+        if s:CheckTimeout(printf('%srgba\='.pat, ''), a:force)
+            let cmd = printf(':sil %d,%ds/rgba\='. pat. '/'. 
+                \ '\=s:ColorRGBValues(submatch(0))/egi%s', a:line1, a:line2,
+                \ n_flag ? 'n' : '')
+            exe cmd
+        endif
         " highlight hsl(X,X,X) values
-        let cmd = printf(':sil %d,%ds/hsla\='. pat. '/'.
-            \'\=s:ColorHSLValues(submatch(0))/egi%s', a:line1, a:line2,
-            \ n_flag ? 'n' : '')
-        exe cmd
+        " Check, the pattern isn't too costly...
+        if s:CheckTimeout(printf('%shsla\='.pat,''), a:force)
+            let cmd = printf(':sil %d,%ds/hsla\='. pat. '/'.
+                \'\=s:ColorHSLValues(submatch(0))/egi%s', a:line1, a:line2,
+                \ n_flag ? 'n' : '')
+            exe cmd
+        endif
     endif
     " highlight Colornames
-    if exists("s:color_names") && s:color_names
+    " only highlight, if either force is given, or the pattern matches within
+    " 100ms, so this won't slow down loading too long
+    let colornames = s:GetColorPattern(keys(s:colors))
+    if (exists("s:color_names") && s:color_names) && s:CheckTimeout(colornames, a:force)
         let s_cmd =
             \ printf(':sil %d,%ds/%s/\=s:PreviewColorName(submatch(0))/egi%s',
-            \ a:line1, a:line2, s:GetColorPattern(keys(s:colors)),
-            \ n_flag ? 'n' : '')
+            \ a:line1, a:line2, colornames, n_flag ? 'n' : '')
         exe s_cmd
         " Somehow, when performing above search, the pattern remains in the
         " search history and this can be disturbing, so delete it from there.
