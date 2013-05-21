@@ -1512,7 +1512,7 @@ endfu
 
 function! s:HasColorPattern() "{{{1
     let _pos    = winsaveview()
-    let pattern = [ '#\x\{3,6}\>', 'rgba\=(\s*\%(\d\+%\?\D*\)\{3,4})',
+    let pattern = [ '#\x\{3,6}\>', 'rgba\=(\s*\%(\d\+%\?\D*\)\{3}\%(\d\%(.\d\+\)\?\)\?)',
                 \ 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
                 \ s:GetColorPattern(keys(s:colors))]
     call cursor(1,1)
@@ -1620,6 +1620,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " Also support something like
     " CSS rgb(255,0,0)
     "     rgba(255,0,0,1)
+    "     rgba(255,0,0,0.8)
     "     rgb(10%,0,100%)
     "     hsl(0,100%,50%) -> hsl2rgb conversion RED
     "     hsla(120,100%,50%,1) Lime
@@ -1627,7 +1628,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-        let pat = '\s*(\s*\%%(\d\+%%\?[^0-9)]*\)\{3,4})'
+        let pat = '\s*(\s*\%%(\d\+%%\?[^0-9)]*\)\{3}\%(\d\%(\.\d\+\)\?\)\?)'
         " Check, the pattern isn't too costly...
         if s:CheckTimeout(printf('%srgba\='.pat, ''), a:force)
             let cmd = printf(':sil %d,%ds/rgba\='. pat. '/'. 
