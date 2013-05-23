@@ -1762,9 +1762,11 @@ function! Colorizer#ColorWinEnter() "{{{1
         return
     else
         let g:colorizer_only_unfolded = 1
-        call Colorizer#DoColor('', line('.'),line('.'))
+        let _c = getpos('.')
+        call Colorizer#DoColor('', 1, line('$'))
         let b:Colorizer_changedtick = b:changedtick
         unlet! g:colorizer_only_unfolded
+        call setpos('.', _c)
     endif
 endfu
 
