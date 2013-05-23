@@ -1154,7 +1154,7 @@ function! s:GetMatchList() "{{{1
 endfunction
 
 function! s:CheckTimeout(pattern, force) "{{{1
-    return (!empty(a:force) || search(a:pattern, 'nW', '', 100))
+    return (!empty(a:force) || search(a:pattern, 'cnW', '', 100))
 endfunction
 
 function! s:Init(...) "{{{1
@@ -1705,6 +1705,7 @@ function! Colorizer#AutoCmds(enable) "{{{1
             au GUIEnter,BufWinEnter * silent call
                         \ Colorizer#DoColor('', 1, line('$'))
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
+            au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
         aug END
     else
         aug Colorizer
@@ -1720,6 +1721,7 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
             au!
             au CursorHold,CursorHoldI,InsertLeave <buffer> silent call
                         \ Colorizer#DoColor('', line('.'), line('.'))
+            au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine()
             au GUIEnter,ColorScheme <buffer> silent
                         \ call Colorizer#DoColor('!', 1, line('$'))
         aug END
@@ -1737,6 +1739,16 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
             au!
         aug END
         aug! FTColorizer
+    endif
+endfu
+
+function! Colorizer#ColorLine() "{{{1
+    if get(b:, 'Colorizer_changedtick', 0) == b:changedtick
+        " nothing to do
+        return
+    else
+        call Colorizer#DoColor('', line('.'),line('.'))
+        let b:Colorizer_changedtick = b:changedtick
     endif
 endfu
 
