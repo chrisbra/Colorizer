@@ -1351,9 +1351,13 @@ endfunction
 function! s:ApplyAlphaValue(rgb) "{{{1
     " Add Alpha Value to RGB values
     let bg = synIDattr(synIDtrans(hlID("Normal")), "bg")
-    if empty(bg) || bg !~? '#\x\{6}' || !has('float')
+    if empty(bg) || !has('float')
         return a:rgb[0:3]
     else
+        if (bg =~? '\d\{1,3}') && bg < 256
+            " Xterm color code
+            let bg = '.'.join(s:colortable[bg])
+        endif
         let rgb = []
         let bg_ = split(bg[1:], '..\zs')
         let alpha = str2float(a:rgb[3])
