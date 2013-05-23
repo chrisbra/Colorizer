@@ -1227,11 +1227,7 @@ function! s:Init(...) "{{{1
         let s:color_names = 1
     endif
 
-    if exists("g:colorizer_syntax") && g:colorizer_syntax
-        let s:color_syntax = 1
-    else
-        let s:color_syntax = 0
-    endif
+    let s:color_syntax = get(g:, 'colorizer_syntax', 0)
 
     if !s:force_hl && s:old_fgcontrast != g:colorizer_fgcontrast
                 \ && s:swap_fg_bg == 0
@@ -1290,6 +1286,7 @@ function! s:Init(...) "{{{1
         else
             let s:colors = s:xterm_8colors
         endif
+        let s:colornamepattern = s:GetColorPattern(keys(s:colors))
         call map(s:match_list, 'v:val.pattern')
     else
         throw "nocolor"
@@ -1512,19 +1509,24 @@ endfu
 
 function! s:HasColorPattern() "{{{1
     let _pos    = winsaveview()
-    let pattern = [ '#\x\{3,6}\>', 'rgba\=(\s*\%(\d\+%\?\D*\)\{3}\%(\d\%(.\d\+\)\?\)\?)',
-                \ 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
-                \ s:GetColorPattern(keys(s:colors))]
-    call cursor(1,1)
-    for pat in pattern
-        let found = search(pat, 'cnW')
-        if found
-            break
+    try
+        if !exists("s:colornamepattern")
+            let s:colornamepattern = s:GetColorPattern(keys(s:colors))
         endif
-    endfor
+        let pattern = [ '#\x\{3,6}\>', 'rgba\=(\s*\%(\d\+%\?\D*\)\{3}\%(\d\%(.\d\+\)\?\)\?)',
+                    \ 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})', s:colornamepattern]
+        call cursor(1,1)
+        for pat in pattern
+            let found = search(pat, 'cnW')
+            if found
+                return found
+            endif
+        endfor
+        return found
 
-    call winrestview(_pos)
-    return found
+    finally
+        call winrestview(_pos)
+    endtry
 endfunction
 
 function! s:PrepareHSLArgs(list) "{{{1
@@ -1648,11 +1650,10 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " highlight Colornames
     " only highlight, if either force is given, or the pattern matches within
     " 100ms, so this won't slow down loading too long
-    let colornames = s:GetColorPattern(keys(s:colors))
-    if (exists("s:color_names") && s:color_names) && s:CheckTimeout(colornames, a:force)
+    if (exists("s:color_names") && s:color_names) && s:CheckTimeout(s:colornamepattern, a:force)
         let s_cmd =
             \ printf(':sil %d,%ds/%s/\=s:PreviewColorName(submatch(0))/egi%s',
-            \ a:line1, a:line2, colornames, n_flag ? 'n' : '')
+            \ a:line1, a:line2, s:colornamepattern, n_flag ? 'n' : '')
         exe s_cmd
         " Somehow, when performing above search, the pattern remains in the
         " search history and this can be disturbing, so delete it from there.
