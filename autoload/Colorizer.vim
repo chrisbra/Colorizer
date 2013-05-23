@@ -1228,6 +1228,11 @@ function! s:Init(...) "{{{1
     endif
 
     let s:color_syntax = get(g:, 'colorizer_syntax', 0)
+    if get(g:, 'colorizer_only_unfolded', 0) && exists(":foldd") == 1
+        let s:color_unfolded = 'foldd '
+    else
+        let s:color_unfolded = ''
+    endif
 
     if !s:force_hl && s:old_fgcontrast != g:colorizer_fgcontrast
                 \ && s:swap_fg_bg == 0
@@ -1267,6 +1272,12 @@ function! s:Init(...) "{{{1
     else
         let s:hex_pattern = g:colorizer_hex_pattern
     endif
+
+    let s:color_patterns = { 'hex': join(s:hex_pattern, ''),
+        \ 'rgb': 'rgb(\s*\%(\d\+%\?\D*\)\{3})',
+        \ 'rgba': 'rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\%(.\d\+\)\?\)\|1\))',
+        \ 'hsla': 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})'}
+
 
     if has("gui_running") || &t_Co >= 8 || s:HasColorPattern()
 	" The list of available match() patterns
@@ -1513,16 +1524,14 @@ function! s:HasColorPattern() "{{{1
         if !exists("s:colornamepattern")
             let s:colornamepattern = s:GetColorPattern(keys(s:colors))
         endif
-        let pattern = [ '#\x\{3,6}\>', 'rgba\=(\s*\%(\d\+%\?\D*\)\{3}\%(\d\%(.\d\+\)\?\)\?)',
-                    \ 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})', s:colornamepattern]
+        let pattern = values(s:color_patterns) + [s:colornamepattern]
         call cursor(1,1)
         for pat in pattern
-            let found = search(pat, 'cnW')
-            if found
-                return found
+            if s:CheckTimeout(pat, '')
+                return 1
             endif
         endfor
-        return found
+        return 0
 
     finally
         call winrestview(_pos)
@@ -1612,10 +1621,10 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "
     " Hexcodes should be word-bounded, but could also be delimited by [-_], so
     " allow those to delimit the end of the pattern
-    if (s:CheckTimeout(join(s:hex_pattern, ''), a:force))
-        let cmd = printf(':sil %d,%ds/%s/'.
+    if (s:CheckTimeout(s:color_patterns.hex, a:force))
+        let cmd = printf(':sil %d,%d%ss/%s/'.
             \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
-            \ join(s:hex_pattern, ''), n_flag ? 'n' : '')
+            \ s:color_unfolded, s:color_patterns.hex, n_flag ? 'n' : '')
         exe cmd
     endif
     if &t_Co > 16 || has("gui_running")
@@ -1630,30 +1639,32 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-        let pat = '\s*(\s*\%%(\d\+%%\?[^0-9)]*\)\{3}\%(\d\%(\.\d\+\)\?\)\?)'
-        " Check, the pattern isn't too costly...
-        if s:CheckTimeout(printf('%srgba\='.pat, ''), a:force)
-            let cmd = printf(':sil %d,%ds/rgba\='. pat. '/'. 
-                \ '\=s:ColorRGBValues(submatch(0))/egi%s', a:line1, a:line2,
-                \ n_flag ? 'n' : '')
-            exe cmd
-        endif
+        for pat in [ s:color_patterns.rgb, s:color_patterns.rgba]
+            " Check, the pattern isn't too costly...
+            if s:CheckTimeout(pat, a:force)
+                let cmd = printf(':sil %d,%ds/%s/'.
+                    \ '\=s:ColorRGBValues(submatch(0))/egi%s', a:line1, a:line2,
+                    \ pat, n_flag ? 'n' : '')
+                exe cmd
+            endif
+        endfor
         " highlight hsl(X,X,X) values
         " Check, the pattern isn't too costly...
-        if s:CheckTimeout(printf('%shsla\='.pat,''), a:force)
-            let cmd = printf(':sil %d,%ds/hsla\='. pat. '/'.
-                \'\=s:ColorHSLValues(submatch(0))/egi%s', a:line1, a:line2,
-                \ n_flag ? 'n' : '')
-            exe cmd
-        endif
+        for pat in [ s:color_patterns.hsla ]
+            if s:CheckTimeout(pat, a:force)
+                let cmd = printf(':sil %d,%d%ss/%s/'.
+                    \'\=s:ColorHSLValues(submatch(0))/egi%s', a:line1, a:line2,
+                    \ s:color_unfolded, pat, n_flag ? 'n' : '')
+                exe cmd
+            endif
+        endfor
     endif
     " highlight Colornames
     " only highlight, if either force is given, or the pattern matches within
     " 100ms, so this won't slow down loading too long
     if (exists("s:color_names") && s:color_names) && s:CheckTimeout(s:colornamepattern, a:force)
-        let s_cmd =
-            \ printf(':sil %d,%ds/%s/\=s:PreviewColorName(submatch(0))/egi%s',
-            \ a:line1, a:line2, s:colornamepattern, n_flag ? 'n' : '')
+        let s_cmd = printf(':sil %d,%d%ss/%s/\=s:PreviewColorName(submatch(0))/egi%s',
+            \ a:line1, a:line2, s:color_unfolded, s:colornamepattern, n_flag ? 'n' : '')
         exe s_cmd
         " Somehow, when performing above search, the pattern remains in the
         " search history and this can be disturbing, so delete it from there.
@@ -1701,9 +1712,11 @@ function! Colorizer#AutoCmds(enable) "{{{1
         aug Colorizer
             au!
             au CursorHold,CursorHoldI,InsertLeave * silent call
-                        \ Colorizer#DoColor('', line('.'), line('.'))
-            au GUIEnter,BufWinEnter * silent call
-                        \ Colorizer#DoColor('', 1, line('$'))
+                        \ Colorizer#DoColor('', line('w0'), line('w$'))
+            "au GUIEnter,BufWinEnter * silent call
+            "            \ Colorizer#DoColor('', 1, line('$'))
+            au GUIEnter * silent call Colorizer#DoColor('!', 1, line('$'))
+            au BufWinEnter * silent call Colorizer#ColorWinEnter('', 1, line('$'))
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
             au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
         aug END
@@ -1720,7 +1733,7 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
         aug FTColorizer
             au!
             au CursorHold,CursorHoldI,InsertLeave <buffer> silent call
-                        \ Colorizer#DoColor('', line('.'), line('.'))
+                        \ Colorizer#DoColor('', line('w0'), line('w$'))
             au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine()
             au GUIEnter,ColorScheme <buffer> silent
                         \ call Colorizer#DoColor('!', 1, line('$'))
@@ -1739,6 +1752,19 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
             au!
         aug END
         aug! FTColorizer
+    endif
+endfu
+
+function! Colorizer#ColorWinEnter() "{{{1
+    " be fast!
+    if get(b:, 'Colorizer_changedtick', 0) == b:changedtick
+        " nothing to do
+        return
+    else
+        let g:colorizer_only_unfolded = 1
+        call Colorizer#DoColor('', line('.'),line('.'))
+        let b:Colorizer_changedtick = b:changedtick
+        unlet! g:colorizer_only_unfolded
     endif
 endfu
 
@@ -1828,8 +1854,6 @@ fu! Test2() "{{{2
     endfor
    return list
 endfu
-
-
 
 " Plugin folklore and Vim Modeline " {{{1
 let &cpo = s:cpo_save
