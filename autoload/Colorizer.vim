@@ -1348,6 +1348,37 @@ function! s:StripParentheses(val) "{{{1
     return split(matchstr(a:val, '^\(hsl\|rgb\)a\?\s*(\zs[^)]*\ze)'), '\s*,\s*')
 endfunction
 
+function! s:ApplyAlphaValue(rgb) "{{{1
+    " Add Alpha Value to RGB values
+    let bg = synIDattr(synIDtrans(hlID("Normal")), "bg")
+    if empty(bg) || bg !~? '#\x\{6}' || !has('float')
+        return a:rgb[0:3]
+    else
+        let rgb = []
+        let bg_ = split(bg[1:], '..\zs')
+        let alpha = str2float(a:rgb[3])
+        if alpha > 1
+            let alpha = 1 + 0.0
+        elseif alpha < 0
+            let alpha = 0 + 0.0
+        endif
+        let i = 0
+        for value in a:rgb[0:2]
+            let value += 0 " convert to nr
+            let value = float2nr(ceil(value * alpha) + ceil((bg_[i]+0)*(1-alpha)))
+            if value > 255
+                let value = 255
+            elseif value < 0
+                let value = 0
+            endif
+            call add(rgb, value)
+            let i+=1
+            unlet value " reset type of value
+        endfor
+        return rgb
+    endif
+endfunction
+
 function! s:ColorRGBValues(val) "{{{1
     if s:skip_comments &&
         \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
@@ -1359,9 +1390,6 @@ function! s:ColorRGBValues(val) "{{{1
     if empty(rgb)
         call s:Warn("Error in expression". a:val. "! Please report as bug.")
         return a:val
-    elseif len(rgb) == 4
-        " drop alpha channel
-        call remove(rgb, 3)
     endif
     for i in range(3)
         if rgb[i][-1:-1] == '%'
@@ -1376,6 +1404,11 @@ function! s:ColorRGBValues(val) "{{{1
             endif
         endif
     endfor
+    if len(rgb) == 4
+        " drop alpha channel
+        " call remove(rgb, 3)
+        let rgb = s:ApplyAlphaValue(rgb)
+    endif
     let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
     call s:SetMatcher(clr, a:val)
     return a:val
@@ -1610,7 +1643,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     let save = s:SaveRestoreOptions(1, {},
             \ ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
 
-    let n_flag = v:version > 703 || ( v:version == 703 && has("patch627"))
+    if !exists("n_flag")
+        let n_flag = v:version > 703 || ( v:version == 703 && has("patch627"))
+    endif
     " highlight Hex Codes:
     "
     " The :%s command is a lot faster than this:
@@ -1632,6 +1667,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " CSS rgb(255,0,0)
     "     rgba(255,0,0,1)
     "     rgba(255,0,0,0.8)
+    "     rgba(255,0,0,0.2)
     "     rgb(10%,0,100%)
     "     hsl(0,100%,50%) -> hsl2rgb conversion RED
     "     hsla(120,100%,50%,1) Lime
@@ -1718,7 +1754,9 @@ function! Colorizer#AutoCmds(enable) "{{{1
             au GUIEnter * silent call Colorizer#DoColor('!', 1, line('$'))
             au BufWinEnter * silent call Colorizer#ColorWinEnter('', 1, line('$'))
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
-            au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
+            if get(g:, 'colorizer_cursormoved', 0)
+                au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
+            endif
         aug END
     else
         aug Colorizer
