@@ -1274,7 +1274,7 @@ function! s:Init(...) "{{{1
     endif
 
     let s:color_patterns = { 'hex': join(s:hex_pattern, ''),
-        \ 'rgb': 'rgb(\s*\%(\d\+%\?\D*\)\{3})',
+        \ 'rgb': 'rgb(\s*\%(\d\+%\?[^)]*\)\{3})',
         \ 'rgba': 'rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\%(.\d\+\)\?\)\|1\))',
         \ 'hsla': 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})'}
 
