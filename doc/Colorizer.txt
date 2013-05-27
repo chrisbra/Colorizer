@@ -288,6 +288,12 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
+0.9 (unreleased): {{{1
+- https://github.com/chrisbra/color_highlight/issues/15 (rgba highlighting
+  didn't work for floating point value of alpha, reported by LiTuX.S, thanks!)
+- https://github.com/chrisbra/color_highlight/issues/16 (rgb() pattern did
+  match too much, reported by taecilla, thanks!)
+
 0.8: Dec 14, 2012 {{{1
 - https://github.com/chrisbra/color_highlight/issues/13 (colorizing should not
   stop at word-boundaries, reported by teschmitz, thanks!)
