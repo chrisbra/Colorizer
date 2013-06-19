@@ -4,7 +4,7 @@ Author:     Christian Brabandt <cb@256bit.org>
 Version:    0.8 Fri, 14 Dec 2012 22:34:20 +0100
 Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
             The VIM LICENSE applies to Colorizer.txt
-            (see |copyright|) except use NrrwRgnPlugin instead of "Vim".
+            (see |copyright|) except use ColorizerPlugin instead of "Vim".
             NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK.
 
 
@@ -64,7 +64,8 @@ This plugin defines the following commands:
 
 Scan the lines given by [range] for color codes names and highlight those. If
 [range] is omitted, the whole file will be scanned. If the ! is used, the
-plugin will redefine all highlighting groups.
+plugin will redefine all highlighting groups. If ! is not used, it will also
+skip patterns, that would take too long and make Vim unresponsive.
 
 [args] can by any of "syntax" or "match". Syntax means to convert the
 highlighting to syntax highlighting. This is useful, so a plugin like
@@ -286,6 +287,14 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 ==============================================================================
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
+
+0.9 (unreleased): {{{1
+- https://github.com/chrisbra/color_highlight/issues/15 (rgba highlighting
+  didn't work for floating point value of alpha, reported by LiTuX.S, thanks!)
+- https://github.com/chrisbra/color_highlight/issues/16 (rgb() pattern did
+  match too much, reported by taecilla, thanks!)
+- https://github.com/chrisbra/color_highlight/issues/19 (error on calling
+  ColorWinEnter() command, reported by wedgwood, thanks!)
 
 0.8: Dec 14, 2012 {{{1
 - https://github.com/chrisbra/color_highlight/issues/13 (colorizing should not
