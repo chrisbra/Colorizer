@@ -293,6 +293,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   didn't work for floating point value of alpha, reported by LiTuX.S, thanks!)
 - https://github.com/chrisbra/color_highlight/issues/16 (rgb() pattern did
   match too much, reported by taecilla, thanks!)
+- https://github.com/chrisbra/color_highlight/issues/19 (error on calling
+  ColorWinEnter() command, reported by wedgwood, thanks!)
 
 0.8: Dec 14, 2012 {{{1
 - https://github.com/chrisbra/color_highlight/issues/13 (colorizing should not
