@@ -4,7 +4,7 @@ Author:     Christian Brabandt <cb@256bit.org>
 Version:    0.8 Fri, 14 Dec 2012 22:34:20 +0100
 Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
             The VIM LICENSE applies to Colorizer.txt
-            (see |copyright|) except use NrrwRgnPlugin instead of "Vim".
+            (see |copyright|) except use ColorizerPlugin instead of "Vim".
             NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK.
 
 
