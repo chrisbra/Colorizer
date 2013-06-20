@@ -1756,7 +1756,7 @@ function! Colorizer#AutoCmds(enable) "{{{1
             "au GUIEnter,BufWinEnter * silent call
             "            \ Colorizer#DoColor('', 1, line('$'))
             au GUIEnter * silent call Colorizer#DoColor('!', 1, line('$'))
-            au BufWinEnter * silent call Colorizer#ColorWinEnter()
+            au WinEnter,BufWinEnter * silent call Colorizer#ColorWinEnter()
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
             if get(g:, 'colorizer_cursormoved', 0)
                 au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
@@ -1799,7 +1799,8 @@ endfu
 
 function! Colorizer#ColorWinEnter() "{{{1
     " be fast!
-    if get(b:, 'Colorizer_changedtick', 0) == b:changedtick
+    if get(b:, 'Colorizer_changedtick', 0) == b:changedtick &&
+                \ !empty(getmatches())
         " nothing to do
         return
     else
