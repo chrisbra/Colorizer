@@ -1154,7 +1154,7 @@ function! s:GetMatchList() "{{{1
 endfunction
 
 function! s:CheckTimeout(pattern, force) "{{{1
-    return (!empty(a:force) || search(a:pattern, 'cnW', '', 100))
+    return (!empty(a:force) || search(a:pattern, 'cnw', '', 100))
 endfunction
 
 function! s:Init(...) "{{{1
