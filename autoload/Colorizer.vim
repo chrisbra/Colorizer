@@ -1799,6 +1799,11 @@ endfu
 
 function! Colorizer#ColorWinEnter() "{{{1
     " be fast!
+    if get(g:, "colorizer_auto_filetype", "") !~ &ft
+        " current filetype doesn't match g:colorizer_auto_filetype,
+        " so nothing to do
+        return
+    endif
     if get(b:, 'Colorizer_changedtick', 0) == b:changedtick &&
                 \ !empty(getmatches())
         " nothing to do
