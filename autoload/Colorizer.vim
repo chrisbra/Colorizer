@@ -1799,7 +1799,8 @@ endfu
 
 function! Colorizer#ColorWinEnter() "{{{1
     " be fast!
-    if get(g:, "colorizer_auto_filetype", "") !~ &ft
+    let ft_list = split(get(g:, "colorizer_auto_filetype", ""), ',')
+    if match(ft_list, "^".&ft."$") == -1
         " current filetype doesn't match g:colorizer_auto_filetype,
         " so nothing to do
         return
