@@ -1713,6 +1713,10 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
+    if !exists("#FTColorizer#BufWinEnter")
+        let b:Colorizer_force = 1
+        call Colorizer#LocalFTAutoCmds(1)
+    endif
     call s:SaveRestoreOptions(0, save, [])
     call winrestview(_a)
 endfu
@@ -1801,13 +1805,14 @@ endfu
 function! Colorizer#ColorWinEnter() "{{{1
     " be fast!
     let ft_list = split(get(g:, "colorizer_auto_filetype", ""), ',')
-    if match(ft_list, "^".&ft."$") == -1
+    if match(ft_list, "^".&ft."$") == -1 && !get(b:, 'Colorizer_force', 0)
         " current filetype doesn't match g:colorizer_auto_filetype,
         " so nothing to do
         return
     endif
     if get(b:, 'Colorizer_changedtick', 0) == b:changedtick &&
-                \ !empty(getmatches())
+                \ !empty(getmatches()) &&
+                \ !get(b:, 'Colorizer_force', 0)
         " nothing to do
         return
     else
