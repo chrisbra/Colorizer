@@ -1777,6 +1777,7 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
             au CursorHold,CursorHoldI,InsertLeave <buffer> silent call
                         \ Colorizer#DoColor('', line('w0'), line('w$'))
             au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine()
+            au WinEnter,BufWinEnter <buffer> silent call Colorizer#ColorWinEnter()
             au GUIEnter,ColorScheme <buffer> silent
                         \ call Colorizer#DoColor('!', 1, line('$'))
         aug END
