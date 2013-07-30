@@ -1113,7 +1113,8 @@ function! s:PreviewColorName(color) "{{{1
     endif
     let name=tolower(a:color)
     let clr = s:colors[name]
-    call s:SetMatcher(clr[1:], '\<'.name.'\>\c')
+    " Skip color-name, e.g. white-space property
+    call s:SetMatcher(clr[1:], '\<'.name.'\>\c[-]\@!')
     return a:color
 endfu
 
