@@ -295,6 +295,16 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   match too much, reported by taecilla, thanks!)
 - https://github.com/chrisbra/color_highlight/issues/19 (error on calling
   ColorWinEnter() command, reported by wedgwood, thanks!)
+- https://github.com/chrisbra/color_highlight/issues/20 and
+  https://github.com/chrisbra/color_highlight/issues/21
+  (also color on split commands, reported by wedgwood and Andri Möll, Thanks!)
+- https://github.com/chrisbra/color_highlight/issues/22 (Make sure, patterns
+  like white-space won't get colored, reported by Andri Möll, Thanks!)
+- https://github.com/chrisbra/color_highlight/issues/23 (ColorToggle got
+  confused when several windows with highlighting exists, reported by Andri
+  Möll, Thanks!)
+- https://github.com/chrisbra/color_highlight/issues/24 (turning off coloring
+  should also remove the autocommands, reported by Andri Möll, Thanks!)
 
 0.8: Dec 14, 2012 {{{1
 - https://github.com/chrisbra/color_highlight/issues/13 (colorizing should not
