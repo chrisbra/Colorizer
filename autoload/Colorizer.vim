@@ -905,7 +905,7 @@ function! s:FGforBG(bg) "{{{1
 endfunction
 
 function! s:DidColor(clr, pat) "{{{1
-    let idx = index(s:match_list, a:pat)
+    let idx = index(w:match_list, a:pat)
     if idx > -1
         if a:pat[0] == '#' ||
         \ !empty(synIDattr(hlID(a:clr), 'fg'))
@@ -962,7 +962,7 @@ function! s:SetMatcher(clr, pattern) "{{{1
     endif
     " let 'hls' overrule our syntax highlighting
     call matchadd(clr, a:pattern, -1)
-    call add(s:match_list, a:pattern)
+    call add(w:match_list, a:pattern)
 endfunction
 
 function! s:Xterm2rgb16(color) "{{{1
@@ -1150,7 +1150,7 @@ function! s:GetColorPattern(list) "{{{1
 endfunction
 
 function! s:GetMatchList() "{{{1
-    " this is buffer-local!
+    " this is window-local!
     return filter(getmatches(), 'v:val.group =~ ''^Color_\x\{6}$''')
 endfunction
 
@@ -1282,10 +1282,10 @@ function! s:Init(...) "{{{1
 
     if has("gui_running") || &t_Co >= 8 || s:HasColorPattern()
 	" The list of available match() patterns
-	let s:match_list = s:GetMatchList()
+	let w:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
-	if ((empty(s:match_list) || !hlexists(s:match_list[0].group) ||  
-	    \ empty(synIDattr(hlID(s:match_list[0].group), 'fg'))) &&
+	if ((empty(w:match_list) || !hlexists(w:match_list[0].group) ||  
+	    \ empty(synIDattr(hlID(w:match_list[0].group), 'fg'))) &&
             \ !s:force_hl)
 	    let s:force_hl = 1
 	endif
@@ -1299,7 +1299,7 @@ function! s:Init(...) "{{{1
             let s:colors = s:xterm_8colors
         endif
         let s:colornamepattern = s:GetColorPattern(keys(s:colors))
-        call map(s:match_list, 'v:val.pattern')
+        call map(w:match_list, 'v:val.pattern')
     else
         throw "nocolor"
     endif
@@ -1602,12 +1602,12 @@ function! s:SyntaxMatcher(enable) "{{{1
         endif
     endfor
 "    if a:enable
-"        unlet s:match_list
+"        unlet w:match_list
 "    endif
 endfu
 
 function! Colorizer#ColorToggle() "{{{1
-    if !exists("s:match_list") || empty(s:match_list)
+    if !exists("w:match_list") || empty(w:match_list)
         call Colorizer#DoColor(0, 1, line('$'))
     else
         call Colorizer#ColorOff()
@@ -1618,7 +1618,8 @@ function! Colorizer#ColorOff() "{{{1
     for _match in s:GetMatchList()
         sil! call matchdelete(_match.id)
     endfor
-    unlet! s:match_list
+    unlet! w:match_list
+    unlet! b:Colorizer_force
 endfu
 
 function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
@@ -1714,7 +1715,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
-    if !exists("#FTColorizer#BufWinEnter")
+    if !exists("#FTColorizer#BufEnter")
         let b:Colorizer_force = 1
         call Colorizer#LocalFTAutoCmds(1)
     endif
