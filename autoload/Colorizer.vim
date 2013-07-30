@@ -1618,6 +1618,7 @@ function! Colorizer#ColorOff() "{{{1
     for _match in s:GetMatchList()
         sil! call matchdelete(_match.id)
     endfor
+    call Colorizer#LocalFTAutoCmds(0)
     unlet! w:match_list
     unlet! b:Colorizer_force
 endfu
