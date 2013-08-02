@@ -11,6 +11,5 @@ vim_passfile
 stuff/*
 *.css
 *.txt
-*.png
 testfile*
 .VimballRecord
