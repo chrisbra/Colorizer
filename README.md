@@ -29,4 +29,5 @@ Based on work by Nikolaus Hofer. Further developed by Christian Brabandt.
 The Vim License applies. See `:h license`
 
 2009, 2010, 2011, 2012, 2013 by Christian Brabandt
+
 __NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK__
