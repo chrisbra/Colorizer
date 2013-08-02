@@ -9,3 +9,8 @@ vim_passfile
 *.orig
 *.pl
 stuff/*
+*.css
+*.txt
+*.png
+testfile*
+.VimballRecord
