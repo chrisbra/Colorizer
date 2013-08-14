@@ -1,8 +1,8 @@
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
-Version:    0.8 Fri, 14 Dec 2012 22:34:20 +0100
-Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
+Version:    0.9 Wed, 14 Aug 2013 22:13:54 +0200
+Copyright:  (c) 2009-2013 by Christian Brabandt
             The VIM LICENSE applies to Colorizer.txt
             (see |copyright|) except use ColorizerPlugin instead of "Vim".
             NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK.
@@ -288,7 +288,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
-0.9 (unreleased): {{{1
+0.9 Aug 14, 2013: {{{1
 - https://github.com/chrisbra/color_highlight/issues/15 (rgba highlighting
   didn't work for floating point value of alpha, reported by LiTuX.S, thanks!)
 - https://github.com/chrisbra/color_highlight/issues/16 (rgb() pattern did
@@ -319,9 +319,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - check for 'ed' and 'gd' defaults
 
 0.6: May 17, 2012 {{{1
-- Fix various issues with hsl coloring (reported by teschmitz in 
+- Fix various issues with hsl coloring (reported by teschmitz in
   https://github.com/chrisbra/color_highlight/issues/9, thanks!)
-- Make it possible, to skip coloring comments (reported by teschmitz in 
+- Make it possible, to skip coloring comments (reported by teschmitz in
   https://github.com/chrisbra/color_highlight/issues/10, thanks!)
 - search highlighting should overrule color highlighting(reported by teschmitz
   in https://github.com/chrisbra/color_highlight/issues/11, thanks!)
@@ -366,7 +366,6 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 0.1: Mar 02, 2012 {{{1
 - first internal version
   }}}
-
 ==============================================================================
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl

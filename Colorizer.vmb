@@ -6,10 +6,10 @@ plugin/ColorizerPlugin.vim	[[[1
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
-" Last Change: Fri, 14 Dec 2012 22:34:20 +0100
+" Last Change: Wed, 14 Aug 2013 22:13:54 +0200
 " Licence:      Vim License (see :h License)
-" Version:      0.8
-" GetLatestVimScripts: 3963 8 :AutoInstall: Colorizer.vim
+" Version:      0.9
+" GetLatestVimScripts: 3963 9 :AutoInstall: Colorizer.vim
 "
 " This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
 " Changes made: - make terminal colors work more reliably and with all
@@ -82,12 +82,12 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-368
+371
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
-Version:    0.8 Fri, 14 Dec 2012 22:34:20 +0100
-Copyright:  (c) 2009, 2010, 2011, 2012 by Christian Brabandt         
+Version:    0.9 Wed, 14 Aug 2013 22:13:54 +0200
+Copyright:  (c) 2009-2013 by Christian Brabandt
             The VIM LICENSE applies to Colorizer.txt
             (see |copyright|) except use ColorizerPlugin instead of "Vim".
             NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK.
@@ -373,7 +373,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
-0.9 (unreleased): {{{1
+0.9 Aug 14, 2013: {{{1
 - https://github.com/chrisbra/color_highlight/issues/15 (rgba highlighting
   didn't work for floating point value of alpha, reported by LiTuX.S, thanks!)
 - https://github.com/chrisbra/color_highlight/issues/16 (rgb() pattern did
@@ -383,9 +383,13 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - https://github.com/chrisbra/color_highlight/issues/20 and
   https://github.com/chrisbra/color_highlight/issues/21
   (also color on split commands, reported by wedgwood and Andri Möll, Thanks!)
-- https://github.com/chrisbra/color_highlight/issues/21 (ColorToggle got
+- https://github.com/chrisbra/color_highlight/issues/22 (Make sure, patterns
+  like white-space won't get colored, reported by Andri Möll, Thanks!)
+- https://github.com/chrisbra/color_highlight/issues/23 (ColorToggle got
   confused when several windows with highlighting exists, reported by Andri
   Möll, Thanks!)
+- https://github.com/chrisbra/color_highlight/issues/24 (turning off coloring
+  should also remove the autocommands, reported by Andri Möll, Thanks!)
 
 0.8: Dec 14, 2012 {{{1
 - https://github.com/chrisbra/color_highlight/issues/13 (colorizing should not
@@ -400,9 +404,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - check for 'ed' and 'gd' defaults
 
 0.6: May 17, 2012 {{{1
-- Fix various issues with hsl coloring (reported by teschmitz in 
+- Fix various issues with hsl coloring (reported by teschmitz in
   https://github.com/chrisbra/color_highlight/issues/9, thanks!)
-- Make it possible, to skip coloring comments (reported by teschmitz in 
+- Make it possible, to skip coloring comments (reported by teschmitz in
   https://github.com/chrisbra/color_highlight/issues/10, thanks!)
 - search highlighting should overrule color highlighting(reported by teschmitz
   in https://github.com/chrisbra/color_highlight/issues/11, thanks!)
@@ -447,7 +451,6 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 0.1: Mar 02, 2012 {{{1
 - first internal version
   }}}
-
 ==============================================================================
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
@@ -456,10 +459,10 @@ autoload/Colorizer.vim	[[[1
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
-" Last Change: Fri, 14 Dec 2012 22:34:20 +0100
+" Last Change: Wed, 14 Aug 2013 22:13:54 +0200
 " Licence:      Vim License (see :h License)
-" Version:      0.8
-" GetLatestVimScripts: 3963 8 :AutoInstall: Colorizer.vim
+" Version:      0.9
+" GetLatestVimScripts: 3963 9 :AutoInstall: Colorizer.vim
 "
 " This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
 " Changes made: - make terminal colors work more reliably and with all
