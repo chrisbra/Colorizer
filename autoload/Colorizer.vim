@@ -1065,8 +1065,9 @@ function! s:DidColor(clr, pat) "{{{1
     return 0
 endfu
 
-function! s:DoHlGroup(clr) "{{{1
-    let group = 'Color_'. a:clr
+function! s:DoHlGroup(clr, ...) "{{{1
+    " if a:1 is given, only highlight foreground (used for TERM coloring)
+    let group = 'Color_'. a:clr . (exists("a:1") && a:1 ? '_fg' : '')
     if !s:force_hl 
         let syn = synIDattr(hlID(group), 'fg')
         if !empty(syn) && syn > -1
@@ -1077,7 +1078,7 @@ function! s:DoHlGroup(clr) "{{{1
     let clr = a:clr
     let bg  = clr
     let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(a:clr)
-    if s:swap_fg_bg > 0
+    if s:swap_fg_bg > 0 || (exists("a:1") && a:1)
         let fg  = clr
         let bg  = 'NONE'
     elseif s:swap_fg_bg == -1
@@ -1104,9 +1105,14 @@ function! s:DoHlGroup(clr) "{{{1
     endtry
 endfunction
 
-function! s:SetMatcher(clr, pattern) "{{{1
-    let clr = 'Color_'. a:clr
-    call s:DoHlGroup(a:clr)
+function! s:SetMatcher(clr, pattern, ...) "{{{1
+    " if a:1 is given, only color the fg!
+    let clr = 'Color_'. a:clr . (exists("a:1") && a:1 ? '_fg' : '')
+    if !exists("a:1")
+        call s:DoHlGroup(a:clr)
+    else
+        call s:DoHlGroup(a:clr, a:1)
+    endif
     if s:DidColor(clr, a:pattern)
         return
     endif
@@ -1321,10 +1327,10 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
             let color = list[idx]
         endif
     endif
-    let old_swap_fg_bg = s:swap_fg_bg
-    let s:swap_fg_bg = 1
-    call s:SetMatcher(color, '\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=')
-    let s:swap_fg_bg = old_swap_fg_bg
+"    let old_swap_fg_bg = s:swap_fg_bg
+"    let s:swap_fg_bg = 1
+    call s:SetMatcher(color, '\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', 1)
+"    let s:swap_fg_bg = old_swap_fg_bg
     return retval
 endfunction
 
