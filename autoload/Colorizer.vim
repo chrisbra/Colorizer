@@ -1373,12 +1373,12 @@ function! s:Ansi2Color(chars) "{{{1
     let bground = ""
     let check = [0,0] " check fground and bground color
 
-    if a:chars=~ '.*3[0-7]\(;1\)\?m'
+    if a:chars=~ '.*3[0-7]\(;1\)\?[m;]'
         let check[0] = 1
     else
         let fground = "NONE"
     endif
-    if a:chars=~ '.*4[0-7]\(;1\)\?m'
+    if a:chars=~ '.*4[0-7]\(;1\)\?[m;]'
         let check[1] = 1
     else
         let bground = "NONE"
@@ -1389,12 +1389,12 @@ function! s:Ansi2Color(chars) "{{{1
             let bright = (val == "std" ? "" : ";1")
 
             if check[0] " Check for a match of the foreground color
-                if a:chars =~ ".*".key.bright."m"
+                if a:chars =~ ".*".key.bright."[m;]"
                     let fground = s:term2ansi[val][key]
                 endif
             endif
             if check[1] "Check for background color
-                if a:chars =~ ".*".(key+10).bright."m"
+                if a:chars =~ ".*".(key+10).bright."[m;]"
                     let bground = s:term2ansi[val][key]
                 endif
             endif
@@ -1744,7 +1744,7 @@ function! Colorizer#ColorOff() "{{{1
     endfor
     call Colorizer#LocalFTAutoCmds(0)
     if exists("s:conceal") && has("conceal")
-        let [&l:cole, &l:cocue] = s:conceal
+        let [&l:cole, &l:cocu] = s:conceal
         unlet! s:conceal
     endif
     unlet s:conceal
@@ -1879,7 +1879,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
-    if !exists("#FTColorizer#BufEnter") && !empty(error)
+    if !exists("#FTColorizer#BufEnter") && empty(error)
         let b:Colorizer_force = 1
         call Colorizer#LocalFTAutoCmds(1)
     endif
