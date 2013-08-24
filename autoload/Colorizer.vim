@@ -29,21 +29,21 @@ let s:valuerange4 = [ 0x00, 0x8B, 0xCD, 0xFF ]
 "
 "" 16 basic colors "{{{2
 let s:basic16 = [
-    \ [ 0x00, 0x00, 0x00 ], 
-    \ [ 0xCD, 0x00, 0x00 ], 
-    \ [ 0x00, 0xCD, 0x00 ], 
-    \ [ 0xCD, 0xCD, 0x00 ], 
-    \ [ 0x00, 0x00, 0xEE ], 
-    \ [ 0xCD, 0x00, 0xCD ], 
-    \ [ 0x00, 0xCD, 0xCD ], 
-    \ [ 0xE5, 0xE5, 0xE5 ], 
-    \ [ 0x7F, 0x7F, 0x7F ], 
-    \ [ 0xFF, 0x00, 0x00 ], 
-    \ [ 0x00, 0xFF, 0x00 ], 
-    \ [ 0xFF, 0xFF, 0x00 ], 
-    \ [ 0x5C, 0x5C, 0xFF ], 
-    \ [ 0xFF, 0x00, 0xFF ], 
-    \ [ 0x00, 0xFF, 0xFF ], 
+    \ [ 0x00, 0x00, 0x00 ],
+    \ [ 0xCD, 0x00, 0x00 ],
+    \ [ 0x00, 0xCD, 0x00 ],
+    \ [ 0xCD, 0xCD, 0x00 ],
+    \ [ 0x00, 0x00, 0xEE ],
+    \ [ 0xCD, 0x00, 0xCD ],
+    \ [ 0x00, 0xCD, 0xCD ],
+    \ [ 0xE5, 0xE5, 0xE5 ],
+    \ [ 0x7F, 0x7F, 0x7F ],
+    \ [ 0xFF, 0x00, 0x00 ],
+    \ [ 0x00, 0xFF, 0x00 ],
+    \ [ 0xFF, 0xFF, 0x00 ],
+    \ [ 0x5C, 0x5C, 0xFF ],
+    \ [ 0xFF, 0x00, 0xFF ],
+    \ [ 0x00, 0xFF, 0xFF ],
     \ [ 0xFF, 0xFF, 0xFF ]
     \ ]
 
@@ -938,7 +938,7 @@ function! s:ColorInit(...) "{{{1
     endif
 
     if !exists("s:old_fgcontrast")
-        " if the value was changed since last time, 
+        " if the value was changed since last time,
         " be sure to clear the old highlighting.
         let s:old_fgcontrast = g:colorizer_fgcontrast
     endif
@@ -1022,7 +1022,7 @@ function! s:ColorInit(...) "{{{1
 	" The list of available match() patterns
 	let w:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
-	if ((empty(w:match_list) || !hlexists(w:match_list[0].group) ||  
+	if ((empty(w:match_list) || !hlexists(w:match_list[0].group) ||
 	    \ empty(synIDattr(hlID(w:match_list[0].group), 'fg'))) &&
             \ !s:force_hl)
 	    let s:force_hl = 1
@@ -1077,7 +1077,7 @@ function! s:DoHlGroup(clr, group) "{{{1
     endif
     let group = a:group
 
-    if !s:force_hl 
+    if !s:force_hl
         let syn = synIDattr(hlID(group), 'fg')
         if !empty(syn) && syn > -1
             " highlighting already exists
@@ -1108,9 +1108,9 @@ function! s:DoHlGroup(clr, group) "{{{1
 	let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
     endif
     "Don't error out for invalid colors
-    try 
+    try
         exe hi
-    catch 
+    catch
         " Only report errors, when debugging info is turned on
         if s:debug
             call s:Warn("Invalid color: ".hi)
@@ -1597,11 +1597,11 @@ endfunction
 
 function! s:Modifylists(la, lb, op) "{{{1
     if a:op == '+'
-        return [ a:la[0] + a:lb[0], 
+        return [ a:la[0] + a:lb[0],
             \    a:la[1] + a:lb[1],
             \    a:la[2] + a:lb[2]]
     else
-        return [ a:la[0] - a:lb[0], 
+        return [ a:la[0] - a:lb[0],
             \    a:la[1] - a:lb[1],
             \    a:la[2] - a:lb[2]]
     endif
@@ -1761,7 +1761,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         endif
     catch /nocolor/
         " nothing to do
-        call s:Warn("Your terminal doesn't support colors or no colors". 
+        call s:Warn("Your terminal doesn't support colors or no colors".
                     \ 'found in the current buffer!')
         return
     endtry
@@ -1771,7 +1771,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "for name in keys(s:colors)
     "    call s:PreviewColorName(name)
     "endfor
-    
+
     " too slow:
     "for line in range(1,line('$'))
     "    call s:ColorMatchingLines(line)
@@ -1824,7 +1824,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 let cmd = printf(':sil %d,%d%ss/%s/'.
                     \ '\=s:ColorRGBValues(submatch(0))/egi%s', a:line1, a:line2,
                     \ s:color_unfolded, pat, n_flag ? 'n' : '')
-                try 
+                try
                     exe cmd
                 catch
                     " some error occured, stop when finished (and don't setup auto
@@ -1962,8 +1962,8 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
         endif
         " Delete specific auto commands, because the filetype
         " has been changed.
-        let b:undo_ftplugin .= '| exe "sil! au! FTColorizer"'  
-        let b:undo_ftplugin .= '| exe "sil! aug! FTColorizer"'  
+        let b:undo_ftplugin .= '| exe "sil! au! FTColorizer"'
+        let b:undo_ftplugin .= '| exe "sil! aug! FTColorizer"'
         let b:undo_ftplugin .= '| exe ":ColorClear"'
     else
         aug FTColorizer
@@ -2043,7 +2043,7 @@ endif
 
 function! s:ColorMatchingLines() "{{{2
     " Programmatic approach to highlight all hex values as colors.
-    " Surprisingly a lot slower than calling 
+    " Surprisingly a lot slower than calling
     " :s/#\x\{3,6}/\=s:ColorMatchingLines1(submatch(0))/g
     let pat = s:GetColorPattern(keys(s:pat_func)). '\|'.
             \ s:GetColorPattern(keys(s:colors))
