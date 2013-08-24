@@ -458,7 +458,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2005
+2049
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -1471,9 +1471,9 @@ function! s:ColorInit(...) "{{{1
         \ 'rgb': 'rgb(\s*\%(\d\+%\?[^)]*\)\{3})',
         \ 'rgba': 'rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\%(.\d\+\)\?\)\|1\))',
         \ 'hsla': 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
-        \ 'term': '\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\='}
-        "'term': '\(\%(\%x1b[0m\)\?\%x1b[\d\+\(;\d\+\)*m\)\(.\{-}\)\(\%x1b[0m\)\?'}
-        " ... 
+        \ 'term': '\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\=',
+        \ 'term_conceal': '\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)'
+        \ }
 
 
     if has("gui_running") || &t_Co >= 8 || s:HasColorPattern()
@@ -1526,9 +1526,15 @@ function! s:DidColor(clr, pat) "{{{1
     return 0
 endfu
 
-function! s:DoHlGroup(clr, ...) "{{{1
-    " if a:1 is given, only highlight foreground (used for TERM coloring)
-    let group = 'Color_'. a:clr . (exists("a:1") && a:1 ? '_fg' : '')
+function! s:DoHlGroup(clr, group) "{{{1
+    let colorlist = 0
+    if type(a:clr) == type([])
+        " a:clr is a list, containing fg and bg colors
+        " e.g. for TERM coloring
+        let colorlist = 1
+    endif
+    let group = a:group
+
     if !s:force_hl 
         let syn = synIDattr(hlID(group), 'fg')
         if !empty(syn) && syn > -1
@@ -1536,9 +1542,13 @@ function! s:DoHlGroup(clr, ...) "{{{1
             return
         endif
     endif
-    let clr = a:clr
-    let bg  = clr
-    let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(a:clr)
+    let clr = (colorlist ? a:clr[0] : a:clr)
+    let bg  = (colorlist ? a:clr[1] : a:clr)
+    if !colorlist
+        let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(clr)
+    else
+        let fg=clr "explicit foreground color has been given
+    endif
     if s:swap_fg_bg > 0 || (exists("a:1") && a:1)
         let fg  = clr
         let bg  = 'NONE'
@@ -1567,13 +1577,14 @@ function! s:DoHlGroup(clr, ...) "{{{1
 endfunction
 
 function! s:SetMatcher(clr, pattern, ...) "{{{1
-    " if a:1 is given, only color the fg!
-    let clr = 'Color_'. a:clr . (exists("a:1") && a:1 ? '_fg' : '')
-    if !exists("a:1")
-        call s:DoHlGroup(a:clr)
+    if (exists("a:1") && type(a:clr) == type([]))
+        " a:clr is a list, containing foreground and background color (e.g.
+        " from TERM highlighting
+        let clr = 'TermColor_'.a:clr[0].'_'.a:clr[1]
     else
-        call s:DoHlGroup(a:clr, a:1)
+        let clr = 'Color_'. a:clr
     endif
+    call s:DoHlGroup(a:clr, clr)
     if s:DidColor(clr, a:pattern)
         return
     endif
@@ -1766,27 +1777,23 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
     " a:text: Text to color
     " a:post: Ansi-Sequences resetting the coloring (might be empty)
     let retval = a:pre. a:text. a:post
-    if s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
-        " skip coloring comments
-        return retval
-    endif
 
     let color = s:Ansi2Color(a:pre)
-    if color == "0"
-        " probably some error, parsing the Term sequences...
-        return retval
-    endif
+
     if &t_Co == 8 && !has("gui_running")
         " The first 12 color names, can be displayed by 8 color terminals
-        let list = values(s:xterm_8colors)
-        let idx = match(list, a:color)
-        if idx == -1
-            " Color can't be displayed by 8 color terminal
-            return retval
-        else
-            let color = list[idx]
-        endif
+        let i = 0
+        for clr in color
+            let list = values(s:xterm_8colors)
+            let idx = match(list, clr)
+            if idx == -1
+                " Color can't be displayed by 8 color terminal
+                let color[i] = NONE
+            else
+                let color[i] = list[idx]
+            endif
+            let i+=1
+        endfor
     endif
 "    let old_swap_fg_bg = s:swap_fg_bg
 "    let s:swap_fg_bg = 1
@@ -1820,15 +1827,50 @@ function! s:Ansi2Color(chars) "{{{1
                         \ }
     endif
 
+    let fground = ""
+    let bground = ""
+    let check = [0,0] " check fground and bground color
+
+    if a:chars=~ '.*3[0-7]\(;1\)\?m'
+        let check[0] = 1
+    else
+        let fground = "NONE"
+    endif
+    if a:chars=~ '.*4[0-7]\(;1\)\?m'
+        let check[1] = 1
+    else
+        let bground = "NONE"
+    endif
+
     for val in ["std", "bold"]
         for key in keys(s:term2ansi[val])
             let bright = (val == "std" ? "" : ";1")
-            if a:chars =~ ".*".key.bright."m"
-                return s:term2ansi[val][key]
+
+            if check[0] " Check for a match of the foreground color
+                if a:chars =~ ".*".key.bright."m"
+                    let fground = s:term2ansi[val][key]
+                endif
+            endif
+            if check[1] "Check for background color
+                if a:chars =~ ".*".(key+10).bright."m"
+                    let bground = s:term2ansi[val][key]
+                endif
+            endif
+            if !empty(bground) && !empty(fground)
+                break
             endif
         endfor
+        if !empty(fground) && !empty(bground)
+            break
+        endif
     endfor
+    return [fground, bground]
 endfunction
+
+function! s:TermConceal(pattern) "{{{1
+    exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
+    setl cocu=nv cole=2
+endfu
 function! s:GetColorPattern(list) "{{{1
     let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>\)'' ')
     return join(list, '\|')
@@ -2257,6 +2299,8 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             \ a:line1, a:line2,  s:color_unfolded, s:color_patterns.term,
             \ n_flag ? 'n' : '')
         exe cmd
+        " Hide ESC Terminal Chars
+        call s:TermConceal(s:color_patterns.term_conceal)
     endif
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
@@ -2278,7 +2322,7 @@ function! Colorizer#RGB2Term(arg) "{{{1
     endif
 
     let tcolor = s:Rgb2xterm(color)
-    call s:DoHlGroup(color[1:])
+    call s:DoHlGroup(color[1:], "Color_". color[1:])
     exe "echohl" color[1:]
     echo a:arg. " => ". tcolor
     echohl None
@@ -2293,7 +2337,7 @@ function! Colorizer#HSL2Term(arg) "{{{1
     let str = s:PrepareHSLArgs(hsl)
 
     let tcolor = s:Rgb2xterm('#'.str)
-    call s:DoHlGroup(str)
+    call s:DoHlGroup(str, "Color_".str)
     exe "echohl" str
     echo a:arg. " => ". tcolor
     echohl None
