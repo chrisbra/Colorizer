@@ -999,6 +999,9 @@ function! s:ColorInit(...) "{{{1
     elseif s:force_hl
         call Colorizer#ColorOff()
     endif
+    if !exists("s:conceal") && has("conceal")
+        let s:conceal = [&l:cole, &l:cocu]
+    endif
 
     if !exists("g:colorizer_hex_pattern")
         let s:hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@=']
@@ -1407,8 +1410,10 @@ function! s:Ansi2Color(chars) "{{{1
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
-    exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
-    setl cocu=nv cole=2
+    if has("conceal")
+        exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
+        setl cocu=nv cole=2
+    endif
 endfu
 function! s:GetColorPattern(list) "{{{1
     let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>\)'' ')
@@ -1738,6 +1743,11 @@ function! Colorizer#ColorOff() "{{{1
         sil! call matchdelete(_match.id)
     endfor
     call Colorizer#LocalFTAutoCmds(0)
+    if exists("s:conceal") && has("conceal")
+        let [&l:cole, &l:cocue] = s:conceal
+        unlet! s:conceal
+    endif
+    unlet s:conceal
     unlet! w:match_list
     unlet! b:Colorizer_force
 endfu
@@ -1755,6 +1765,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                     \ 'found in the current buffer!')
         return
     endtry
+    let error = ""
 
     " too slow
     "for name in keys(s:colors)
@@ -1786,7 +1797,13 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         let cmd = printf(':sil %d,%d%ss/%s/'.
             \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
             \ s:color_unfolded, s:color_patterns.hex, n_flag ? 'n' : '')
-        exe cmd
+        try
+            exe cmd
+        catch
+            " some error occured, stop when finished (and don't setup auto
+            " comands
+            let error.=" ColorHex "
+        endtry
     endif
     if &t_Co > 16 || has("gui_running")
     " Also support something like
@@ -1807,7 +1824,13 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 let cmd = printf(':sil %d,%d%ss/%s/'.
                     \ '\=s:ColorRGBValues(submatch(0))/egi%s', a:line1, a:line2,
                     \ s:color_unfolded, pat, n_flag ? 'n' : '')
-                exe cmd
+                try 
+                    exe cmd
+                catch
+                    " some error occured, stop when finished (and don't setup auto
+                    " comands
+                    let error.=" ColorRGBValues: pat "
+                endtry
             endif
         endfor
         " highlight hsl(X,X,X) values
@@ -1827,7 +1850,13 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     if (exists("s:color_names") && s:color_names) && s:CheckTimeout(s:colornamepattern, a:force)
         let s_cmd = printf(':sil %d,%d%ss/%s/\=s:PreviewColorName(submatch(0))/egi%s',
             \ a:line1, a:line2, s:color_unfolded, s:colornamepattern, n_flag ? 'n' : '')
-        exe s_cmd
+        try
+            exe s_cmd
+        catch
+            " some error occured, stop when finished (and don't setup auto
+            " comands
+            let error=" ColorNames "
+        endtry
         " Somehow, when performing above search, the pattern remains in the
         " search history and this can be disturbing, so delete it from there.
         call histdel('/', -1)
@@ -1837,16 +1866,27 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             \ '\=s:PreviewColorTerm(submatch(1),submatch(2),submatch(3))/egi%s',
             \ a:line1, a:line2,  s:color_unfolded, s:color_patterns.term,
             \ n_flag ? 'n' : '')
-        exe cmd
-        " Hide ESC Terminal Chars
-        call s:TermConceal(s:color_patterns.term_conceal)
+        try
+            exe cmd
+            " Hide ESC Terminal Chars
+            call s:TermConceal(s:color_patterns.term_conceal)
+        catch
+            " some error occured, stop when finished (and don't setup auto
+            " comands
+            let error=" ColorTerm "
+        endtry
     endif
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
-    if !exists("#FTColorizer#BufEnter")
+    if !exists("#FTColorizer#BufEnter") && !empty(error)
         let b:Colorizer_force = 1
         call Colorizer#LocalFTAutoCmds(1)
+    endif
+    if !empty(error)
+        " Some error occured, stop trying to color the file
+        call Colorizer#ColorOff
+        call s:Warn("Some error occured here: ". error)
     endif
     call s:SaveRestoreOptions(0, save, [])
     call winrestview(_a)
