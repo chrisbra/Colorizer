@@ -1747,7 +1747,6 @@ function! Colorizer#ColorOff() "{{{1
         let [&l:cole, &l:cocu] = s:conceal
         unlet! s:conceal
     endif
-    unlet s:conceal
     unlet! w:match_list
     unlet! b:Colorizer_force
 endfu
