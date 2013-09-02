@@ -890,6 +890,75 @@ let s:x11_color_names = {
 \ 'lightgreen': '#90EE90'
 \ }
 
+function! s:PreviewColorName(color) "{{{1
+    if s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+        " skip coloring comments
+        return a:color
+    endif
+    let name=tolower(a:color)
+    let clr = s:colors[name]
+    " Skip color-name, e.g. white-space property
+    call s:SetMatcher(clr[1:], '\<'.name.'\>\c[-]\@!')
+    return a:color
+endfu
+
+function! s:PreviewColorHex(match) "{{{1
+    if s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == 'Comment'
+        " skip coloring comments
+        return a:match
+    endif
+    let color = (a:match[0] == '#' ? a:match[1:] : a:match)
+    let pattern = color
+    if len(color) == 3
+        let color = substitute(color, '.', '&&', 'g')
+    endif
+    if &t_Co == 8 && !has("gui_running")
+        " The first 12 color names, can be displayed by 8 color terminals
+        let list = values(s:xterm_8colors)
+        let idx = match(list, a:match)
+        if idx == -1
+            " Color can't be displayed by 8 color terminal
+            return a:match
+        else
+            let color = list[idx]
+        endif
+    endif
+    call s:SetMatcher(color, s:hex_pattern[0]. pattern. s:hex_pattern[2])
+    return a:match
+endfunction
+
+function! s:PreviewColorTerm(pre, text, post) "{{{1
+    " a:pre: Ansi-Sequences determining the highlighting
+    " a:text: Text to color
+    " a:post: Ansi-Sequences resetting the coloring (might be empty)
+    let retval = a:pre. a:text. a:post
+
+    let color = s:Ansi2Color(a:pre)
+
+    if &t_Co == 8 && !has("gui_running")
+        " The first 12 color names, can be displayed by 8 color terminals
+        let i = 0
+        for clr in color
+            let list = values(s:xterm_8colors)
+            let idx = match(list, clr)
+            if idx == -1
+                " Color can't be displayed by 8 color terminal
+                let color[i] = NONE
+            else
+                let color[i] = list[idx]
+            endif
+            let i+=1
+        endfor
+    endif
+"    let old_swap_fg_bg = s:swap_fg_bg
+"    let s:swap_fg_bg = 1
+    call s:SetMatcher(color, '\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', 1)
+"    let s:swap_fg_bg = old_swap_fg_bg
+    return retval
+endfunction
+
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
 
@@ -1010,11 +1079,11 @@ function! s:ColorInit(...) "{{{1
     endif
 
     let s:color_patterns = { 'hex': join(s:hex_pattern, ''),
-        \ 'rgb': 'rgb(\s*\%(\d\+%\?[^)]*\)\{3})',
-        \ 'rgba': 'rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\%(.\d\+\)\?\)\|1\))',
-        \ 'hsla': 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
-        \ 'term': '\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\=',
-        \ 'term_conceal': '\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)'
+        \ 'rgb': ['rgb(\s*\%(\d\+%\?[^)]*\)\{3})', function("s:ColorRGBValues")],
+        \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\%(.\d\+\)\?\)\|1\))', function("s:ColorRGBValues")],
+        \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})', function("s:ColorRGBValues")],
+        \ 'term': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\=', function("s:PreviewColorTerm")],
+        \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)']
         \ }
 
 
@@ -1275,80 +1344,13 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
   return a:rgblist
 endfunction
 
-function! s:PreviewColorName(color) "{{{1
-    if s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
-        " skip coloring comments
-        return a:color
-    endif
-    let name=tolower(a:color)
-    let clr = s:colors[name]
-    " Skip color-name, e.g. white-space property
-    call s:SetMatcher(clr[1:], '\<'.name.'\>\c[-]\@!')
-    return a:color
-endfu
-
-function! s:PreviewColorHex(match) "{{{1
-    if s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == 'Comment'
-        " skip coloring comments
-        return a:match
-    endif
-    let color = (a:match[0] == '#' ? a:match[1:] : a:match)
-    let pattern = color
-    if len(color) == 3
-        let color = substitute(color, '.', '&&', 'g')
-    endif
-    if &t_Co == 8 && !has("gui_running")
-        " The first 12 color names, can be displayed by 8 color terminals
-        let list = values(s:xterm_8colors)
-        let idx = match(list, a:match)
-        if idx == -1
-            " Color can't be displayed by 8 color terminal
-            return a:match
-        else
-            let color = list[idx]
-        endif
-    endif
-    call s:SetMatcher(color, s:hex_pattern[0]. pattern. s:hex_pattern[2])
-    return a:match
-endfunction
-
-function! s:PreviewColorTerm(pre, text, post) "{{{1
-    " a:pre: Ansi-Sequences determining the highlighting
-    " a:text: Text to color
-    " a:post: Ansi-Sequences resetting the coloring (might be empty)
-    let retval = a:pre. a:text. a:post
-
-    let color = s:Ansi2Color(a:pre)
-
-    if &t_Co == 8 && !has("gui_running")
-        " The first 12 color names, can be displayed by 8 color terminals
-        let i = 0
-        for clr in color
-            let list = values(s:xterm_8colors)
-            let idx = match(list, clr)
-            if idx == -1
-                " Color can't be displayed by 8 color terminal
-                let color[i] = NONE
-            else
-                let color[i] = list[idx]
-            endif
-            let i+=1
-        endfor
-    endif
-"    let old_swap_fg_bg = s:swap_fg_bg
-"    let s:swap_fg_bg = 1
-    call s:SetMatcher(color, '\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', 1)
-"    let s:swap_fg_bg = old_swap_fg_bg
-    return retval
-endfunction
-
 function! s:Ansi2Color(chars) "{{{1
     " chars look like this
     " [0m[01;32m
     if !exists("s:term2ansi")
         let s:term2ansi = {}
+        " Color values taken from
+        " https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
         let s:term2ansi.std = { 30: printf("%.2X%.2X%.2X", 0,     0,   0),
                         \       31: printf("%.2X%.2X%.2X", 205,   0,   0),
                         \       32: printf("%.2X%.2X%.2X", 0,   205,   0),
@@ -1410,7 +1412,7 @@ function! s:Ansi2Color(chars) "{{{1
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
-    if has("conceal")
+    if has("conceal") && hlID('ColorTermESC') == 0
         exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
         setl cocu=nv cole=2
     endif
@@ -1817,12 +1819,12 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-        for pat in [ s:color_patterns.rgb, s:color_patterns.rgba, s:color_patterns.hsla]
+        for Pat in [ s:color_patterns.rgb, s:color_patterns.rgba, s:color_patterns.hsla]
             " Check, the pattern isn't too costly...
-            if s:CheckTimeout(pat, a:force)
+            if s:CheckTimeout(Pat[0], a:force)
                 let cmd = printf(':sil %d,%d%ss/%s/'.
-                    \ '\=s:ColorRGBValues(submatch(0))/egi%s', a:line1, a:line2,
-                    \ s:color_unfolded, pat, n_flag ? 'n' : '')
+                    \ '\=call(Pat[1], [submatch(0)])/egi%s', a:line1, a:line2,
+                    \ s:color_unfolded, Pat[0], n_flag ? 'n' : '')
                 try
                     exe cmd
                 catch
@@ -1860,21 +1862,23 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         " search history and this can be disturbing, so delete it from there.
         call histdel('/', -1)
     endif
-    if (s:CheckTimeout(s:color_patterns.term, a:force))
-        let cmd = printf(':sil %d,%d%ss/%s/'.
-            \ '\=s:PreviewColorTerm(submatch(1),submatch(2),submatch(3))/egi%s',
-            \ a:line1, a:line2,  s:color_unfolded, s:color_patterns.term,
-            \ n_flag ? 'n' : '')
-        try
-            exe cmd
-            " Hide ESC Terminal Chars
-            call s:TermConceal(s:color_patterns.term_conceal)
-        catch
-            " some error occured, stop when finished (and don't setup auto
-            " comands
-            let error=" ColorTerm "
-        endtry
-    endif
+    for Pat in [ s:color_patterns.term ]
+        if (s:CheckTimeout(Pat[0], a:force))
+            let cmd = printf(':sil %d,%d%ss/%s/'.
+                \ '\=call(Pat[1],[submatch(1),submatch(2),submatch(3)])/egi%s',
+                \ a:line1, a:line2,  s:color_unfolded, Pat[0],
+                \ n_flag ? 'n' : '')
+            try
+                exe cmd
+                " Hide ESC Terminal Chars
+                call s:TermConceal(s:color_patterns.term_conceal[0])
+            catch
+                " some error occured, stop when finished (and don't setup auto
+                " comands
+                let error=" ColorTerm "
+            endtry
+        endif
+    endfor
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
@@ -1884,7 +1888,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     endif
     if !empty(error)
         " Some error occured, stop trying to color the file
-        call Colorizer#ColorOff
+        call Colorizer#ColorOff()
         call s:Warn("Some error occured here: ". error)
     endif
     call s:SaveRestoreOptions(0, save, [])
