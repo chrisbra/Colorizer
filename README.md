@@ -10,7 +10,7 @@ The plugin understands the W3-Colors (used for CSS files for example), the Color
 
 It works best in the gui version of Vim, but the plugin also supports 256 and 88 color terminals and translates the colors to those supported by the terminal. 16 and 8 color terminals should work theoretically too, but hasn't been widely tested. Note, that translating the colors to the terminal might impose a performance penalty, depending on the terminal type and the number of matches in the file.
 
-Also, it can highlight terminal color sequences correctly and will hide those terminal ansi sequences, so that the file can be read like it would be shown in the terminal. A screen capture is available [here](http://www.256bit.org/~chrisbra/Colorizer_term.mkv).
+Also, it can highlight terminal color sequences correctly and will hide those terminal ansi sequences, so that the file can be read like it would be shown in the terminal. Here is a screen capture for coloring ANSI terminal sequences:![Terminal Coloring](Colorizer.gif).
 
 Installation
 ---
