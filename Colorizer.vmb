@@ -458,7 +458,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2049
+2092
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -490,21 +490,21 @@ let s:valuerange4 = [ 0x00, 0x8B, 0xCD, 0xFF ]
 "
 "" 16 basic colors "{{{2
 let s:basic16 = [
-    \ [ 0x00, 0x00, 0x00 ], 
-    \ [ 0xCD, 0x00, 0x00 ], 
-    \ [ 0x00, 0xCD, 0x00 ], 
-    \ [ 0xCD, 0xCD, 0x00 ], 
-    \ [ 0x00, 0x00, 0xEE ], 
-    \ [ 0xCD, 0x00, 0xCD ], 
-    \ [ 0x00, 0xCD, 0xCD ], 
-    \ [ 0xE5, 0xE5, 0xE5 ], 
-    \ [ 0x7F, 0x7F, 0x7F ], 
-    \ [ 0xFF, 0x00, 0x00 ], 
-    \ [ 0x00, 0xFF, 0x00 ], 
-    \ [ 0xFF, 0xFF, 0x00 ], 
-    \ [ 0x5C, 0x5C, 0xFF ], 
-    \ [ 0xFF, 0x00, 0xFF ], 
-    \ [ 0x00, 0xFF, 0xFF ], 
+    \ [ 0x00, 0x00, 0x00 ],
+    \ [ 0xCD, 0x00, 0x00 ],
+    \ [ 0x00, 0xCD, 0x00 ],
+    \ [ 0xCD, 0xCD, 0x00 ],
+    \ [ 0x00, 0x00, 0xEE ],
+    \ [ 0xCD, 0x00, 0xCD ],
+    \ [ 0x00, 0xCD, 0xCD ],
+    \ [ 0xE5, 0xE5, 0xE5 ],
+    \ [ 0x7F, 0x7F, 0x7F ],
+    \ [ 0xFF, 0x00, 0x00 ],
+    \ [ 0x00, 0xFF, 0x00 ],
+    \ [ 0xFF, 0xFF, 0x00 ],
+    \ [ 0x5C, 0x5C, 0xFF ],
+    \ [ 0xFF, 0x00, 0xFF ],
+    \ [ 0x00, 0xFF, 0xFF ],
     \ [ 0xFF, 0xFF, 0xFF ]
     \ ]
 
@@ -1351,6 +1351,75 @@ let s:x11_color_names = {
 \ 'lightgreen': '#90EE90'
 \ }
 
+function! s:PreviewColorName(color) "{{{1
+    if s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+        " skip coloring comments
+        return a:color
+    endif
+    let name=tolower(a:color)
+    let clr = s:colors[name]
+    " Skip color-name, e.g. white-space property
+    call s:SetMatcher(clr[1:], '\<'.name.'\>\c[-]\@!')
+    return a:color
+endfu
+
+function! s:PreviewColorHex(match) "{{{1
+    if s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == 'Comment'
+        " skip coloring comments
+        return a:match
+    endif
+    let color = (a:match[0] == '#' ? a:match[1:] : a:match)
+    let pattern = color
+    if len(color) == 3
+        let color = substitute(color, '.', '&&', 'g')
+    endif
+    if &t_Co == 8 && !has("gui_running")
+        " The first 12 color names, can be displayed by 8 color terminals
+        let list = values(s:xterm_8colors)
+        let idx = match(list, a:match)
+        if idx == -1
+            " Color can't be displayed by 8 color terminal
+            return a:match
+        else
+            let color = list[idx]
+        endif
+    endif
+    call s:SetMatcher(color, s:hex_pattern[0]. pattern. s:hex_pattern[2])
+    return a:match
+endfunction
+
+function! s:PreviewColorTerm(pre, text, post) "{{{1
+    " a:pre: Ansi-Sequences determining the highlighting
+    " a:text: Text to color
+    " a:post: Ansi-Sequences resetting the coloring (might be empty)
+    let retval = a:pre. a:text. a:post
+
+    let color = s:Ansi2Color(a:pre)
+
+    if &t_Co == 8 && !has("gui_running")
+        " The first 12 color names, can be displayed by 8 color terminals
+        let i = 0
+        for clr in color
+            let list = values(s:xterm_8colors)
+            let idx = match(list, clr)
+            if idx == -1
+                " Color can't be displayed by 8 color terminal
+                let color[i] = NONE
+            else
+                let color[i] = list[idx]
+            endif
+            let i+=1
+        endfor
+    endif
+"    let old_swap_fg_bg = s:swap_fg_bg
+"    let s:swap_fg_bg = 1
+    call s:SetMatcher(color, '\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', 1)
+"    let s:swap_fg_bg = old_swap_fg_bg
+    return retval
+endfunction
+
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
 
@@ -1399,7 +1468,7 @@ function! s:ColorInit(...) "{{{1
     endif
 
     if !exists("s:old_fgcontrast")
-        " if the value was changed since last time, 
+        " if the value was changed since last time,
         " be sure to clear the old highlighting.
         let s:old_fgcontrast = g:colorizer_fgcontrast
     endif
@@ -1460,6 +1529,9 @@ function! s:ColorInit(...) "{{{1
     elseif s:force_hl
         call Colorizer#ColorOff()
     endif
+    if !exists("s:conceal") && has("conceal")
+        let s:conceal = [&l:cole, &l:cocu]
+    endif
 
     if !exists("g:colorizer_hex_pattern")
         let s:hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@=']
@@ -1468,11 +1540,11 @@ function! s:ColorInit(...) "{{{1
     endif
 
     let s:color_patterns = { 'hex': join(s:hex_pattern, ''),
-        \ 'rgb': 'rgb(\s*\%(\d\+%\?[^)]*\)\{3})',
-        \ 'rgba': 'rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\%(.\d\+\)\?\)\|1\))',
-        \ 'hsla': 'hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
-        \ 'term': '\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\=',
-        \ 'term_conceal': '\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)'
+        \ 'rgb': ['rgb(\s*\%(\d\+%\?[^)]*\)\{3})', function("s:ColorRGBValues")],
+        \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\%(.\d\+\)\?\)\|1\))', function("s:ColorRGBValues")],
+        \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})', function("s:ColorRGBValues")],
+        \ 'term': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\=', function("s:PreviewColorTerm")],
+        \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)']
         \ }
 
 
@@ -1480,7 +1552,7 @@ function! s:ColorInit(...) "{{{1
 	" The list of available match() patterns
 	let w:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
-	if ((empty(w:match_list) || !hlexists(w:match_list[0].group) ||  
+	if ((empty(w:match_list) || !hlexists(w:match_list[0].group) ||
 	    \ empty(synIDattr(hlID(w:match_list[0].group), 'fg'))) &&
             \ !s:force_hl)
 	    let s:force_hl = 1
@@ -1535,7 +1607,7 @@ function! s:DoHlGroup(clr, group) "{{{1
     endif
     let group = a:group
 
-    if !s:force_hl 
+    if !s:force_hl
         let syn = synIDattr(hlID(group), 'fg')
         if !empty(syn) && syn > -1
             " highlighting already exists
@@ -1566,9 +1638,9 @@ function! s:DoHlGroup(clr, group) "{{{1
 	let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
     endif
     "Don't error out for invalid colors
-    try 
+    try
         exe hi
-    catch 
+    catch
         " Only report errors, when debugging info is turned on
         if s:debug
             call s:Warn("Invalid color: ".hi)
@@ -1733,80 +1805,13 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
   return a:rgblist
 endfunction
 
-function! s:PreviewColorName(color) "{{{1
-    if s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
-        " skip coloring comments
-        return a:color
-    endif
-    let name=tolower(a:color)
-    let clr = s:colors[name]
-    " Skip color-name, e.g. white-space property
-    call s:SetMatcher(clr[1:], '\<'.name.'\>\c[-]\@!')
-    return a:color
-endfu
-
-function! s:PreviewColorHex(match) "{{{1
-    if s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == 'Comment'
-        " skip coloring comments
-        return a:match
-    endif
-    let color = (a:match[0] == '#' ? a:match[1:] : a:match)
-    let pattern = color
-    if len(color) == 3
-        let color = substitute(color, '.', '&&', 'g')
-    endif
-    if &t_Co == 8 && !has("gui_running")
-        " The first 12 color names, can be displayed by 8 color terminals
-        let list = values(s:xterm_8colors)
-        let idx = match(list, a:match)
-        if idx == -1
-            " Color can't be displayed by 8 color terminal
-            return a:match
-        else
-            let color = list[idx]
-        endif
-    endif
-    call s:SetMatcher(color, s:hex_pattern[0]. pattern. s:hex_pattern[2])
-    return a:match
-endfunction
-
-function! s:PreviewColorTerm(pre, text, post) "{{{1
-    " a:pre: Ansi-Sequences determining the highlighting
-    " a:text: Text to color
-    " a:post: Ansi-Sequences resetting the coloring (might be empty)
-    let retval = a:pre. a:text. a:post
-
-    let color = s:Ansi2Color(a:pre)
-
-    if &t_Co == 8 && !has("gui_running")
-        " The first 12 color names, can be displayed by 8 color terminals
-        let i = 0
-        for clr in color
-            let list = values(s:xterm_8colors)
-            let idx = match(list, clr)
-            if idx == -1
-                " Color can't be displayed by 8 color terminal
-                let color[i] = NONE
-            else
-                let color[i] = list[idx]
-            endif
-            let i+=1
-        endfor
-    endif
-"    let old_swap_fg_bg = s:swap_fg_bg
-"    let s:swap_fg_bg = 1
-    call s:SetMatcher(color, '\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', 1)
-"    let s:swap_fg_bg = old_swap_fg_bg
-    return retval
-endfunction
-
 function! s:Ansi2Color(chars) "{{{1
     " chars look like this
     " [0m[01;32m
     if !exists("s:term2ansi")
         let s:term2ansi = {}
+        " Color values taken from
+        " https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
         let s:term2ansi.std = { 30: printf("%.2X%.2X%.2X", 0,     0,   0),
                         \       31: printf("%.2X%.2X%.2X", 205,   0,   0),
                         \       32: printf("%.2X%.2X%.2X", 0,   205,   0),
@@ -1831,12 +1836,12 @@ function! s:Ansi2Color(chars) "{{{1
     let bground = ""
     let check = [0,0] " check fground and bground color
 
-    if a:chars=~ '.*3[0-7]\(;1\)\?m'
+    if a:chars=~ '.*3[0-7]\(;1\)\?[m;]'
         let check[0] = 1
     else
         let fground = "NONE"
     endif
-    if a:chars=~ '.*4[0-7]\(;1\)\?m'
+    if a:chars=~ '.*4[0-7]\(;1\)\?[m;]'
         let check[1] = 1
     else
         let bground = "NONE"
@@ -1847,12 +1852,12 @@ function! s:Ansi2Color(chars) "{{{1
             let bright = (val == "std" ? "" : ";1")
 
             if check[0] " Check for a match of the foreground color
-                if a:chars =~ ".*".key.bright."m"
+                if a:chars =~ ".*".key.bright."[m;]"
                     let fground = s:term2ansi[val][key]
                 endif
             endif
             if check[1] "Check for background color
-                if a:chars =~ ".*".(key+10).bright."m"
+                if a:chars =~ ".*".(key+10).bright."[m;]"
                     let bground = s:term2ansi[val][key]
                 endif
             endif
@@ -1868,8 +1873,10 @@ function! s:Ansi2Color(chars) "{{{1
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
-    exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
-    setl cocu=nv cole=2
+    if has("conceal") && hlID('ColorTermESC') == 0
+        exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
+        setl cocu=nv cole=2
+    endif
 endfu
 function! s:GetColorPattern(list) "{{{1
     let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>\)'' ')
@@ -2053,11 +2060,11 @@ endfunction
 
 function! s:Modifylists(la, lb, op) "{{{1
     if a:op == '+'
-        return [ a:la[0] + a:lb[0], 
+        return [ a:la[0] + a:lb[0],
             \    a:la[1] + a:lb[1],
             \    a:la[2] + a:lb[2]]
     else
-        return [ a:la[0] - a:lb[0], 
+        return [ a:la[0] - a:lb[0],
             \    a:la[1] - a:lb[1],
             \    a:la[2] - a:lb[2]]
     endif
@@ -2199,6 +2206,10 @@ function! Colorizer#ColorOff() "{{{1
         sil! call matchdelete(_match.id)
     endfor
     call Colorizer#LocalFTAutoCmds(0)
+    if exists("s:conceal") && has("conceal")
+        let [&l:cole, &l:cocu] = s:conceal
+        unlet! s:conceal
+    endif
     unlet! w:match_list
     unlet! b:Colorizer_force
 endfu
@@ -2212,16 +2223,17 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         endif
     catch /nocolor/
         " nothing to do
-        call s:Warn("Your terminal doesn't support colors or no colors". 
+        call s:Warn("Your terminal doesn't support colors or no colors".
                     \ 'found in the current buffer!')
         return
     endtry
+    let error = ""
 
     " too slow
     "for name in keys(s:colors)
     "    call s:PreviewColorName(name)
     "endfor
-    
+
     " too slow:
     "for line in range(1,line('$'))
     "    call s:ColorMatchingLines(line)
@@ -2247,7 +2259,13 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         let cmd = printf(':sil %d,%d%ss/%s/'.
             \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
             \ s:color_unfolded, s:color_patterns.hex, n_flag ? 'n' : '')
-        exe cmd
+        try
+            exe cmd
+        catch
+            " some error occured, stop when finished (and don't setup auto
+            " comands
+            let error.=" ColorHex "
+        endtry
     endif
     if &t_Co > 16 || has("gui_running")
     " Also support something like
@@ -2262,13 +2280,19 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-        for pat in [ s:color_patterns.rgb, s:color_patterns.rgba, s:color_patterns.hsla]
+        for Pat in [ s:color_patterns.rgb, s:color_patterns.rgba, s:color_patterns.hsla]
             " Check, the pattern isn't too costly...
-            if s:CheckTimeout(pat, a:force)
+            if s:CheckTimeout(Pat[0], a:force)
                 let cmd = printf(':sil %d,%d%ss/%s/'.
-                    \ '\=s:ColorRGBValues(submatch(0))/egi%s', a:line1, a:line2,
-                    \ s:color_unfolded, pat, n_flag ? 'n' : '')
-                exe cmd
+                    \ '\=call(Pat[1], [submatch(0)])/egi%s', a:line1, a:line2,
+                    \ s:color_unfolded, Pat[0], n_flag ? 'n' : '')
+                try
+                    exe cmd
+                catch
+                    " some error occured, stop when finished (and don't setup auto
+                    " comands
+                    let error.=" ColorRGBValues: pat "
+                endtry
             endif
         endfor
         " highlight hsl(X,X,X) values
@@ -2288,26 +2312,45 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     if (exists("s:color_names") && s:color_names) && s:CheckTimeout(s:colornamepattern, a:force)
         let s_cmd = printf(':sil %d,%d%ss/%s/\=s:PreviewColorName(submatch(0))/egi%s',
             \ a:line1, a:line2, s:color_unfolded, s:colornamepattern, n_flag ? 'n' : '')
-        exe s_cmd
+        try
+            exe s_cmd
+        catch
+            " some error occured, stop when finished (and don't setup auto
+            " comands
+            let error=" ColorNames "
+        endtry
         " Somehow, when performing above search, the pattern remains in the
         " search history and this can be disturbing, so delete it from there.
         call histdel('/', -1)
     endif
-    if (s:CheckTimeout(s:color_patterns.term, a:force))
-        let cmd = printf(':sil %d,%d%ss/%s/'.
-            \ '\=s:PreviewColorTerm(submatch(1),submatch(2),submatch(3))/egi%s',
-            \ a:line1, a:line2,  s:color_unfolded, s:color_patterns.term,
-            \ n_flag ? 'n' : '')
-        exe cmd
-        " Hide ESC Terminal Chars
-        call s:TermConceal(s:color_patterns.term_conceal)
-    endif
+    for Pat in [ s:color_patterns.term ]
+        if (s:CheckTimeout(Pat[0], a:force))
+            let cmd = printf(':sil %d,%d%ss/%s/'.
+                \ '\=call(Pat[1],[submatch(1),submatch(2),submatch(3)])/egi%s',
+                \ a:line1, a:line2,  s:color_unfolded, Pat[0],
+                \ n_flag ? 'n' : '')
+            try
+                exe cmd
+                " Hide ESC Terminal Chars
+                call s:TermConceal(s:color_patterns.term_conceal[0])
+            catch
+                " some error occured, stop when finished (and don't setup auto
+                " comands
+                let error=" ColorTerm "
+            endtry
+        endif
+    endfor
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
-    if !exists("#FTColorizer#BufEnter")
+    if !exists("#FTColorizer#BufEnter") && empty(error)
         let b:Colorizer_force = 1
         call Colorizer#LocalFTAutoCmds(1)
+    endif
+    if !empty(error)
+        " Some error occured, stop trying to color the file
+        call Colorizer#ColorOff()
+        call s:Warn("Some error occured here: ". error)
     endif
     call s:SaveRestoreOptions(0, save, [])
     call winrestview(_a)
@@ -2383,8 +2426,8 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
         endif
         " Delete specific auto commands, because the filetype
         " has been changed.
-        let b:undo_ftplugin .= '| exe "sil! au! FTColorizer"'  
-        let b:undo_ftplugin .= '| exe "sil! aug! FTColorizer"'  
+        let b:undo_ftplugin .= '| exe "sil! au! FTColorizer"'
+        let b:undo_ftplugin .= '| exe "sil! aug! FTColorizer"'
         let b:undo_ftplugin .= '| exe ":ColorClear"'
     else
         aug FTColorizer
@@ -2464,7 +2507,7 @@ endif
 
 function! s:ColorMatchingLines() "{{{2
     " Programmatic approach to highlight all hex values as colors.
-    " Surprisingly a lot slower than calling 
+    " Surprisingly a lot slower than calling
     " :s/#\x\{3,6}/\=s:ColorMatchingLines1(submatch(0))/g
     let pat = s:GetColorPattern(keys(s:pat_func)). '\|'.
             \ s:GetColorPattern(keys(s:colors))
