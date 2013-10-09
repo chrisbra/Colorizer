@@ -1105,7 +1105,7 @@ function! s:ColorInit(...) "{{{1
         else
             let s:colors = s:xterm_8colors
         endif
-        let s:colornamepattern = s:GetColorPattern(keys(s:colors))
+        let s:colornamepattern =  s:GetColorPattern(keys(s:colors))
         call map(w:match_list, 'v:val.pattern')
     else
         throw "nocolor"
@@ -1419,7 +1419,8 @@ function! s:TermConceal(pattern) "{{{1
 endfu
 function! s:GetColorPattern(list) "{{{1
     let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>\)'' ')
-    return join(list, '\|')
+    " Force the old re engine. It should be faster without backtracking.
+    return (exists("+re") ? '\%#=1' : '').join(list, '\|')
 endfunction
 
 function! s:GetMatchList() "{{{1
