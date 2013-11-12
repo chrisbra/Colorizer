@@ -1906,7 +1906,7 @@ function! Colorizer#RGB2Term(arg) "{{{1
 
     let tcolor = s:Rgb2xterm(color)
     call s:DoHlGroup(color[1:], "Color_". color[1:])
-    exe "echohl" color[1:]
+    exe "echohl" "Color_".color[1:]
     echo a:arg. " => ". tcolor
     echohl None
 endfu
