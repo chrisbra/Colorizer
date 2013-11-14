@@ -13,6 +13,7 @@
 "               - detect rgb colors like this: rgb(R,G,B)
 "               - detect hvl coloring: hvl(H,V,L)
 "               - fix small bugs
+"               - Color ANSI Term values and hide terminal escape sequences
 
 " Init some variables "{{{1
 let s:cpo_save = &cpo
@@ -47,11 +48,12 @@ let s:basic16 = [
     \ [ 0xFF, 0xFF, 0xFF ]
     \ ]
 
-" Window console / ConEmu has different color codes
+" Cygwin / Window console / ConEmu has different color codes
 if (expand("$ComSpec") =~# '^\%(command\.com\|cmd\.exe\)$' &&
     \ !has("gui_running")) ||
-    \ (exists("$ConEmuPID") &&
-    \ expand("$ConEmuANSI") ==# "OFF")
+    \ (exists("$ConEmuPID") && 
+    \ expand("$ConEmuANSI") ==# "OFF") ||
+    \ (expand("$TERM") ==# 'cygwin' && &t_Co = 16)  " Cygwin terminal
     " command.com/ConEmu Color Cube (currently only supports 16 colors)
     let s:basic16 = [
     \ [ 0x00, 0x00, 0x00 ],
