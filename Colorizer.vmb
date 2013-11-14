@@ -37,7 +37,7 @@ endfu
 " define commands "{{{1
 command! -bang -range=%  -nargs=? -complete=custom,ColorHiArgs ColorHighlight
         \ :call Colorizer#DoColor(<q-bang>, <q-line1>, <q-line2>, <q-args>)
-command! -bang -nargs=1  RGB2Xterm  
+command! -bang -nargs=1  RGB2Term  
         \ :call Colorizer#RGB2Term(<q-args>)
 
 command! -bang    ColorClear    :call Colorizer#ColorOff()
@@ -82,7 +82,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-374
+377
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -100,7 +100,7 @@ Contents                                                        *Colorizer*
         1.  Colorizer Manual.............................|Colorizer-manual|
                 1.1 :ColorHighlight......................|:ColorHighlight|
                 1.2 :ColorClear..........................|:ColorClear|
-                1.3 :RGB2Xterm...........................|:RGB2Xterm|
+                1.3 :RGB2Term............................|:RGB2Term|
                 1.4 :HSL2RGB.............................|:HSL2RGB|
                 1.5 :ColorContrast.......................|:ColorContrast|
                 1.6 :ColorSwapFgBg.......................|:ColorSwapFgBg|
@@ -161,11 +161,11 @@ allowed, to disable that setting and use the opposite).
                                                                  *:ColorClear*
 :ColorClear                 Turn off Color highlighting.
 
-                                                                 *:RGB2Xterm*
-:RGB2Xterm <color>          Translate the color code given as argument to a
+                                                                 *:RGB2Term*
+:RGB2Term <color>           Translate the color code given as argument to a
                             the closest color, that can be displayed by the
                             terminal. Note, the color must be given in the
-                            format #RRGGBB (the hex format of the colors reg,
+                            format #RRGGBB (the hex format of the colors red,
                             green and blue the '#' is optional or
                             alternatively like rgb(X,X,X)
 
@@ -181,17 +181,17 @@ allowed, to disable that setting and use the opposite).
                             255 and V and L represent a percentage for value
                             and Lightness.
 
-                                                               *:ColorContrast*
+                                                             *:ColorContrast*
 :ColorContrast              Switch between all different color contrast
                             settings.
-                                                               *:ColorSwapFgBg*
+                                                             *:ColorSwapFgBg*
 :ColorSwapFgBg              Switch between foreground and background colors.
                             This will toggle in 3 ways. From Swapping
                             foreground and background colors, to only
                             highlight the foreground color back to normal
                             forground background color.
 
-                                                               *:ColorToggle*
+                                                              *:ColorToggle*
 :ColorToggle                Switch between highlighting colors and no
                             highlighting.
 
@@ -270,7 +270,7 @@ the CSS Specification. To use the X11 color names, set the variable
     let g:colorizer_x11_names = 1
 <
 
-2.7 Use syntax highlighting                                     *Colorizer-syntax*
+2.7 Use syntax highlighting                                *Colorizer-syntax*
 ---------------------------
 
 The plugin by default uses the |matchadd()| functions for highlighting colors
@@ -349,7 +349,7 @@ The better way to do this, is to use the g:colorizer_auto_filetype
 variable and set this to the desired filetypes. |Colorizer-hl-ft|
 
 ==============================================================================
-5. Colorizer Feedback                                      *Colorizer-feedback*
+5. Colorizer Feedback                                     *Colorizer-feedback*
 ==============================================================================
 
 Feedback is always welcome. If you like the plugin, please rate it at the
@@ -361,9 +361,9 @@ http://github.com/chrisbra/color_highlight
 Bugs can also be reported there:
 https://github.com/chrisbra/color_highlight/issues
 
-Alternatively, you can also report any bugs to the maintainer, mentioned in the
-third line of this document. Please don't hesitate to contact me, I won't bite
-;)
+Alternatively, you can also report any bugs to the maintainer, mentioned in
+the third line of this document. Please don't hesitate to contact me, I
+won't bite ;)
 
 If you like the plugin, write me an email (look in the third line for my mail
 address). And if you are really happy, vote for the plugin and consider
@@ -375,6 +375,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 
 0.10 (unreleased) {{{1
 - Also highlight Ansi Term sequences
+- Match colornames using the "old" RE Engine, if Vim supports it.
+- Make |RGB2Xterm| output the color name in its color
+- Rename |RGB2Xterm| to |RGB2Term|
 
 0.9 Aug 14, 2013: {{{1
 - https://github.com/chrisbra/color_highlight/issues/15 (rgba highlighting
@@ -458,7 +461,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2092
+2120
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -507,6 +510,33 @@ let s:basic16 = [
     \ [ 0x00, 0xFF, 0xFF ],
     \ [ 0xFF, 0xFF, 0xFF ]
     \ ]
+
+" Window console / ConEmu has different color codes
+if (expand("$ComSpec") =~# '^\%(command\.com\|cmd\.exe\)$' &&
+    \ !has("gui_running")) ||
+    \ (exists("$ConEmuPID") &&
+    \ expand("$ConEmuANSI") ==# "OFF")
+    " command.com/ConEmu Color Cube (currently only supports 16 colors)
+    let s:basic16 = [
+    \ [ 0x00, 0x00, 0x00 ],
+    \ [ 0x00, 0x00, 0x80 ],
+    \ [ 0x00, 0x80, 0x00 ],
+    \ [ 0x00, 0x80, 0x80 ],
+    \ [ 0x80, 0x00, 0x00 ],
+    \ [ 0x80, 0x00, 0x80 ],
+    \ [ 0xFF, 0xFF, 0x00 ],
+    \ [ 0xFF, 0xFF, 0xFF ],
+    \ [ 0xC0, 0xC0, 0xC0 ],
+    \ [ 0x00, 0x00, 0xFF ],
+    \ [ 0x00, 0xFF, 0x00 ],
+    \ [ 0x00, 0xFF, 0xFF ],
+    \ [ 0xFF, 0x00, 0x00 ],
+    \ [ 0xFF, 0x00, 0xFF ],
+    \ [ 0xFF, 0xFF, 0x00 ],
+    \ [ 0xFF, 0xFF, 0xFF ]
+    \ ]
+    let &t_Co=16
+endif
 
 " xterm-8 colors "{{{2
 let s:xterm_8colors = {
@@ -1566,7 +1596,7 @@ function! s:ColorInit(...) "{{{1
         else
             let s:colors = s:xterm_8colors
         endif
-        let s:colornamepattern = s:GetColorPattern(keys(s:colors))
+        let s:colornamepattern =  s:GetColorPattern(keys(s:colors))
         call map(w:match_list, 'v:val.pattern')
     else
         throw "nocolor"
@@ -1880,7 +1910,8 @@ function! s:TermConceal(pattern) "{{{1
 endfu
 function! s:GetColorPattern(list) "{{{1
     let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>\)'' ')
-    return join(list, '\|')
+    " Force the old re engine. It should be faster without backtracking.
+    return (exists("+re") ? '\%#=1' : '').join(list, '\|')
 endfunction
 
 function! s:GetMatchList() "{{{1
@@ -2366,7 +2397,7 @@ function! Colorizer#RGB2Term(arg) "{{{1
 
     let tcolor = s:Rgb2xterm(color)
     call s:DoHlGroup(color[1:], "Color_". color[1:])
-    exe "echohl" color[1:]
+    exe "echohl" "Color_".color[1:]
     echo a:arg. " => ". tcolor
     echohl None
 endfu

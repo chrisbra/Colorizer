@@ -47,8 +47,11 @@ let s:basic16 = [
     \ [ 0xFF, 0xFF, 0xFF ]
     \ ]
 
-if expand("$ComSpec") =~ "^\%(command\)\|\%(cmd\)" ||
-            \ (exists("$ConEmuPID") && expand("$ConEmuANSI") ==# "OFF")
+" Window console / ConEmu has different color codes
+if (expand("$ComSpec") =~# '^\%(command\.com\|cmd\.exe\)$' &&
+    \ !has("gui_running")) ||
+    \ (exists("$ConEmuPID") &&
+    \ expand("$ConEmuANSI") ==# "OFF")
     " command.com/ConEmu Color Cube (currently only supports 16 colors)
     let s:basic16 = [
     \ [ 0x00, 0x00, 0x00 ],
