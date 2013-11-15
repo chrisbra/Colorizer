@@ -1109,7 +1109,7 @@ function! s:ColorInit(...) "{{{1
 
     let s:color_patterns = { 'hex': join(s:hex_pattern, ''),
         \ 'rgb': ['rgb(\s*\%(\d\+%\?[^)]*\)\{3})', function("s:ColorRGBValues")],
-        \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\%(.\d\+\)\?\)\|1\))', function("s:ColorRGBValues")],
+        \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\))', function("s:ColorRGBValues")],
         \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})', function("s:ColorRGBValues")],
         \ 'term': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\=', function("s:PreviewColorTerm")],
         \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)']
