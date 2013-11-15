@@ -51,9 +51,13 @@ if (expand("$ComSpec") =~# '^\%(command\.com\|cmd\.exe\)$' &&
     \ !has("gui_running")) ||
     \ (exists("$ConEmuPID") && 
     \ expand("$ConEmuANSI") ==# "OFF") ||
+<<<<<<< HEAD
     \ (expand("$TERM") ==# 'cygwin' && &t_Co == 16) 
 
     " Cygwin terminal
+=======
+    \ (expand("$TERM") ==# 'cygwin' && &t_Co == 16)  " Cygwin terminal
+>>>>>>> 7f3fdceadd6c659f2ca5e65040d24c8c486bb10e
     " command.com/ConEmu Color Cube (currently only supports 16 colors)
     let s:basic16 = [
     \ [ 0x00, 0x00, 0x00 ],
