@@ -1497,7 +1497,7 @@ function! s:Ansi2Color(chars) "{{{1
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
-    if has("conceal") && hlID('ColorTermESC') == 0
+    if has("conceal")
         exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
         setl cocu=nv cole=2
     endif
