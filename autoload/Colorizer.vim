@@ -920,16 +920,16 @@ let s:x11_color_names = {
 \ }
 
 function! s:PreviewColorName(color) "{{{1
-    if s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
-        " skip coloring comments
-        return a:color
-    endif
     let name=tolower(a:color)
     let clr = s:colors[name]
     " Skip color-name, e.g. white-space property
     call s:SetMatcher(clr[1:], '\<'.name.'\>\c[-]\@!', {})
     return a:color
+endfu
+
+function! s:IsInComment() "{{{1
+    return s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
 endfu
 
 function! s:PreviewColorHex(match) "{{{1
@@ -1870,7 +1870,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "
     " Hexcodes should be word-bounded, but could also be delimited by [-_], so
     " allow those to delimit the end of the pattern
-    if (s:CheckTimeout(s:color_patterns.hex, a:force))
+    if (s:CheckTimeout(s:color_patterns.hex, a:force)) && !s:IsInComment()
         let cmd = printf(':sil %d,%d%ss/%s/'.
             \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
             \ s:color_unfolded, s:color_patterns.hex, n_flag ? 'n' : '')
@@ -1904,7 +1904,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             endif
 
             " Check, the pattern isn't too costly...
-            if s:CheckTimeout(Pat[0], a:force)
+            if s:CheckTimeout(Pat[0], a:force) && !s:IsInComment()
                 let cmd = printf(':sil %d,%d%ss/%s/'.
                     \ '\=call(Pat[1], [submatch(0)])/egi%s', a:line1, a:line2,
                     \ s:color_unfolded, Pat[0], n_flag ? 'n' : '')
@@ -1922,7 +1922,8 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     endif
     " highlight Colornames
     " only highlight, if either force is given, or the pattern matches within
-    if (exists("s:color_names") && s:color_names) && s:CheckTimeout(s:colornamepattern, a:force)
+    if (exists("s:color_names") && s:color_names)
+        && s:CheckTimeout(s:colornamepattern, a:force) && !s:IsInComment()
         let s_cmd = printf(':sil %d,%d%ss/%s/\=s:PreviewColorName(submatch(0))/egi%s',
             \ a:line1, a:line2, s:color_unfolded, s:colornamepattern, n_flag ? 'n' : '')
         try
@@ -1936,8 +1937,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         " search history and this can be disturbing, so delete it from there.
         call histdel('/', -1)
     endif
+
     for Pat in [ s:color_patterns.term ]
-        if (s:CheckTimeout(Pat[0], a:force))
+        if (s:CheckTimeout(Pat[0], a:force)) && !s:IsInComment()
             let cmd = printf(':sil %d,%d%ss/%s/'.
                 \ '\=call(Pat[1],[submatch(1),submatch(2),submatch(3)])/egi%s',
                 \ a:line1, a:line2,  s:color_unfolded, Pat[0],
