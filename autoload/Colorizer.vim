@@ -1150,16 +1150,6 @@ function! s:ColorInit(...) "{{{1
     let s:hex_pattern = get(g:, 'colorizer_hex_pattern',
                 \ ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@='])
 
-    let s:color_patterns = { 'hex': join(s:hex_pattern, ''),
-        \ 'rgb': ['rgb(\s*\%(\d\+%\?[^)]*\)\{3})', function("s:ColorRGBValues")],
-        \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\))', function("s:ColorRGBValues")],
-        \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})', function("s:ColorRGBValues")],
-        \ 'term': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\=', function("s:PreviewColorTerm")],
-        \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)'],
-        \ 'taskwarrior':  ['^color[^=]*=\zs.\+$', function("s:PreviewTaskWarriorColors")]
-        \ }
-
-
     if has("gui_running") || &t_Co >= 8 || s:HasColorPattern()
 	" The list of available match() patterns
 	let w:match_list = s:GetMatchList()
@@ -1183,6 +1173,30 @@ function! s:ColorInit(...) "{{{1
     else
         throw "nocolor"
     endif
+
+    let s:color_patterns = {
+        \ 'rgb': ['rgb(\s*\%(\d\+%\?[^)]*\)\{3})',
+            \ function("s:ColorRGBValues"), 'colorizer_rgb' ],
+        \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\))',
+            \ function("s:ColorRGBValues"), 'colorizer_rgba' ],
+        \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
+            \ function("s:ColorRGBValues"), 'colorizer_hsla' ],
+        \ 'term': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\=',
+            \ function("s:PreviewColorTerm"), 'colorizer_term'],
+        \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)', '',
+            \ 'colorizer_term_conceal' ],
+        \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
+            \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior' ],
+        \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex'],
+        \ }
+
+    if exists("s:colornamepattern")
+        let s:color_patterns["colornames"] = [ s:colornamepattern, 
+            \ function("s:PreviewColorName"), 'colorizer_names']
+    endif
+
+    let s:colorizer_taskwarrior_disable = get(g:, 'colorizer_taskwarrior_disable', 1)
+
 endfu
 
 function! s:FGforBG(bg) "{{{1
@@ -1844,15 +1858,6 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     endtry
     let error = ""
 
-    " too slow
-    "for name in keys(s:colors)
-    "    call s:PreviewColorName(name)
-    "endfor
-
-    " too slow:
-    "for line in range(1,line('$'))
-    "    call s:ColorMatchingLines(line)
-    "endfor
     let _a   = winsaveview()
     let save = s:SaveRestoreOptions(1, {},
             \ ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
@@ -1868,20 +1873,6 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "              #F0F
     "              #FFF
     "
-    " Hexcodes should be word-bounded, but could also be delimited by [-_], so
-    " allow those to delimit the end of the pattern
-    if (s:CheckTimeout(s:color_patterns.hex, a:force)) && !s:IsInComment()
-        let cmd = printf(':sil %d,%d%ss/%s/'.
-            \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
-            \ s:color_unfolded, s:color_patterns.hex, n_flag ? 'n' : '')
-        try
-            exe cmd
-        catch
-            " some error occured, stop when finished (and don't setup auto
-            " comands
-            let error.=" ColorHex "
-        endtry
-    endif
     if &t_Co > 16 || has("gui_running")
     " Also support something like
     " CSS rgb(255,0,0)
@@ -1895,11 +1886,13 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-        for Pat in [ s:color_patterns.rgb, s:color_patterns.rgba,
-                    \ s:color_patterns.hsla, s:color_patterns.taskwarrior]
+        for Pat in [ s:color_patterns.hex, s:color_patterns.rgb, s:color_patterns.rgba,
+                    \ s:color_patterns.hsla, s:color_patterns.taskwarrior] +
+                    \ (exists("s:color_names") ? [s:color_patterns.colornames] : [])
             " Taskwarrior highlighting needs to be expliticitly enabled!
-            if (Pat == s:color_patterns.taskwarrior) && !get(g:, 'colorizer_taskwarrior', 0)
-                " by default, don't try to color taskwarrior files
+
+            if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
+                " Coloring disabled
                 continue
             endif
 
@@ -1913,33 +1906,22 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 catch
                     " some error occured, stop when finished (and don't setup auto
                     " comands
-                    let error.=" ColorRGBValues: ". string(Pat)
+                    let error.=" Colorize: ". string(Pat)
                 endtry
             endif
         endfor
         " highlight hsl(X,X,X) values
         " Check, the pattern isn't too costly...
     endif
-    " highlight Colornames
-    " only highlight, if either force is given, or the pattern matches within
-    if (exists("s:color_names") && s:color_names)
-        && s:CheckTimeout(s:colornamepattern, a:force) && !s:IsInComment()
-        let s_cmd = printf(':sil %d,%d%ss/%s/\=s:PreviewColorName(submatch(0))/egi%s',
-            \ a:line1, a:line2, s:color_unfolded, s:colornamepattern, n_flag ? 'n' : '')
-        try
-            exe s_cmd
-        catch
-            " some error occured, stop when finished (and don't setup auto
-            " comands
-            let error.=" ColorNames "
-        endtry
-        " Somehow, when performing above search, the pattern remains in the
-        " search history and this can be disturbing, so delete it from there.
-        call histdel('/', -1)
-    endif
 
     for Pat in [ s:color_patterns.term ]
         if (s:CheckTimeout(Pat[0], a:force)) && !s:IsInComment()
+
+            if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
+                " Coloring disabled
+                continue
+            endif
+
             let cmd = printf(':sil %d,%d%ss/%s/'.
                 \ '\=call(Pat[1],[submatch(1),submatch(2),submatch(3)])/egi%s',
                 \ a:line1, a:line2,  s:color_unfolded, Pat[0],
@@ -1955,6 +1937,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             endtry
         endif
     endfor
+
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
