@@ -928,7 +928,7 @@ function! s:PreviewColorName(color) "{{{1
     let name=tolower(a:color)
     let clr = s:colors[name]
     " Skip color-name, e.g. white-space property
-    call s:SetMatcher(clr[1:], '\<'.name.'\>\c[-]\@!')
+    call s:SetMatcher(clr[1:], '\<'.name.'\>\c[-]\@!', {})
     return a:color
 endfu
 
@@ -954,7 +954,7 @@ function! s:PreviewColorHex(match) "{{{1
             let color = list[idx]
         endif
     endif
-    call s:SetMatcher(color, s:hex_pattern[0]. pattern. s:hex_pattern[2])
+    call s:SetMatcher(color, s:hex_pattern[0]. pattern. s:hex_pattern[2], {})
     return a:match
 endfunction
 
@@ -965,6 +965,7 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
     let retval = a:pre. a:text. a:post
 
     let color = s:Ansi2Color(a:pre)
+    let clr_Dict = {}
 
     if &t_Co == 8 && !has("gui_running")
         " The first 12 color names, can be displayed by 8 color terminals
@@ -981,9 +982,11 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
             let i+=1
         endfor
     endif
+    let clr_Dict.fg = color[0]
+    let clr_Dict.bg = color[1]
 "    let old_swap_fg_bg = s:swap_fg_bg
 "    let s:swap_fg_bg = 1
-    call s:SetMatcher(color, '\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', 1)
+    call s:SetMatcher(clr_Dict.fg, '\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', clr_Dict)
 "    let s:swap_fg_bg = old_swap_fg_bg
     return retval
 endfunction
@@ -994,6 +997,7 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
     " this highlighting should overrule e.g. colorname highlighting
     let s:default_match_priority += 1
     let color = ['NONE', 'NONE']
+    let color_Dict = {}
     " The submatch is everything after the first equalsign!
     let colormatch = matchlist(a:submatch, '\(\S\{3,}\)\?\%(\s*\)\?\%(on\s\+\(\S\{3,}\)\)\?')
     if !empty(colormatch) && !empty(colormatch[0])
@@ -1001,21 +1005,31 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
         for m in colormatch[1:2]
             let i+=1
             if match(keys(s:colors), '\<'.m.'\>') > -1
-                let color[i] = s:Rgb2xterm(s:colors[m])
+                if i == 0
+                    let color_Dict.fg = s:colors[m]
+                else
+                    let color_Dict.bg = s:colors[m]
+                endif
                 continue
             elseif match(m, '^rgb') > -1
                 let color[i] = m[3] * 36 + m[4] * 6 + m[5]
-                continue
             elseif match(m, '^color') > -1
                 let color[i] = matchstr(m, '\d\+')+0
-                continue
             elseif match(m, '^gray') > -1
                 let color[i] = matchstr(m, '\d\+') + 232
             endif
+            if i == 0
+                let color_Dict.ctermfg = color[i]
+            else
+                let color_Dict.ctermbg = color[i]
+            endif
         endfor
+"        if get(color_Dict, 'ctermfg', -1) || get(color_Dict, 'fg', -1) == '0'
+"            let color_Dict.fg = '000000'
+"        endif
         " only color in the line, that has been found
         "call s:SetMatcher(color, '\%'.line('.').'l'.a:submatch, color)
-        call s:SetMatcher(color, '=\s*\zs\<'.a:submatch.'\>$', color)
+        call s:SetMatcher(get(color_Dict, 'fg', get(color_Dict, 'ctermfg', 'NONE')), '=\s*\zs\<'.a:submatch.'\>$', color_Dict)
     endif
     let s:default_match_priority -= 1
     return a:submatch
@@ -1196,17 +1210,7 @@ function! s:DidColor(clr, pat) "{{{1
     return 0
 endfu
 
-function! s:DoHlGroup(clr, group, ...) "{{{1
-    let colorlist = 0
-    let cterm_clr = 0
-    if type(a:clr) == type([])
-        " a:clr is a list, containing fg and bg colors
-        " e.g. for TERM coloring
-        let colorlist = 1
-        if exists("a:1") && !empty(a:1)
-            let cterm_clr = 1
-        endif
-    endif
+function! s:DoHlGroup(clr, group, Dict) "{{{1
     let group = a:group
 
     if !s:force_hl
@@ -1216,9 +1220,9 @@ function! s:DoHlGroup(clr, group, ...) "{{{1
             return
         endif
     endif
-    let clr = (colorlist ? a:clr[0] : a:clr)
-    let bg  = (colorlist ? a:clr[1] : a:clr)
-    if !colorlist
+    let clr = (get(a:Dict, 'fg', 0) ? (a:Dict).fg : a:clr)
+    let bg  = (get(a:Dict, 'bg', get(a:Dict, 'ctermbg', 'NONE')))
+    if !empty(a:Dict) && get(a:Dict, 'fg', 0)
         let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(clr)
     else
         let fg=clr "explicit foreground color has been given
@@ -1235,9 +1239,9 @@ function! s:DoHlGroup(clr, group, ...) "{{{1
     let hi  = printf('hi %s guifg=#%s', group, fg)
     let hi .= printf(' guibg=%s', (bg != 'NONE' ? '#'.bg : bg))
     if !has("gui_running")
-        let fg = (cterm_clr ? a:1[0] : s:Rgb2xterm(fg))
-        let bg = (cterm_clr ? a:1[1] : (bg != 'NONE' ? s:Rgb2xterm(bg) : bg))
-	let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
+	let hi.= printf(' ctermfg=%s ctermbg=%s',
+          \ (get(a:Dict, 'ctermfg', get(a:Dict, 'ctermfg', s:Rgb2xterm(fg)))),
+          \ (get(a:Dict, 'ctermbg', get(a:Dict, 'ctermbg', 'NONE'))))
     endif
     "Don't error out for invalid colors
     try
@@ -1250,30 +1254,33 @@ function! s:DoHlGroup(clr, group, ...) "{{{1
     endtry
 endfunction
 
-function! s:SetMatcher(clr, pattern, ...) "{{{1
-    let cterm_clr = []
-    if (exists("a:1") && type(a:clr) == type([]))
-        " a:clr is a list, containing foreground and background color (e.g.
+function! s:SetMatcher(clr, pattern, Dict) "{{{1
+    let param={}
+    if (!empty(a:Dict))
+        " a:clr is a Dict, containing foreground and background color (e.g.
         " from TERM highlighting
-        let param = a:clr
-        if param[0] =~ '^\d\+$' || param[1] =~ '^\d\+$'
-            " Terminal colors have been given
-            let cterm_clr = copy(param)
-            " translate terminal color to rgb color value
-            let param[0]  = (string(param[0]) ==# 'NONE' ? 'NONE' :
-                        \ join(map(copy(s:colortable[param[0]]), 'printf("%02X", v:val)'),''))
-            let param[1]  = (string(param[1]) ==# 'NONE' ? 'NONE' : 
-                        \ join(map(copy(s:colortable[param[1]]), 'printf("%02X", v:val)'),''))
-        endif
-        let clr = 'Color_'.param[0].'_'.param[1]
+        let param = copy(a:Dict)
+        for key in ['ctermfg', 'ctermbg']
+            if get(param, key)
+                " Terminal colors have been given
+                " translate terminal color to rgb color value
+                let param[matchstr(key, '..$')] = (string(param[key]) ==# 'NONE' ? 'NONE' :
+                            \ join(map(copy(s:colortable[param[key]]), 'printf("%02X", v:val)'),''))
+            endif
+        endfor
+        let clr = 'Color_'.get(param, 'fg', get(param, 'ctermfg', '000000')) . '_'. 
+                \ get(param, 'bg', get(param, 'ctermbg', '000000'))
     else
         let clr = 'Color_'. a:clr
     endif
-    if !empty(cterm_clr)
-        call s:DoHlGroup(a:clr, clr, cterm_clr)
+
+    if !empty(a:Dict)
+        let color = get(param, 'fg', get(param, 'ctermfg', 'NONE'))
     else
-        call s:DoHlGroup(a:clr, clr)
+        let color = a:clr
     endif
+
+    call s:DoHlGroup(color, clr, param)
     if s:DidColor(clr, a:pattern)
         return
     endif
@@ -1622,7 +1629,7 @@ function! s:ColorRGBValues(val) "{{{1
         let rgb = s:ApplyAlphaValue(rgb)
     endif
     let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
-    call s:SetMatcher(clr, a:val)
+    call s:SetMatcher(clr, a:val, {})
     return a:val
 endfunction
 
@@ -1923,7 +1930,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         catch
             " some error occured, stop when finished (and don't setup auto
             " comands
-            let error=" ColorNames "
+            let error.=" ColorNames "
         endtry
         " Somehow, when performing above search, the pattern remains in the
         " search history and this can be disturbing, so delete it from there.
@@ -1971,7 +1978,7 @@ function! Colorizer#RGB2Term(arg) "{{{1
     endif
 
     let tcolor = s:Rgb2xterm(color)
-    call s:DoHlGroup(color[1:], "Color_". color[1:])
+    call s:DoHlGroup(color[1:], "Color_". color[1:], {})
     exe "echohl" "Color_".color[1:]
     echo a:arg. " => ". tcolor
     echohl None
@@ -1986,7 +1993,7 @@ function! Colorizer#HSL2Term(arg) "{{{1
     let str = s:PrepareHSLArgs(hsl)
 
     let tcolor = s:Rgb2xterm('#'.str)
-    call s:DoHlGroup(str, "Color_".str)
+    call s:DoHlGroup(str, "Color_".str, {})
     exe "echohl" str
     echo a:arg. " => ". tcolor
     echohl None
