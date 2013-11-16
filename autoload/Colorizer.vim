@@ -1028,7 +1028,13 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
 "        endif
         " only color in the line, that has been found
         "call s:SetMatcher(color, '\%'.line('.').'l'.a:submatch, color)
-        call s:SetMatcher(get(color_Dict, 'fg', get(color_Dict, 'ctermfg', 'NONE')), '=\s*\zs\<'.a:submatch.'\>$', color_Dict)
+        let cname = get(color_Dict, 'fg', 'NONE')
+        if cname[0] ==# '#'
+            let cname = cname[1:]
+        elseif cname ==# 'NONE' && get(color_Dict, 'ctermfg')
+            let cname = join(map(copy(s:colortable[color_Dict.ctermfg]), 'printf("%02X", v:val)'),'')
+        endif
+        call s:SetMatcher(cname, '=\s*\zs\<'.a:submatch.'\>$', color_Dict)
     endif
     let s:default_match_priority -= 1
     return a:submatch
@@ -1281,7 +1287,7 @@ function! s:SetMatcher(clr, pattern, Dict) "{{{1
                             \ join(map(copy(s:colortable[param[key]]), 'printf("%02X", v:val)'),''))
             endif
         endfor
-        let clr = 'Color_'.get(param, 'fg', get(param, 'ctermfg', '000000')) . '_'. 
+        let clr = 'Color_'. a:clr. '_'. 
                 \ get(param, 'bg', get(param, 'ctermbg', '000000'))
     else
         let clr = 'Color_'. a:clr
