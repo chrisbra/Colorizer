@@ -1010,7 +1010,7 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
                     let color_Dict.bg = s:colors[m][1:] " skip the # sign
                 endif
                 continue
-            elseif match(m, '^rgb') > -1
+            elseif match(m, '^rgb...') > -1
                 let color[i] = m[3] * 36 + m[4] * 6 + m[5]
             elseif match(m, '^color') > -1
                 let color[i] = matchstr(m, '\d\+')+0
