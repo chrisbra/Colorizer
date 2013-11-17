@@ -1296,7 +1296,7 @@ function! s:SetMatcher(clr, pattern, Dict) "{{{1
         " from TERM highlighting
         let param = copy(a:Dict)
         for key in ['ctermfg', 'ctermbg']
-            if get(param, key)
+            if get(param, key, -1) > -1
                 " Terminal colors have been given
                 " translate terminal color to rgb color value
                 let param[matchstr(key, '..$')] = (string(param[key]) ==# 'NONE' ? 'NONE' :
