@@ -1261,8 +1261,14 @@ function! s:DoHlGroup(clr, group, Dict) "{{{1
         let bg  = t
         unlet t
     endif
-    let hi  = printf('hi %s guifg=#%s', group, fg)
-    let hi .= printf(' guibg=%s', (bg != 'NONE' ? '#'.bg : bg))
+    if fg[0] !=# '#' && fg !=# 'NONE'
+        let fg='#'.fg
+    endif
+    if bg[0] !=# '#' && bg !=# 'NONE'
+        let bg='#'.bg
+    endif
+    let hi  = printf('hi %s guifg=%s', group, fg)
+    let hi .= printf(' guibg=%s', bg)
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
     if !has("gui_running")
@@ -1306,7 +1312,7 @@ function! s:SetMatcher(clr, pattern, Dict) "{{{1
     endif
 
     if !empty(a:Dict)
-        let color = get(param, 'fg', get(param, 'ctermfg') ?
+        let color = get(param, 'fg', get(param, 'ctermfg', -1) > -1 ?
                     \ s:Term2RGB(get(param, 'ctermfg')) : 'NONE')
     else
         let color = a:clr
