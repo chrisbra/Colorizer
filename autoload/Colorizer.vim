@@ -995,18 +995,25 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
 
     " this highlighting should overrule e.g. colorname highlighting
     let s:default_match_priority += 1
-    let color = ['NONE', 'NONE']
+    let color = ['', 'NONE', 'NONE']
     let color_Dict = {}
     " The submatch is everything after the first equalsign!
-    let colormatch = matchlist(a:submatch, '\(\S\{3,}\)\?\%(\s*\)\?\%(on\s\+\(\S\{3,}\)\)\?')
+    let colormatch = matchlist(a:submatch, '\(inverse\|underline\|bright\|bold\)\?\%(\s*\)\(\S\{3,}\)\?\%(\s*\)\?\%(on\s\+\(\S\{3,}\)\)\?')
     if !empty(colormatch) && !empty(colormatch[0])
         let i=-1
-        for m in colormatch[1:2]
+        for m in colormatch[1:3]
             let i+=1
-            if match(keys(s:colors), '\<'.m.'\>') > -1
-                if i == 0
-                    let color_Dict.fg = s:colors[m][1:] " skip the # sign
+            if i == 0
+                if (!empty(colormatch[1]))
+                    let color_Dict.special=colormatch[1]
                 else
+                    continue
+                endif
+            endif
+            if match(keys(s:colors), '\<'.m.'\>') > -1
+                if i == 1
+                    let color_Dict.fg = s:colors[m][1:] " skip the # sign
+                elseif i == 2
                     let color_Dict.bg = s:colors[m][1:] " skip the # sign
                 endif
                 continue
@@ -1017,9 +1024,9 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
             elseif match(m, '^gray') > -1
                 let color[i] = matchstr(m, '\d\+') + 232
             endif
-            if i == 0
+            if i == 1
                 let color_Dict.ctermfg = color[i]
-            else
+            elseif i == 2
                 let color_Dict.ctermbg = color[i]
             endif
         endfor
@@ -1034,7 +1041,7 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
     return a:submatch
 endfunction
 
-function s:Term2RGB(index)
+function s:Term2RGB(index) "{{{1
     " Return index in colortable in RRGGBB form
     return join(map(copy(s:colortable[a:index]), 'printf("%02X", v:val)'),'')
 endfu
@@ -1256,10 +1263,14 @@ function! s:DoHlGroup(clr, group, Dict) "{{{1
     endif
     let hi  = printf('hi %s guifg=#%s', group, fg)
     let hi .= printf(' guibg=%s', (bg != 'NONE' ? '#'.bg : bg))
+    let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
+        \ (' gui='. a:Dict.special) : '')
     if !has("gui_running")
 	let hi.= printf(' ctermfg=%s ctermbg=%s',
           \ (get(a:Dict, 'ctermfg', get(a:Dict, 'ctermfg', s:Rgb2xterm(fg)))),
           \ (get(a:Dict, 'ctermbg', get(a:Dict, 'ctermbg', 'NONE'))))
+        let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
+          \ (' cterm='. a:Dict.special) : '')
     endif
     "Don't error out for invalid colors
     try
@@ -1287,13 +1298,16 @@ function! s:SetMatcher(clr, pattern, Dict) "{{{1
             endif
         endfor
         let clr = 'Color_'. a:clr. '_'. 
-                \ get(param, 'bg', s:Term2RGB(get(param, 'ctermbg', '0')))
+                \ get(param, 'bg', s:Term2RGB(get(param, 'ctermbg', '0'))).
+                \ (!empty(get(param, 'special', '')) ?
+                \ ('_'. get(param, 'special')) : '')
     else
         let clr = 'Color_'. a:clr
     endif
 
     if !empty(a:Dict)
-        let color = get(param, 'fg', get(param, 'ctermfg') ? s:Term2RGB(get(param, 'ctermfg')) : 'NONE')
+        let color = get(param, 'fg', get(param, 'ctermfg') ?
+                    \ s:Term2RGB(get(param, 'ctermfg')) : 'NONE')
     else
         let color = a:clr
     endif
