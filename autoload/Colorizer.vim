@@ -1005,9 +1005,9 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
             let i+=1
             if match(keys(s:colors), '\<'.m.'\>') > -1
                 if i == 0
-                    let color_Dict.fg = s:colors[m]
+                    let color_Dict.fg = s:colors[m][1:] " skip the # sign
                 else
-                    let color_Dict.bg = s:colors[m]
+                    let color_Dict.bg = s:colors[m][1:] " skip the # sign
                 endif
                 continue
             elseif match(m, '^rgb') > -1
@@ -1023,22 +1023,21 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
                 let color_Dict.ctermbg = color[i]
             endif
         endfor
-"        if get(color_Dict, 'ctermfg', -1) || get(color_Dict, 'fg', -1) == '0'
-"            let color_Dict.fg = '000000'
-"        endif
-        " only color in the line, that has been found
-        "call s:SetMatcher(color, '\%'.line('.').'l'.a:submatch, color)
+
         let cname = get(color_Dict, 'fg', 'NONE')
-        if cname[0] ==# '#'
-            let cname = cname[1:]
-        elseif cname ==# 'NONE' && get(color_Dict, 'ctermfg')
-            let cname = join(map(copy(s:colortable[color_Dict.ctermfg]), 'printf("%02X", v:val)'),'')
+        if cname ==# 'NONE' && get(color_Dict, 'ctermfg')
+            let cname = s:Term2RGB(color_Dict.ctermfg)
         endif
         call s:SetMatcher(cname, '=\s*\zs\<'.a:submatch.'\>$', color_Dict)
     endif
     let s:default_match_priority -= 1
     return a:submatch
 endfunction
+
+function s:Term2RGB(index)
+    " Return index in colortable in RRGGBB form
+    return join(map(copy(s:colortable[a:index]), 'printf("%02X", v:val)'),'')
+endfu
 
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
@@ -1284,17 +1283,17 @@ function! s:SetMatcher(clr, pattern, Dict) "{{{1
                 " Terminal colors have been given
                 " translate terminal color to rgb color value
                 let param[matchstr(key, '..$')] = (string(param[key]) ==# 'NONE' ? 'NONE' :
-                            \ join(map(copy(s:colortable[param[key]]), 'printf("%02X", v:val)'),''))
+                            \ s:Term2RGB(param[key]))
             endif
         endfor
         let clr = 'Color_'. a:clr. '_'. 
-                \ get(param, 'bg', get(param, 'ctermbg', '000000'))
+                \ get(param, 'bg', s:Term2RGB(get(param, 'ctermbg', '0')))
     else
         let clr = 'Color_'. a:clr
     endif
 
     if !empty(a:Dict)
-        let color = get(param, 'fg', get(param, 'ctermfg', 'NONE'))
+        let color = get(param, 'fg', get(param, 'ctermfg') ? s:Term2RGB(get(param, 'ctermfg')) : 'NONE')
     else
         let color = a:clr
     endif
