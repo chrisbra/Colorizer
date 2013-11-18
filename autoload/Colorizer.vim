@@ -998,7 +998,10 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
     let color = ['', 'NONE', 'NONE']
     let color_Dict = {}
     " The submatch is everything after the first equalsign!
-    let colormatch = matchlist(a:submatch, '\(inverse\|underline\|bright\|bold\)\?\%(\s*\)\(\S\{3,}\)\?\%(\s*\)\?\%(on\s\+\(\S\{3,}\)\)\?')
+    let tpat = '\(inverse\|underline\|bright\|bold\)\?\%(\s*\)\(\S\{3,}\)'.
+                \ '\?\%(\s*\)\?\%(on\s\+'.
+                \ '\%(inverse\|underline\|bright\|bold\)\?\%(\s*\)\(\S\{3,}\)\)\?'
+    let colormatch = matchlist(a:submatch, tpat)
     try
         if !empty(colormatch) && !empty(colormatch[0])
             let i=-1
