@@ -1287,9 +1287,13 @@ function! s:DoHlGroup(clr, group, Dict) "{{{1
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
     if !has("gui_running")
+        let bg = get(a:Dict, 'bg', 'NONE')
+        if bg !=# 'NONE'
+            let bg = s:Rgb2xterm(bg)
+        endif
 	let hi.= printf(' ctermfg=%s ctermbg=%s',
           \ (get(a:Dict, 'ctermfg', get(a:Dict, 'ctermfg', s:Rgb2xterm(fg)))),
-          \ (get(a:Dict, 'ctermbg', get(a:Dict, 'ctermbg', 'NONE'))))
+          \ (get(a:Dict, 'ctermbg', get(a:Dict, 'ctermbg', bg))))
         let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
           \ (' cterm='. a:Dict.special) : '')
     endif
