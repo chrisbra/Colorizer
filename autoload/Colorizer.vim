@@ -2002,7 +2002,7 @@ function! Colorizer#RGB2Term(arg) "{{{1
         let clr    = s:StripParentheses(a:arg)
         let color  = printf("#%02X%02X%02X", clr[0], clr[1], clr[2])
     else
-        let color  = a:arg[0] == '#' ? a:arg : #.a:arg
+        let color  = a:arg[0] == '#' ? a:arg : '#'.a:arg
     endif
 
     let tcolor = s:Rgb2xterm(color)
