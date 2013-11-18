@@ -1221,8 +1221,6 @@ function! s:ColorInit(...) "{{{1
             \ function("s:PreviewColorName"), 'colorizer_names']
     endif
 
-    let s:colorizer_taskwarrior_disable = get(g:, 'colorizer_taskwarrior_disable', 1)
-
 endfu
 
 function! s:FGforBG(bg) "{{{1
@@ -1936,6 +1934,11 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
 
             if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
                 " Coloring disabled
+                continue
+            endif
+
+            if Pat ==# s:color_patterns.taskwarrior && expand("%:e") !=# 'theme'
+                " only try to use taskwarrior coloring for .theme files
                 continue
             endif
 
