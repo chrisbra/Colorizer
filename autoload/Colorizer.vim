@@ -999,46 +999,61 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
     let color_Dict = {}
     " The submatch is everything after the first equalsign!
     let colormatch = matchlist(a:submatch, '\(inverse\|underline\|bright\|bold\)\?\%(\s*\)\(\S\{3,}\)\?\%(\s*\)\?\%(on\s\+\(\S\{3,}\)\)\?')
-    if !empty(colormatch) && !empty(colormatch[0])
-        let i=-1
-        for m in colormatch[1:3]
-            let i+=1
-            if i == 0
-                if (!empty(colormatch[1]))
-                    let color_Dict.special=colormatch[1]
-                else
+    try
+        if !empty(colormatch) && !empty(colormatch[0])
+            let i=-1
+            for m in colormatch[1:3]
+                let i+=1
+                if i == 0
+                    if (!empty(colormatch[1]))
+                        let color_Dict.special=colormatch[1]
+                    else
+                        continue
+                    endif
+                endif
+                if match(keys(s:colors), '\<'.m.'\>') > -1
+                    if i == 1
+                        let color_Dict.fg = s:colors[m][1:] " skip the # sign
+                    elseif i == 2
+                        let color_Dict.bg = s:colors[m][1:] " skip the # sign
+                    endif
                     continue
+                elseif match(m, '^rgb...') > -1
+                    let color[i] = m[3] * 36 + m[4] * 6 + m[5] + 16 " (start at index 16)
+                    if color[i] > 231
+                        " invalid color
+                        return a:submatch
+                    endif
+                elseif match(m, '^color') > -1
+                    let color[i] = matchstr(m, '\d\+')+0
+                    if color[i] > 231
+                        " invalid color
+                        return a:submatch
+                    endif
+                elseif match(m, '^gray') > -1
+                    let color[i] = matchstr(m, '\d\+') + 232
+                    if color[i] > 231
+                        " invalid color
+                        return a:submatch
+                    endif
                 endif
-            endif
-            if match(keys(s:colors), '\<'.m.'\>') > -1
                 if i == 1
-                    let color_Dict.fg = s:colors[m][1:] " skip the # sign
+                    let color_Dict.ctermfg = color[i]
                 elseif i == 2
-                    let color_Dict.bg = s:colors[m][1:] " skip the # sign
+                    let color_Dict.ctermbg = color[i]
                 endif
-                continue
-            elseif match(m, '^rgb...') > -1
-                let color[i] = m[3] * 36 + m[4] * 6 + m[5]
-            elseif match(m, '^color') > -1
-                let color[i] = matchstr(m, '\d\+')+0
-            elseif match(m, '^gray') > -1
-                let color[i] = matchstr(m, '\d\+') + 232
-            endif
-            if i == 1
-                let color_Dict.ctermfg = color[i]
-            elseif i == 2
-                let color_Dict.ctermbg = color[i]
-            endif
-        endfor
+            endfor
 
-        let cname = get(color_Dict, 'fg', 'NONE')
-        if cname ==# 'NONE' && get(color_Dict, 'ctermfg')
-            let cname = s:Term2RGB(color_Dict.ctermfg)
+            let cname = get(color_Dict, 'fg', 'NONE')
+            if cname ==# 'NONE' && get(color_Dict, 'ctermfg')
+                let cname = s:Term2RGB(color_Dict.ctermfg)
+            endif
+            call s:SetMatcher(cname, '=\s*\zs\<'.a:submatch.'\>$', color_Dict)
         endif
-        call s:SetMatcher(cname, '=\s*\zs\<'.a:submatch.'\>$', color_Dict)
-    endif
-    let s:default_match_priority -= 1
-    return a:submatch
+        return a:submatch
+    finally
+        let s:default_match_priority -= 1
+    endtry
 endfunction
 
 function s:Term2RGB(index) "{{{1
