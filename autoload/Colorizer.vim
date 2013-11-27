@@ -1242,12 +1242,17 @@ endfunction
 
 function! s:DidColor(clr, pat) "{{{1
     let idx = index(w:match_list, a:pat)
+    let cache_hl_group = get(filter(copy(getmatches()), 'v:val.pattern ==# a:pat'), 0, {})
     if idx > -1
         if a:pat[0] == '#' ||
         \ (!empty(synIDattr(hlID(a:clr), 'fg')) && 
-        \ filter(copy(getmatches()), 'v:val.pattern ==# a:pat')[0].group ==# 'a:clr')
+        \ get(cache_hl_group, 'pattern', a:clr) ==# a:clr)
             return 1
         endif
+    endif
+    if (!empty(cache_hl_group) &&
+    \ get(cache_hl_group, 'pattern', a:clr) !=# a:clr)
+        sil! call matchdelete(get(cache_hl_group, 'id'))
     endif
     return 0
 endfu
