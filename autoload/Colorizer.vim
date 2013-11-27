@@ -1059,7 +1059,7 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
     endtry
 endfunction
 
-function s:Term2RGB(index) "{{{1
+function! s:Term2RGB(index) "{{{1
     " Return index in colortable in RRGGBB form
     return join(map(copy(s:colortable[a:index]), 'printf("%02X", v:val)'),'')
 endfu
@@ -1244,7 +1244,8 @@ function! s:DidColor(clr, pat) "{{{1
     let idx = index(w:match_list, a:pat)
     if idx > -1
         if a:pat[0] == '#' ||
-        \ !empty(synIDattr(hlID(a:clr), 'fg'))
+        \ (!empty(synIDattr(hlID(a:clr), 'fg')) && 
+        \ filter(copy(getmatches()), 'v:val.pattern ==# a:pat')[0].group ==# 'a:clr')
             return 1
         endif
     endif
@@ -1263,7 +1264,7 @@ function! s:DoHlGroup(clr, group, Dict) "{{{1
     endif
     let clr = (get(a:Dict, 'fg', 0) ? (a:Dict).fg : a:clr)
     let bg  = (get(a:Dict, 'bg', get(a:Dict, 'ctermbg', 'NONE')))
-    if !empty(a:Dict) && get(a:Dict, 'fg', 0)
+    if !empty(a:Dict) && get(a:Dict, 'fg', -1) > -1
         let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(clr)
     else
         let fg=clr "explicit foreground color has been given
