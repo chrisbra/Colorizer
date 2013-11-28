@@ -1226,9 +1226,21 @@ function! s:ColorInit(...) "{{{1
 
 endfu
 
+function! s:SwapColors(list) "{{{1
+    if s:swap_fg_bg > 0
+        return [a:list[1]] + ['NONE']
+    elseif s:swap_fg_bg == -1
+        return [a:list[1], a:list[0]]
+    else
+        return a:list
+    endif
+endfu
 function! s:FGforBG(bg) "{{{1
    " takes a 6hex color code and returns a matching color that is visible
    let fgc = g:colorizer_fgcontrast
+   if a:bg ==# 'NONE'
+       return s:predefined_fgcolors['dark'][fgc]
+   endif
    let pure = a:bg
    let r = '0x'.pure[0:1]+0
    let g = '0x'.pure[2:3]+0
@@ -1258,7 +1270,6 @@ function! s:DidColor(clr, pat) "{{{1
 endfu
 
 function! s:DoHlGroup(group, Dict) "{{{1
-
     if !s:force_hl
         let syn = synIDattr(hlID(a:group), 'fg')
         if !empty(syn) && syn > -1
@@ -1273,15 +1284,7 @@ function! s:DoHlGroup(group, Dict) "{{{1
     else
         let fg=clr "explicit foreground color has been given
     endif
-    if s:swap_fg_bg > 0
-        let fg  = clr
-        let bg  = 'NONE'
-    elseif s:swap_fg_bg == -1
-        let t   = fg
-        let fg  = clr
-        let bg  = t
-        unlet t
-    endif
+    let [fg, bg] = s:SwapColors([fg, bg])
     if fg[0] !=# '#' && fg !=# 'NONE'
         let fg='#'.fg
     endif
@@ -1293,13 +1296,18 @@ function! s:DoHlGroup(group, Dict) "{{{1
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
     if !has("gui_running")
-        let ctermbg = get(a:Dict, 'bg', bg)
-        if ctermbg !=# 'NONE'
-            let bg = s:Rgb2xterm(ctermbg)
+        if bg !=# 'NONE'
+            let bg = s:Rgb2xterm(bg)
         endif
+        if fg !=# 'NONE' && get(a:Dict, 'ctermfg', -1) > -1
+            let fg = get(a:Dict, 'ctermfg')
+        elseif fg !=# 'NONE'
+            let fg = s:Rgb2xterm(fg)
+        endif
+
 	let hi.= printf(' ctermfg=%s ctermbg=%s',
           \ (get(a:Dict, 'ctermfg', get(a:Dict, 'ctermfg', s:Rgb2xterm(fg)))),
-          \ (get(a:Dict, 'ctermbg', get(a:Dict, 'ctermbg', bg))))
+          \ bg )
         let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
           \ (' cterm='. a:Dict.special) : '')
     endif
@@ -1979,6 +1987,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 " some error occured, stop when finished (and don't setup auto
                 " comands
                 let error=" ColorTerm "
+                break
             endtry
         endif
     endfor
