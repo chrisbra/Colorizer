@@ -923,7 +923,6 @@ function! s:PreviewColorName(color) "{{{1
     let clr = s:colors[name]
     " Skip color-name, e.g. white-space property
     call s:SetMatcher('\<'.name.'\>\c[-]\@!', {'bg': clr[1:]})
-    return a:color
 endfu
 
 function! s:IsInComment() "{{{1
@@ -954,14 +953,12 @@ function! s:PreviewColorHex(match) "{{{1
         endif
     endif
     call s:SetMatcher(s:hex_pattern[0]. pattern. s:hex_pattern[2], {'bg': color})
-    return
 endfunction
 
 function! s:PreviewColorTerm(pre, text, post) "{{{1
     " a:pre: Ansi-Sequences determining the highlighting
     " a:text: Text to color
     " a:post: Ansi-Sequences resetting the coloring (might be empty)
-
     let color = s:Ansi2Color(a:pre)
     let clr_Dict = {}
 
@@ -983,7 +980,6 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
     let clr_Dict.fg = color[0]
     let clr_Dict.bg = color[1]
     call s:SetMatcher('\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', clr_Dict)
-    return
 endfunction
 
 function! s:PreviewTaskWarriorColors(submatch) "{{{1
@@ -1049,7 +1045,6 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
             endif
             call s:SetMatcher('=\s*\zs\<'.a:submatch.'\>$', color_Dict)
         endif
-        return
     finally
         let s:default_match_priority -= 1
     endtry
@@ -1223,7 +1218,6 @@ function! s:ColorInit(...) "{{{1
         let s:color_patterns["colornames"] = [ s:colornamepattern, 
             \ function("s:PreviewColorName"), 'colorizer_names']
     endif
-
 endfu
 
 function! s:SwapColors(list) "{{{1
@@ -1235,16 +1229,16 @@ function! s:SwapColors(list) "{{{1
         return a:list
     endif
 endfu
+
 function! s:FGforBG(bg) "{{{1
    " takes a 6hex color code and returns a matching color that is visible
    let fgc = g:colorizer_fgcontrast
    if a:bg ==# 'NONE'
        return s:predefined_fgcolors['dark'][fgc]
    endif
-   let pure = a:bg
-   let r = '0x'.pure[0:1]+0
-   let g = '0x'.pure[2:3]+0
-   let b = '0x'.pure[4:5]+0
+   let r = '0x'.a:bg[0:1]+0
+   let g = '0x'.a:bg[2:3]+0
+   let b = '0x'.a:bg[4:5]+0
    if r*30 + g*59 + b*11 > 12000
         return s:predefined_fgcolors['dark'][fgc]
     else
@@ -1441,7 +1435,6 @@ function! s:RoundColor(...) "{{{1
     " Check with the values from the 16 color xterm, if the difference
     " is lower
     let result = s:Check16ColorTerm(result, minlist)
-
     return result
 endfunction
 
@@ -1457,8 +1450,8 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
             " euclidian distance would be needed,
             " but this works good enough and is faster.
             let t = abs(value[0] - a:rgblist[0]) +
-                    \ abs(value[1] - a:rgblist[1]) +
-                    \ abs(value[2] - a:rgblist[2])
+                  \ abs(value[1] - a:rgblist[1]) +
+                  \ abs(value[2] - a:rgblist[2])
             if min > t
                 return value
             endif
@@ -1479,8 +1472,8 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
         let list = (&t_Co == 16 ? s:basic16 : s:basic16[:7])
         for value in list
             let t = abs(value[0] - a:rgblist[0]) +
-                    \ abs(value[1] - a:rgblist[1]) +
-                    \ abs(value[2] - a:rgblist[2])
+                  \ abs(value[1] - a:rgblist[1]) +
+                  \ abs(value[2] - a:rgblist[2])
             if min > t
                 let min = t
                 let best = value
@@ -1567,7 +1560,7 @@ endfu
 function! s:GetColorPattern(list) "{{{1
     let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>\)'' ')
     " Force the old re engine. It should be faster without backtracking.
-    return (exists("+re") ? '\%#=1' : '').join(list, '\|')
+    return '\%#=1'.join(list, '\|')
 endfunction
 
 function! s:GetMatchList() "{{{1
@@ -1692,25 +1685,24 @@ function! s:ColorRGBValues(val) "{{{1
     endif
     let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
     call s:SetMatcher(a:val, {'bg': clr})
-    return
 endfunction
 
 function! s:ColorHSLValues(val) "{{{1
     if s:skip_comments &&
         \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
         " skip coloring comments
-        return a:val
+        return
     endif
     " strip parantheses and split on comma
     let hsl = s:StripParentheses(a:val)
     if empty(hsl)
         call s:Warn("Error in expression". a:val. "! Please report as bug.")
-        return a:val
+        return
     endif
     let str = s:PrepareHSLArgs(hsl)
 
     call s:SetMatcher(a:val, {'bg': str})
-    return a:val
+    return
 endfu
 
 function! s:HSL2RGB(h, s, l) "{{{1
@@ -1747,7 +1739,6 @@ function! s:Hue2RGB(m1, m2, h) "{{{1
     return round(res * 255)
 endfunction
 
-
 function! s:Rgb2xterm(color) "{{{1
 " selects the nearest xterm color for a rgb value like #FF0000
 " hard code values for 000000 and FFFFFF, they will be called many times
@@ -1781,10 +1772,6 @@ function! s:Rgb2xterm(color) "{{{1
                 " 0 and 15 have already been take care of
                 if r < 5
                     return 0 " black
-    "            elseif r == 127
-    "                return 8 " from 16 color xterm
-    "            elseif r == 229
-    "                return 7 " from 16 color xterm
                 elseif r > 244
                     return 15 " white
                 endif
@@ -1866,9 +1853,6 @@ function! s:SyntaxMatcher(enable) "{{{1
             sil! call matchdelete(hi.id)
         endif
     endfor
-"    if a:enable
-"        unlet w:match_list
-"    endif
 endfu
 
 function! Colorizer#ColorToggle() "{{{1
@@ -1886,9 +1870,8 @@ function! Colorizer#ColorOff() "{{{1
     call Colorizer#LocalFTAutoCmds(0)
     if exists("s:conceal") && has("conceal")
         let [&l:cole, &l:cocu] = s:conceal
-        unlet! s:conceal
     endif
-    unlet! w:match_list b:Colorizer_force
+    unlet! w:match_list b:Colorizer_force s:conceal
 endfu
 
 function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
@@ -1964,8 +1947,6 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 endtry
             endif
         endfor
-        " highlight hsl(X,X,X) values
-        " Check, the pattern isn't too costly...
     endif
 
     for Pat in [ s:color_patterns.term ]
@@ -2156,35 +2137,6 @@ if !s:debug
     unlet s:cpo_save
     finish
 endif
-
-function! s:ColorMatchingLines() "{{{2
-    " Programmatic approach to highlight all hex values as colors.
-    " Surprisingly a lot slower than calling
-    " :s/#\x\{3,6}/\=s:ColorMatchingLines1(submatch(0))/g
-    let pat = s:GetColorPattern(keys(s:pat_func)). '\|'.
-            \ s:GetColorPattern(keys(s:colors))
-    let pat = substitute(pat, '\\<#', '#', 'g')
-    for content in range(1, line('$'))
-        let line = getline(content)
-        let cnt  = 0
-        while 1
-            let color = matchstr(line, pat, 0, cnt)
-            if empty(color)
-                break
-            else
-                let key  = color
-                if color =~ keys(s:pat_func)[0]
-                    let key = keys(s:pat_func)[0]
-                endif
-                let Func = get(s:pat_func, key,
-                            \ function('s:PreviewColorName'))
-                call call(Func, [color])
-                let cnt  += 1
-            endif
-        endw
-    endfor
-endfu
-" Autoloadable functions
 
 fu! Test1() "{{{2
     return map(range(0,254), 's:Xterm2rgb256(v:val)')
