@@ -983,10 +983,7 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
     endif
     let clr_Dict.fg = color[0]
     let clr_Dict.bg = color[1]
-"    let old_swap_fg_bg = s:swap_fg_bg
-"    let s:swap_fg_bg = 1
     call s:SetMatcher(clr_Dict.fg, '\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', clr_Dict)
-"    let s:swap_fg_bg = old_swap_fg_bg
     return retval
 endfunction
 
@@ -1085,6 +1082,10 @@ function! s:ColorInit(...) "{{{1
 
     if !exists("s:swap_fg_bg")
         let s:swap_fg_bg = 0
+    endif
+
+    if !exists("s:round")
+        let s:round = 0
     endif
 
     " Enable Autocommands
@@ -2141,13 +2142,13 @@ function! Colorizer#SwitchContrast() "{{{1
 endfu
 
 function! Colorizer#SwitchFGBG() "{{{1
+    let range = [ 0, 1, -1 ]
     if !exists("s:round")
-        let s:round = 1
+        let s:round = 0
     else
-        let s:round += 1
+        let s:round = (s:round >= 2 ? 0 : s:round+1)
     endif
-    let range = [ 1, -1, 0]
-    let s:swap_fg_bg = range[s:round % 3]
+    let s:swap_fg_bg = range[s:round]
     call Colorizer#DoColor(1, 1, line('$'))
 endfu
 
