@@ -1267,9 +1267,9 @@ function! s:DoHlGroup(clr, group, Dict) "{{{1
             return
         endif
     endif
-    let clr = (get(a:Dict, 'fg', 0) ? (a:Dict).fg : a:clr)
-    let bg  = (get(a:Dict, 'bg', get(a:Dict, 'ctermbg', 'NONE')))
-    if !empty(a:Dict) && get(a:Dict, 'fg', -1) > -1
+    let clr = (get(a:Dict, 'fg', -1) > -1 ? (a:Dict).fg : a:clr)
+    let bg  = (get(a:Dict, 'bg', get(a:Dict, 'ctermbg', a:clr)))
+    if empty(a:Dict) || get(a:Dict, 'fg', -1) == -1
         let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(clr)
     else
         let fg=clr "explicit foreground color has been given
@@ -1294,9 +1294,9 @@ function! s:DoHlGroup(clr, group, Dict) "{{{1
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
     if !has("gui_running")
-        let bg = get(a:Dict, 'bg', 'NONE')
-        if bg !=# 'NONE'
-            let bg = s:Rgb2xterm(bg)
+        let ctermbg = get(a:Dict, 'bg', bg)
+        if ctermbg !=# 'NONE'
+            let bg = s:Rgb2xterm(ctermbg)
         endif
 	let hi.= printf(' ctermfg=%s ctermbg=%s',
           \ (get(a:Dict, 'ctermfg', get(a:Dict, 'ctermfg', s:Rgb2xterm(fg)))),
