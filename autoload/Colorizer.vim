@@ -935,7 +935,7 @@ function! s:PreviewColorHex(match) "{{{1
     if s:skip_comments &&
         \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == 'Comment'
         " skip coloring comments
-        return a:match
+        return
     endif
     let color = (a:match[0] == '#' ? a:match[1:] : a:match)
     let pattern = color
@@ -948,20 +948,19 @@ function! s:PreviewColorHex(match) "{{{1
         let idx = match(list, a:match)
         if idx == -1
             " Color can't be displayed by 8 color terminal
-            return a:match
+            return
         else
             let color = list[idx]
         endif
     endif
     call s:SetMatcher(s:hex_pattern[0]. pattern. s:hex_pattern[2], {'bg': color})
-    return a:match
+    return
 endfunction
 
 function! s:PreviewColorTerm(pre, text, post) "{{{1
     " a:pre: Ansi-Sequences determining the highlighting
     " a:text: Text to color
     " a:post: Ansi-Sequences resetting the coloring (might be empty)
-    let retval = a:pre. a:text. a:post
 
     let color = s:Ansi2Color(a:pre)
     let clr_Dict = {}
@@ -984,7 +983,7 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
     let clr_Dict.fg = color[0]
     let clr_Dict.bg = color[1]
     call s:SetMatcher('\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', clr_Dict)
-    return retval
+    return
 endfunction
 
 function! s:PreviewTaskWarriorColors(submatch) "{{{1
@@ -1022,19 +1021,19 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
                     let color[i] = m[3] * 36 + m[4] * 6 + m[5] + 16 " (start at index 16)
                     if color[i] > 231
                         " invalid color
-                        return a:submatch
+                        return
                     endif
                 elseif match(m, '^color') > -1
                     let color[i] = matchstr(m, '\d\+')+0
                     if color[i] > 231
                         " invalid color
-                        return a:submatch
+                        return
                     endif
                 elseif match(m, '^gray') > -1
                     let color[i] = matchstr(m, '\d\+') + 232
                     if color[i] > 231
                         " invalid color
-                        return a:submatch
+                        return
                     endif
                 endif
                 if i == 1
@@ -1050,7 +1049,7 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
             endif
             call s:SetMatcher('=\s*\zs\<'.a:submatch.'\>$', color_Dict)
         endif
-        return a:submatch
+        return
     finally
         let s:default_match_priority -= 1
     endtry
@@ -1657,13 +1656,13 @@ function! s:ColorRGBValues(val) "{{{1
     if s:skip_comments &&
         \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
         " skip coloring comments
-        return a:val
+        return
     endif
     " strip parantheses and split on comma
     let rgb = s:StripParentheses(a:val)
     if empty(rgb)
         call s:Warn("Error in expression". a:val. "! Please report as bug.")
-        return a:val
+        return
     endif
     for i in range(3)
         if rgb[i][-1:-1] == '%'
@@ -1685,7 +1684,7 @@ function! s:ColorRGBValues(val) "{{{1
     endif
     let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
     call s:SetMatcher(a:val, {'bg': clr})
-    return a:val
+    return
 endfunction
 
 function! s:ColorHSLValues(val) "{{{1
@@ -1887,6 +1886,10 @@ endfu
 function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " initialize plugin
     try
+        if v:version < 704
+            call s:Warn("Colorizer needs Vim 7.4")
+            return
+        endif
         call s:ColorInit(a:force)
         if exists("a:1") && !empty(a:1)
             let s:color_syntax = ( a:1 =~# '^\%(syntax\|nomatch\)$' )
@@ -1903,9 +1906,6 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     let save = s:SaveRestoreOptions(1, {},
             \ ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
 
-    if !exists("n_flag")
-        let n_flag = v:version > 703 || ( v:version == 703 && has("patch627"))
-    endif
     " highlight Hex Codes:
     "
     " The :%s command is a lot faster than this:
@@ -1945,8 +1945,8 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             " Check, the pattern isn't too costly...
             if s:CheckTimeout(Pat[0], a:force) && !s:IsInComment()
                 let cmd = printf(':sil %d,%d%ss/%s/'.
-                    \ '\=call(Pat[1], [submatch(0)])/egi%s', a:line1, a:line2,
-                    \ s:color_unfolded, Pat[0], n_flag ? 'n' : '')
+                    \ '\=call(Pat[1], [submatch(0)])/egin', a:line1, a:line2,
+                    \ s:color_unfolded, Pat[0])
                 try
                     exe cmd
                 catch
@@ -1969,9 +1969,8 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             endif
 
             let cmd = printf(':sil %d,%d%ss/%s/'.
-                \ '\=call(Pat[1],[submatch(1),submatch(2),submatch(3)])/egi%s',
-                \ a:line1, a:line2,  s:color_unfolded, Pat[0],
-                \ n_flag ? 'n' : '')
+                \ '\=call(Pat[1],[submatch(1),submatch(2),submatch(3)])/egin',
+                \ a:line1, a:line2,  s:color_unfolded, Pat[0])
             try
                 exe cmd
                 " Hide ESC Terminal Chars
