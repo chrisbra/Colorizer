@@ -922,7 +922,7 @@ function! s:PreviewColorName(color) "{{{1
     let name=tolower(a:color)
     let clr = s:colors[name]
     " Skip color-name, e.g. white-space property
-    call s:SetMatcher('\<'.name.'\>\c[-]\@!', {'bg': clr[1:]})
+    call s:SetMatcher('\<'.name.'\>\c-\@!', {'bg': clr[1:]})
 endfu
 
 function! s:IsInComment() "{{{1
@@ -1558,7 +1558,7 @@ function! s:TermConceal(pattern) "{{{1
     endif
 endfu
 function! s:GetColorPattern(list) "{{{1
-    let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>\)'' ')
+    let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>-\@!\)'' ')
     " Force the old re engine. It should be faster without backtracking.
     return '\%#=1'.join(list, '\|')
 endfunction
