@@ -1271,13 +1271,8 @@ function! s:DoHlGroup(group, Dict) "{{{1
             return
         endif
     endif
-    let clr = (get(a:Dict, 'fg', -1) > -1 ? (a:Dict).fg : 'NONE')
-    let bg  = (get(a:Dict, 'bg', get(a:Dict, 'ctermbg', 'NONE')))
-    if get(a:Dict, 'fg', -1) == -1
-        let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(bg)
-    else
-        let fg=clr "explicit foreground color has been given
-    endif
+    let fg = get(a:Dict, 'fg')
+    let bg = get(a:Dict, 'bg')
     let [fg, bg] = s:SwapColors([fg, bg])
     if fg[0] !=# '#' && fg !=# 'NONE'
         let fg='#'.fg
@@ -1290,18 +1285,11 @@ function! s:DoHlGroup(group, Dict) "{{{1
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
     if !has("gui_running")
-        if bg !=# 'NONE'
-            let bg = s:Rgb2xterm(bg)
-        endif
-        if fg !=# 'NONE' && get(a:Dict, 'ctermfg', -1) > -1
-            let fg = get(a:Dict, 'ctermfg')
-        elseif fg !=# 'NONE'
-            let fg = s:Rgb2xterm(fg)
-        endif
+        let fg = get(a:Dict, 'ctermfg')
+        let bg = get(a:Dict, 'ctermbg')
+        let [fg, bg] = s:SwapColors([fg, bg])
 
-	let hi.= printf(' ctermfg=%s ctermbg=%s',
-          \ (get(a:Dict, 'ctermfg', get(a:Dict, 'ctermfg', s:Rgb2xterm(fg)))),
-          \ bg )
+	let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
         let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
           \ (' cterm='. a:Dict.special) : '')
     endif
@@ -1316,25 +1304,42 @@ function! s:DoHlGroup(group, Dict) "{{{1
     endtry
 endfunction
 
-function! s:SetMatcher(pattern, Dict) "{{{1
-    " a:clr is a Dict, containing foreground and background color (e.g.
-    " from TERM highlighting
-    let param = copy(a:Dict)
-    for key in ['ctermfg', 'ctermbg']
-        if get(param, key, -1) > -1
-            " Terminal colors have been given
-            " translate terminal color to rgb color value
-            let param[matchstr(key, '..$')] = (string(param[key]) ==# 'NONE' ? 'NONE' :
-                        \ s:Term2RGB(param[key]))
+function! s:GenerateColors(dict) "{{{1
+    let result=copy(a:dict)
+
+    if !has_key(result, 'bg') && has_key(result, 'ctermbg')
+        let result.bg = s:Term2RGB(result.ctermbg)
+    endif
+    if !has_key(result, 'fg') && has_key(result, 'ctermfg')
+        let result.fg = s:Term2RGB(result.ctermfg)
+    endif
+    if !has_key(result, 'bg')
+        let result.bg = 'NONE'
+    endif
+
+    if !has_key(result, 'fg') &&
+      \ has_key(result, 'bg')
+        let result.fg = s:FGforBG(result.bg)
+    endif
+    if !has("gui_running")
+        " need to make sure, we have ctermfg/ctermbg values
+        if !has_key(result, 'ctermfg') &&
+            \ has_key(result, 'fg')
+            let result.ctermfg  = s:Rgb2xterm(result.fg)
         endif
-    endfor
-    let bg =  get(param, 'bg', s:Term2RGB(get(param, 'ctermbg', '0')))
-    let clr = 'Color_'. get(param, 'fg', bg). '_'. bg. 
+        if !has_key(result, 'ctermbg') &&
+            \ has_key(result, 'bg')
+            let result.ctermbg  = s:Rgb2xterm(result.bg)
+        endif
+    endif
+    return result
+endfunction
+
+function! s:SetMatcher(pattern, Dict) "{{{1
+    let param = s:GenerateColors(a:Dict)
+    let clr = 'Color_'. get(param, 'fg'). '_'. get(param, 'bg'). 
             \ (!empty(get(param, 'special', '')) ?
             \ ('_'. get(param, 'special')) : '')
-
-"    let color = get(param, 'fg', get(param, 'ctermfg', -1) > -1 ?
-"                \ s:Term2RGB(get(param, 'ctermfg')) : 'NONE')
 
     call s:DoHlGroup(clr, param)
     if s:DidColor(clr, a:pattern)
@@ -1743,6 +1748,9 @@ function! s:Rgb2xterm(color) "{{{1
 " selects the nearest xterm color for a rgb value like #FF0000
 " hard code values for 000000 and FFFFFF, they will be called many times
 " so make this fast
+    if a:color ==# 'NONE'
+        return 'NONE'
+    endif
     if len(a:color) <= 3
         " a:color is already a terminal color
         return a:color
