@@ -1233,6 +1233,9 @@ endfu
 function! s:FGforBG(bg) "{{{1
    " takes a 6hex color code and returns a matching color that is visible
    let fgc = g:colorizer_fgcontrast
+   if fgc == -1
+       return a:bg
+   endif
    if a:bg ==# 'NONE'
        return s:predefined_fgcolors['dark'][fgc]
    endif
