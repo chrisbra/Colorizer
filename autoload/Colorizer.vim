@@ -1205,7 +1205,7 @@ function! s:ColorInit(...) "{{{1
             \ function("s:ColorRGBValues"), 'colorizer_rgba' ],
         \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
             \ function("s:ColorRGBValues"), 'colorizer_hsla' ],
-        \ 'term': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\=',
+        \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%(;\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\[0m\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term'],
         \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)', '',
             \ 'colorizer_term_conceal' ],
