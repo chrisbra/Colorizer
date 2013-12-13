@@ -1050,6 +1050,37 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
     endtry
 endfunction
 
+function! s:PreviewVimColors(submatch) "{{{1
+    " a:submatch is something like 'black on rgb141'
+
+    " this highlighting should overrule e.g. colorname highlighting
+    let s:default_match_priority += 1
+    if !exists("s:x11_color_pattern")
+        let s:x11_color_pattern =  s:GetColorPattern(keys(s:x11_color_names))
+    endif
+    let color_Dict = {}
+    let pat1 = '\%(\(cterm[fb]g\)\s*=\s*\)\@<=\<\(\d\+\)\>'
+    let pat2 = '\%(\(gui[fb]g\)\s*=\s*\)\@<=#\(\x\{6}\)\>'
+    let pat3 = '\%#=1\%(\(gui[fb]g\)\s*=\s*\)\@<=\('.s:x11_color_pattern.'\)'
+
+    let cterm = matchlist(a:submatch, pat1)
+    let gui   = matchlist(a:submatch, pat2)
+    if  empty(gui)
+        let gui   = matchlist(a:submatch, pat3)
+    endif
+    try
+        if !empty(cterm)
+            let color_Dict.ctermbg = cterm[2]
+        elseif !empty(gui)
+            let color_Dict.bg = gui[2]
+        endif
+
+        call s:SetMatcher('\<'.a:submatch.'\>', color_Dict)
+    finally
+        let s:default_match_priority -= 1
+    endtry
+endfunction
+
 function! s:Term2RGB(index) "{{{1
     " Return index in colortable in RRGGBB form
     return join(map(copy(s:colortable[a:index]), 'printf("%02X", v:val)'),'')
@@ -1209,6 +1240,8 @@ function! s:ColorInit(...) "{{{1
             \ function("s:PreviewColorTerm"), 'colorizer_term'],
         \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)', '',
             \ 'colorizer_term_conceal' ],
+        \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
+            \ function("s:PreviewVimColors"), 'colorizer_vimcolors' ],
         \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
             \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior' ],
         \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex'],
@@ -1930,7 +1963,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
         for Pat in [ s:color_patterns.hex, s:color_patterns.rgb, s:color_patterns.rgba,
-                    \ s:color_patterns.hsla, s:color_patterns.taskwarrior] +
+                    \ s:color_patterns.hsla, s:color_patterns.taskwarrior, s:color_patterns.vimcolors] +
                     \ (exists("s:color_names") ? [s:color_patterns.colornames] : [])
             " Taskwarrior highlighting needs to be expliticitly enabled!
 
@@ -1940,6 +1973,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             endif
 
             if Pat ==# s:color_patterns.taskwarrior && expand("%:e") !=# 'theme'
+                " only try to use taskwarrior coloring for .theme files
+                continue
+            elseif Pat ==# s:color_patterns.vimcolors && expand("%:e") !=# 'vim'
                 " only try to use taskwarrior coloring for .theme files
                 continue
             endif
