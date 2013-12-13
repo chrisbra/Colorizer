@@ -1988,6 +1988,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                     " some error occured, stop when finished (and don't setup auto
                     " comands
                     let error.=" Colorize: ". string(Pat)
+                    break
                 endtry
             endif
         endfor
