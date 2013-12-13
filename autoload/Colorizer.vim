@@ -2015,6 +2015,26 @@ function! Colorizer#RGB2Term(arg) "{{{1
     echohl None
 endfu
 
+function! Colorizer#Term2RGB(arg) "{{{1
+    let index = a:arg + 0
+    if a:arg > 255 || a:arg < 0
+        call s:Warn('invalid index')
+        return
+    endif
+
+    let _t_Co=&t_Co
+    let &t_Co = 256
+    call s:ColorInit(1)
+
+    let rgb = s:Term2RGB(index)
+    call s:DoHlGroup("Color_". rgb, {'bg': rgb, 'ctermbg': index})
+    exe "echohl" "Color_".rgb
+    echo "TerminalColor: ". a:arg. " => ". rgb
+    echohl None
+    let &t_Co = _t_Co
+endfu
+
+
 function! Colorizer#HSL2Term(arg) "{{{1
     let hsl = s:StripParentheses(a:arg)
     if empty(hsl)
