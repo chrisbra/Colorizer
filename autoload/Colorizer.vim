@@ -2009,7 +2009,7 @@ function! Colorizer#RGB2Term(arg) "{{{1
     endif
 
     let tcolor = s:Rgb2xterm(color)
-    call s:DoHlGroup("Color_". color[1:], {'bg': color[1:]})
+    call s:DoHlGroup("Color_". color[1:], s:GenerateColors({'bg': color[1:]}))
     exe "echohl" "Color_".color[1:]
     echo a:arg. " => ". tcolor
     echohl None
@@ -2027,7 +2027,7 @@ function! Colorizer#Term2RGB(arg) "{{{1
     call s:ColorInit(1)
 
     let rgb = s:Term2RGB(index)
-    call s:DoHlGroup("Color_". rgb, {'bg': rgb, 'ctermbg': index})
+    call s:DoHlGroup("Color_". rgb, s:GenerateColors({'bg': rgb, 'ctermbg': index}))
     exe "echohl" "Color_".rgb
     echo "TerminalColor: ". a:arg. " => ". rgb
     echohl None
@@ -2044,7 +2044,7 @@ function! Colorizer#HSL2Term(arg) "{{{1
     let str = s:PrepareHSLArgs(hsl)
 
     let tcolor = s:Rgb2xterm('#'.str)
-    call s:DoHlGroup("Color_".str, {'bg': str})
+    call s:DoHlGroup("Color_".str, s:GenerateColors({'bg': str}))
     exe "echohl" str
     echo a:arg. " => ". tcolor
     echohl None
