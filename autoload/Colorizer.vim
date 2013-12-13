@@ -1322,7 +1322,7 @@ function! s:GenerateColors(dict) "{{{1
 
     if !has_key(result, 'fg') &&
       \ has_key(result, 'bg')
-        let result.fg = s:FGforBG(result.bg)
+        let result.fg = toupper(s:FGforBG(result.bg))
     endif
     if !has("gui_running")
         " need to make sure, we have ctermfg/ctermbg values
