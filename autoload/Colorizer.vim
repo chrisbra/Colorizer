@@ -1236,16 +1236,18 @@ function! s:ColorInit(...) "{{{1
             \ function("s:ColorRGBValues"), 'colorizer_rgba' ],
         \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
             \ function("s:ColorRGBValues"), 'colorizer_hsla' ],
+        \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
+            \ function("s:PreviewVimColors"), 'colorizer_vimcolors', 'expand("%:e") ==# "vim"' ],
+        \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
+            \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior', 'expand("%:e") ==# "theme"' ],
+        \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex'],
+        \ }
+
+    let s:color_patterns_special = {
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%(;\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\[0m\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term'],
         \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)', '',
-            \ 'colorizer_term_conceal' ],
-        \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
-            \ function("s:PreviewVimColors"), 'colorizer_vimcolors' ],
-        \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
-            \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior' ],
-        \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex'],
-        \ }
+            \ 'colorizer_term_conceal' ] }
 
     if exists("s:colornamepattern")
         let s:color_patterns["colornames"] = [ s:colornamepattern, 
@@ -1962,21 +1964,16 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-        for Pat in [ s:color_patterns.hex, s:color_patterns.rgb, s:color_patterns.rgba,
-                    \ s:color_patterns.hsla, s:color_patterns.taskwarrior, s:color_patterns.vimcolors] +
-                    \ (exists("s:color_names") ? [s:color_patterns.colornames] : [])
-            " Taskwarrior highlighting needs to be expliticitly enabled!
-
+        for Pat in values(s:color_patterns) + 
+            \ (exists("s:color_names") ? [s:color_patterns.colornames] : [])
             if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
                 " Coloring disabled
                 continue
             endif
 
-            if Pat ==# s:color_patterns.taskwarrior && expand("%:e") !=# 'theme'
-                " only try to use taskwarrior coloring for .theme files
-                continue
-            elseif Pat ==# s:color_patterns.vimcolors && expand("%:e") !=# 'vim'
-                " only try to use taskwarrior coloring for .theme files
+            " 4th element in pattern is condition, that must be fullfilled,
+            " before we continue
+            if len(Pat) == 4 && !eval(Pat[3])
                 continue
             endif
 
@@ -1996,7 +1993,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         endfor
     endif
 
-    for Pat in [ s:color_patterns.term ]
+    for Pat in [ s:color_patterns_special.term ]
         if (s:CheckTimeout(Pat[0], a:force)) && !s:IsInComment()
 
             if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
@@ -2010,7 +2007,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             try
                 exe cmd
                 " Hide ESC Terminal Chars
-                call s:TermConceal(s:color_patterns.term_conceal[0])
+                call s:TermConceal(s:color_patterns_special.term_conceal[0])
             catch
                 " some error occured, stop when finished (and don't setup auto
                 " comands
