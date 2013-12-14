@@ -1229,18 +1229,25 @@ function! s:ColorInit(...) "{{{1
         throw "nocolor"
     endif
 
+    " Dictionary, containing all information on what to color
+    " Key: Name
+    " Value: List, containing 1) Pattern to find color
+    "                         2) func ref to call on the match of 1
+    "                         3) Name of variable, to enable or this enty
+    "                         4) condition, that must be fullfilled, before
+    "                            using this entry
     let s:color_patterns = {
         \ 'rgb': ['rgb(\s*\%(\d\+%\?[^)]*\)\{3})',
-            \ function("s:ColorRGBValues"), 'colorizer_rgb' ],
+            \ function("s:ColorRGBValues"), 'colorizer_rgb', 1 ],
         \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\))',
-            \ function("s:ColorRGBValues"), 'colorizer_rgba' ],
+            \ function("s:ColorRGBValues"), 'colorizer_rgba', 1 ],
         \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
-            \ function("s:ColorRGBValues"), 'colorizer_hsla' ],
+            \ function("s:ColorRGBValues"), 'colorizer_hsla', 1 ],
         \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
-            \ function("s:PreviewVimColors"), 'colorizer_vimcolors', 'expand("%:e") ==# "vim"' ],
+            \ function("s:PreviewVimColors"), 'colorizer_vimcolors', '&ft ==# "vim"' ],
         \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
             \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior', 'expand("%:e") ==# "theme"' ],
-        \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex'],
+        \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex', 1],
         \ }
 
     let s:color_patterns_special = {
@@ -1251,7 +1258,7 @@ function! s:ColorInit(...) "{{{1
 
     if exists("s:colornamepattern")
         let s:color_patterns["colornames"] = [ s:colornamepattern, 
-            \ function("s:PreviewColorName"), 'colorizer_names']
+            \ function("s:PreviewColorName"), 'colorizer_names', 1]
     endif
 endfu
 
@@ -1973,7 +1980,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
 
             " 4th element in pattern is condition, that must be fullfilled,
             " before we continue
-            if len(Pat) == 4 && !eval(Pat[3])
+            if !eval(Pat[3])
                 continue
             endif
 
