@@ -1065,6 +1065,12 @@ function! s:PreviewVimColors(submatch) "{{{1
 
     let cterm = matchlist(a:submatch, pat1)
     let gui   = matchlist(a:submatch, pat2)
+    if (!empty(gui) && (gui[2] ==# 'bg' ||
+      \ gui[2] ==# 'fg' ||
+      \ gui[2] ==# 'foreground' ||
+      \ gui[2] ==# 'background'))
+        let gui=[]
+    endif
     if  empty(gui)
         let gui   = matchlist(a:submatch, pat3)
     endif
@@ -1073,6 +1079,10 @@ function! s:PreviewVimColors(submatch) "{{{1
             let color_Dict.ctermbg = cterm[2]
         elseif !empty(gui)
             let color_Dict.bg = gui[2]
+        endif
+
+        if empty(gui) && empty(cterm)
+            return
         endif
 
         call s:SetMatcher('\<'.a:submatch.'\>', color_Dict)
