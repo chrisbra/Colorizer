@@ -30,6 +30,8 @@ Contents                                                        *Colorizer*
                 2.6 Use X11 colornames...................|Colorizer-names|
                 2.7 Use syntax highlighting..............|Colorizer-syntax|
                 2.8 Specify patterns to highlight........|Colorizer-pattern|
+                2.9 Colorizer Taskwarrior files..........|Colorizer-taskwarrior-files|
+                2.10 Colorizer vim syntax files..........|Colorizer-vim-files|
         3.  Colorizer Mappings...........................|Colorizer-maps|
         4.  Colorizer Tips...............................|Colorizer-tips|
         5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -227,7 +229,21 @@ highlighted, use >
 
         let g:colorizer_hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '']
 
-<
+2.9 Colorizer Taskwarrior files                 *Colorizer-taskwarrior-files*
+-------------------------------
+
+For taskwarrior files, this plugin can also highlight those colors. By
+default, this will only work, if the file name ends with '.theme'
+
+For an example, see this website: 
+http://taskwarrior.org/news/182
+
+2.10 Colorizer vim syntax files                 *Colorizer-vim-files*
+-------------------------------
+
+Colorizer also supports highlighting vim syntax files. For this to work, the
+'filetype' must be set to vim, then the plugin tries to identify the colors
+and highlight them.
 
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
@@ -304,8 +320,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   between all states
 - Correctly parse Ansi Term colors
 - |:Term2RGB|
+- Highlight Vim color files correctly
 
-0.9 Aug 14, 2013: {{{1
+0.9: Aug 14, 2013: {{{1
 - https://github.com/chrisbra/color_highlight/issues/15 (rgba highlighting
   didn't work for floating point value of alpha, reported by LiTuX.S, thanks!)
 - https://github.com/chrisbra/color_highlight/issues/16 (rgb() pattern did
