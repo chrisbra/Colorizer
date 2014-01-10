@@ -1289,7 +1289,7 @@ function! s:FGforBG(bg) "{{{1
        return a:bg
    endif
    if a:bg ==# 'NONE'
-       return s:predefined_fgcolors['dark'][fgc]
+       return (&bg==#'dark' ? s:predefined_fgcolors['dark'][fgc] : s:predefined_fgcolors['light'][fgc])
    endif
    let r = '0x'.a:bg[0:1]+0
    let g = '0x'.a:bg[2:3]+0
