@@ -2038,7 +2038,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
-    if !exists("#FTColorizer#BufEnter") && empty(error)
+    if !exists("#FTColorizer#BufWinEnter#<buffer>") && empty(error)
         let b:Colorizer_force = 1
         call Colorizer#LocalFTAutoCmds(1)
     endif
