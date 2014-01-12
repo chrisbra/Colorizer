@@ -2165,14 +2165,14 @@ function! Colorizer#ColorWinEnter() "{{{1
                 \ !get(b:, 'Colorizer_force', 0)
         " nothing to do
         return
-    else
-        let g:colorizer_only_unfolded = 1
-        let _c = getpos('.')
-        call Colorizer#DoColor('', 1, line('$'))
-        let b:Colorizer_changedtick = b:changedtick
-        unlet! g:colorizer_only_unfolded
-        call setpos('.', _c)
     endif
+    let g:colorizer_only_unfolded = 1
+    let _c = getpos('.')
+    call Colorizer#DoColor('', 1, line('$'))
+    let b:Colorizer_changedtick = b:changedtick
+    unlet! g:colorizer_only_unfolded
+    call setpos('.', _c)
+    unlet! b:Colorizer_force
 endfu
 
 function! Colorizer#ColorLine() "{{{1
