@@ -1996,7 +1996,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
 
             " Check, the pattern isn't too costly...
             if s:CheckTimeout(Pat[0], a:force) && !s:IsInComment()
-                let cmd = printf(':sil %d,%d%ss/%s/'.
+                let cmd = printf(':sil keeppatterns %d,%d%ss/%s/'.
                     \ '\=call(Pat[1], [submatch(0)])/egin', a:line1, a:line2,
                     \ s:color_unfolded, Pat[0])
                 try
@@ -2019,7 +2019,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 continue
             endif
 
-            let cmd = printf(':sil %d,%d%ss/%s/'.
+            let cmd = printf(':sil keeppatterns %d,%d%ss/%s/'.
                 \ '\=call(Pat[1],[submatch(1),submatch(2),submatch(3)])/egin',
                 \ a:line1, a:line2,  s:color_unfolded, Pat[0])
             try
