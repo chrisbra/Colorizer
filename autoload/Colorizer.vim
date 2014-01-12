@@ -1934,7 +1934,7 @@ function! Colorizer#ColorOff() "{{{1
     if exists("s:conceal") && has("conceal")
         let [&l:cole, &l:cocu] = s:conceal
     endif
-    unlet! w:match_list b:Colorizer_force s:conceal
+    unlet! w:match_list s:conceal
 endfu
 
 function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
@@ -2039,8 +2039,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
     if !exists("#FTColorizer#BufWinEnter#<buffer>") && empty(error)
-        let b:Colorizer_force = 1
+        " Initialise current window.
         call Colorizer#LocalFTAutoCmds(1)
+        call Colorizer#ColorWinEnter(1)
     endif
     if !empty(error)
         " Some error occured, stop trying to color the file
@@ -2152,19 +2153,21 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
     endif
 endfu
 
-function! Colorizer#ColorWinEnter() "{{{1
+function! Colorizer#ColorWinEnter(...) "{{{1
+    let force = a:0 ? a:1 : 0
     " be fast!
-    let ft_list = split(get(g:, "colorizer_auto_filetype", ""), ',')
-    if match(ft_list, "^".&ft."$") == -1 && !get(b:, 'Colorizer_force', 0)
-        " current filetype doesn't match g:colorizer_auto_filetype,
-        " so nothing to do
-        return
-    endif
-    if get(b:, 'Colorizer_changedtick', 0) == b:changedtick &&
-                \ !empty(getmatches()) &&
-                \ !get(b:, 'Colorizer_force', 0)
-        " nothing to do
-        return
+    if !force
+        let ft_list = split(get(g:, "colorizer_auto_filetype", ""), ',')
+        if match(ft_list, "^".&ft."$") == -1
+            " current filetype doesn't match g:colorizer_auto_filetype,
+            " so nothing to do
+            return
+        endif
+        if get(b:, 'Colorizer_changedtick', 0) == b:changedtick &&
+                    \ !empty(getmatches())
+            " nothing to do
+            return
+        endif
     endif
     let g:colorizer_only_unfolded = 1
     let _c = getpos('.')
@@ -2172,7 +2175,6 @@ function! Colorizer#ColorWinEnter() "{{{1
     let b:Colorizer_changedtick = b:changedtick
     unlet! g:colorizer_only_unfolded
     call setpos('.', _c)
-    unlet! b:Colorizer_force
 endfu
 
 function! Colorizer#ColorLine() "{{{1
