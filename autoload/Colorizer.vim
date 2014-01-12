@@ -2201,6 +2201,7 @@ function! Colorizer#SwitchContrast() "{{{1
     if g:colorizer_fgcontrast < -1
         let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
     endif
+    echom 'Colorizer: using fgcontrast' g:colorizer_fgcontrast
     call Colorizer#DoColor(1, 1, line('$'))
 endfu
 
