@@ -46,17 +46,17 @@ Functionality
 This plugin is based on the css_color plugin by Nikolaus Hofer. The idea is to
 highlight color names and codes in the same color that they represent.
 
-The plugin understands the W3-Colors (used for CSS files for example), the
-Color names from the X11 Window System and also codes in hex notation, like
+The plugin understands the W3C colors (used for CSS files for example), the
+color names from the X11 Window System and also codes in hex notation, like
 #FF0000 (which represents Red in the RGB color system). Additionally, it
 supports the CSS color specifications, e.g. rgb(RR,GG,BB) color representation
-in either absolute or percentage values and also the HVL Color
+in either absolute or percentage values and also the HVL color
 representation like hvl(H,V,L)
 
 It works best in the gui version of Vim, but the plugin also supports 256 and
 88 color terminals and translates the colors to those supported by the
-terminal. 16 and 8 color terminals should work theoretically too, but hasn't
-been widely tested. Note, that translating the colors to the terminal might
+terminal. 16 and 8 color terminals should work theoretically too, but have not
+been widely tested. Note that translating the colors to the terminal might
 impose a performance penalty, depending on the terminal type and the number of
 matches in the file.
 
@@ -65,35 +65,35 @@ This plugin defines the following commands:
                                                               *:ColorHighlight*
 :[range]ColorHighlight[!] [args]
 
-Scan the lines given by [range] for color codes names and highlight those. If
+Scan the lines given by [range] for color code names and highlight those. If
 [range] is omitted, the whole file will be scanned. If the ! is used, the
-plugin will redefine all highlighting groups. If ! is not used, it will also
+plugin will redefine all highlighting groups. If ! is not used, it will
 skip patterns, that would take too long and make Vim unresponsive.
 
-[args] can by any of "syntax" or "match". Syntax means to convert the
+[args] can by any of "syntax" or "match". "syntax" means to convert the
 highlighting to syntax highlighting. This is useful, so a plugin like
-|2html.vim| can convert the colors correctly to website. The default is
-"match", which means to use the |matchadd()| function. (Prepending a "no" is
-allowed, to disable that setting and use the opposite).
+|2html.vim| can convert the colors correctly to HTML. The default is
+"match", which uses the |matchadd()| function. (Prepending "no" is
+supported and will disable that setting and use the opposite).
 
                                                                  *:ColorClear*
-:ColorClear                 Turn off Color highlighting.
+:ColorClear                 Turn off color highlighting.
 
                                                                  *:RGB2Term*
-:RGB2Term <color>           Translate the color code given as argument to a
-                            the closest color, that can be displayed by the
-                            terminal. Note, the color must be given in the
+:RGB2Term <color>           Translate the color code given as argument to
+                            the closest color that can be displayed in the
+                            terminal. The color must be given in the
                             format #RRGGBB (the hex format of the colors red,
-                            green and blue the '#' is optional or
+                            green and blue (the '#' is optional), or
                             alternatively like rgb(X,X,X)
 
                             Uses the number of colors your terminal is capable
-                            to handle (or 256 colors for gVim).
+                            of (or 256 colors for gVim).
 
                                                                 *:HSL2RGB*
 :HSL2RGB hsl(h,v,l)         Translate the HVL color defined by the string
                             'hsl(h,v%,l%)' into a color that the current
-                            terminal can display. Note, that the color must be
+                            terminal can display. Note that the color must be
                             given in the format 'hsl(HH, V, L)' where HH
                             defines the Hue as absolute value between 0 and
                             255 and V and L represent a percentage for value
@@ -105,13 +105,13 @@ allowed, to disable that setting and use the opposite).
 
                                                              *:ColorContrast*
 :ColorContrast              Switch between all different color contrast
-                            settings.
+                            settings (foreground colors).
                                                              *:ColorSwapFgBg*
 :ColorSwapFgBg              Switch between foreground and background colors.
                             This will toggle in 3 ways. From Swapping
                             foreground and background colors, to only
-                            highlight the foreground color back to normal
-                            forground background color.
+                            highlighting the foreground color back to normal
+                            foreground background color.
 
                                                               *:ColorToggle*
 :ColorToggle                Switch between highlighting colors and no
@@ -125,36 +125,36 @@ allowed, to disable that setting and use the opposite).
 ---------------------
 
 The Colorizer plugin can be configured to automatically load when opening a
-new file. Note, that this might slow down the loading process, especially on
-the terminal. To enable this, simply the the variable 'g:colorizer_auto_color'
+new file. Note that this might slow down the loading process, especially on
+the terminal. To enable this, simply set the variable 'g:colorizer_auto_color'
 to 1, e.g. by defining it in your |.vimrc| >
 
     :let g:colorizer_auto_color = 1
 <
-(Not recommended, see below at |Colorizer-hl-ft| for the prefered way)
+(Not recommended, see below at |Colorizer-hl-ft| for the preferred way)
 
 2.2 Automatically highlight filetypes                     *Colorizer-hl-ft*
 -------------------------------------
 
-If you want to have certain filetypes automaticaly highlighted, you can use
-the variable g:colorizer_auto_filetype, e.g. say you want to enable color
-highlighting for html and CSS files, put into your |.vimrc| the following: >
+If you want to have certain filetypes automatically highlighted, you can use
+the variable g:colorizer_auto_filetype, e.g. to enable highlighting for
+HTML and CSS files by default, add the following to your |.vimrc|: >
 
     :let g:colorizer_auto_filetype='css,html'
 <
-After restarting Vim, the plugin will become active, whenever the filetype is
+After restarting Vim, the plugin will become active whenever the filetype is
 set to either html or css.
 
 2.3 Skip coloring comments                                *Colorizer-comments*
 --------------------------
 
-You can skip comments from coloring, by setting the variable
-g:colorizer_skip_comments to 1, e.g. put into your |.vimrc| the following: >
+You can skip comments from being colored by setting the variable
+g:colorizer_skip_comments to 1: >
 
     :let g:colorizer_skip_comments = 1
 <
-The plugin will skip all matches of color codes and names, that appear inside
-comments (only works, when syntax highlighting is enabled |:syn-on|)
+The plugin will skip all matches of color codes and names that appear inside
+comments (this only works when syntax highlighting is enabled |:syn-on|)
 
 Note however, that if the same color is used inside comments and outside
 comments, it will also be highlighted inside the comments, because
@@ -169,7 +169,7 @@ background color. For this, the variable 'g:colorizer_fgcontrast' can be used.
 It can be given any value between -1 and 2 with 2 being the default. Each
 smaller value will decrease the contrast a little bit, with -1 being special,
 as there is the foreground color equals the background color. Use
-|:ColorContrast| to toggle the different values.
+|:ColorContrast| to cycle through the different values.
 
 2.5 Highlight colornames                               *Colorizer-hl-names*
 ------------------------
@@ -184,9 +184,9 @@ into your |.vimrc|
 2.6 Use X11 colornames                                     *Colorizer-names*
 ----------------------
 
-Colorizer can be configured to support all color names, defined by the X11
+Colorizer can be configured to support all color names defined by the X11
 Window System. By default it only supports the colors defined by the W3C for
-the CSS Specification. To use the X11 color names, set the variable
+the CSS specification. To use the X11 color names, set the variable
 'g:colorzer_x11_names' to 1, e,g. put in your |.vimrc| >
 
     let g:colorizer_x11_names = 1
@@ -197,7 +197,7 @@ the CSS Specification. To use the X11 color names, set the variable
 
 The plugin by default uses the |matchadd()| functions for highlighting colors
 on the fly. Unfortunately, this is a problem, if you want to have the result
-successfully transformed to html file with the |2html.vim| plugin. Therefore,
+successfully transformed to a HTML file using the |2html.vim| plugin. Therefore,
 the Colorizer plugin can also convert the highlighting to correct syntax
 highlighting. Use either the >
 
@@ -212,16 +212,16 @@ e.g. in your |.vimrc| put >
 2.8 Specify pattern to highlight                         *Colorizer-pattern*
 --------------------------------
 
-By default, Colorizer detects the following patterns and highlight them as hex
-colors (for better readibility separated into 3 parts by whitespace): >
+By default, Colorizer detects the following patterns and highlights them as
+hex colors (for better readability it is separated into 3 parts): >
 
         #	%(\x\{3}\|\x\{6}\)	\%(\>\|[-_]\)\@=/'
 <
 
 This means it always looks for a '#' followed by either a 3 or 6 hexadecimal
 digits denoting the RGB hex color codes, followed by either the word-boundary
-(|/\>|) or be either a hyphen or a underscore. But highlighted will be only
-the first and middle part (e.g. the RGB color codes).
+(|/\>|), a hyphen or a underscore. But only the first and middle part will be
+highlighted (i.e. the RGB color codes).
 
 You can of course specify a different pattern for your needs by setting the
 g:colorizer_hex_pattern variable. e.g. to display '#RRGGBB' and have all of it
@@ -255,12 +255,12 @@ These mappings are provided:
 
 Keys            Name                Function
 ----            ----                --------
-<Leader>cC      <Plug>Colorizer     Toggle Highlighting of Colors, in visual
-                                    mode, only highlights the colors in the
+<Leader>cC      <Plug>Colorizer     Toggle highlighting of Colors. In visual
+                                    mode it only highlights the colors in the
                                     selected region (normal and visual mode).
-<Leader>cT      <Plug>ColorContrast Toggle contrast setting |:ColorContrast|
-                                    (normal and visual mode)
-<Leader>cF      <Plug>ColorFgBg     Toggle Foreground and Background Color
+<Leader>cT      <Plug>ColorContrast Cycle through contrast setting
+                                    |:ColorContrast| (normal and visual mode)
+<Leader>cF      <Plug>ColorFgBg     Toggle foreground and background color
                                     |:ColorSwapFgBg|
 
 By default, <Leader> is defined as '\' (|<Leader>|). Use the name provided in
@@ -278,10 +278,10 @@ following autocommand in your |.vimrc| >
 <
 
 This will automatically highlight all existing color codes and names if you
-edit either a html file or a css file. Note, that this does not update the
-highlighting, after you have been updating the file.
+edit either a HTML file or a CSS file. Note that this does not update the
+highlighting, after you have been changing the file.
 
-The better way to do this, is to use the g:colorizer_auto_filetype
+The recommended way to do this is to use the g:colorizer_auto_filetype
 variable and set this to the desired filetypes. |Colorizer-hl-ft|
 
 ==============================================================================
@@ -317,7 +317,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - Highlight Taskwarrior file
 - Code refactoring
 - Make |:ColorSwapFgBg| work as expected (did not always toggle reliably
-  between all states
+  between all states)
 - Correctly parse Ansi Term colors
 - |:Term2RGB|
 - Highlight Vim color files correctly
