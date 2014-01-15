@@ -1905,6 +1905,9 @@ function! s:PrepareHSLArgs(list) "{{{1
     return s:HSL2RGB(hsl[0], hsl[1], hsl[2])
 endfu
 function! s:SyntaxMatcher(enable) "{{{1
+    if !a:enable
+        return
+    endif
     let did_clean = {}
     for hi in s:GetMatchList()
         if !get(did_clean, hi.group, 0)
