@@ -249,9 +249,15 @@ and highlight them.
 3. Colorizer Mappings                                      *Colorizer-maps*
 ==============================================================================
 
-Besides using the commands provided at |Colorizer-manual| the plugin also sets
-up some keymappings. It uses the prefix <leader>c to set all functionality up.
-These mappings are provided:
+By default, the Colorizer plugin does not map any key, so that it won't
+pollute the global mapping namespace. If you want however to have the
+following default maps set up, set the global variable g:colorizer_auto_map
+in your |.vimrc| like this: >
+
+    :let g:colorizer_auto_map = 1
+
+<
+This will set up the following key mappings (if they are not already taken):
 
 Keys            Name                Function
 ----            ----                --------
@@ -263,8 +269,9 @@ Keys            Name                Function
 <Leader>cF      <Plug>ColorFgBg     Toggle foreground and background color
                                     |:ColorSwapFgBg|
 
-By default, <Leader> is defined as '\' (|<Leader>|). Use the name provided in
-the second column to map the function to a different key.
+It uses the prefix <leader>c to set all functionality up. By default, <Leader>
+is defined as '\' (|<Leader>|). Use the name provided in the second column to
+map the function to a different key.
 
 ==============================================================================
 4. Colorizer Tips                                           *Colorizer-tips*

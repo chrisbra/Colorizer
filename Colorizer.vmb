@@ -2,7 +2,7 @@
 UseVimball
 finish
 plugin/ColorizerPlugin.vim	[[[1
-78
+95
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -39,6 +39,7 @@ command! -bang -range=%  -nargs=? -complete=custom,ColorHiArgs ColorHighlight
         \ :call Colorizer#DoColor(<q-bang>, <q-line1>, <q-line2>, <q-args>)
 command! -bang -nargs=1  RGB2Term  
         \ :call Colorizer#RGB2Term(<q-args>)
+command! -nargs=1  Term2RGB     :call Colorizer#Term2RGB(<q-args>)
 
 command! -bang    ColorClear    :call Colorizer#ColorOff()
 command! -bang    ColorToggle   :call Colorizer#ColorToggle()
@@ -54,12 +55,28 @@ xnoremap <Plug>ColorContrast    :<C-U>ColorContrast<CR>
 nnoremap <Plug>ColorFgBg        :<C-U>ColorSwapFgBg<CR>
 xnoremap <Plug>ColorFgBg        :<C-U>ColorSwapFgBg<CR>
 
-nmap <silent> <Leader>cC <Plug>Colorizer
-xmap <silent> <Leader>cC <Plug>Colorizer
-nmap <silent> <Leader>cT <Plug>ColorContrast
-xmap <silent> <Leader>cT <Plug>ColorContrast
-nmap <silent> <Leader>cF <Plug>ColorFgBg
-xmap <silent> <Leader>cF <Plug>ColorFgBg
+if get(g:, 'colorizer_auto_map', 0)
+    " only map, if the mapped keys are not yet taken by a different plugin
+    " and the user hasn't mapped the function to different keys
+    if empty(maparg('<Leader>cC', 'n')) && empty(hasmapto('<Plug>Colorizer', 'n'))
+        nmap <silent> <Leader>cC <Plug>Colorizer
+    endif
+    if empty(maparg('<Leader>cC', 'x')) && empty(hasmapto('<Plug>Colorizer', 'x'))
+        xmap <silent> <Leader>cC <Plug>Colorizer
+    endif
+    if empty(maparg('<Leader>cT', 'n')) && empty(hasmapto('<Plug>ColorContrast', 'n'))
+        nmap <silent> <Leader>cT <Plug>ColorContrast
+    endif
+    if empty(maparg('<Leader>cT', 'x')) && empty(hasmapto('<Plug>ColorContrast', 'n'))
+        xmap <silent> <Leader>cT <Plug>ColorContrast
+    endif
+    if empty(maparg('<Leader>cF', 'n')) && empty(hasmapto('<Plug>ColorFgBg', 'n'))
+        nmap <silent> <Leader>cF <Plug>ColorFgBg
+    endif
+    if empty(maparg('<Leader>cF', 'x')) && empty(hasmapto('<Plug>ColorFgBg', 'x'))
+        xmap <silent> <Leader>cF <Plug>ColorFgBg
+    endif
+endif
 
 " Enable Autocommands "{{{1
 if exists("g:colorizer_auto_color")
@@ -82,7 +99,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-377
+412
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -102,9 +119,10 @@ Contents                                                        *Colorizer*
                 1.2 :ColorClear..........................|:ColorClear|
                 1.3 :RGB2Term............................|:RGB2Term|
                 1.4 :HSL2RGB.............................|:HSL2RGB|
-                1.5 :ColorContrast.......................|:ColorContrast|
-                1.6 :ColorSwapFgBg.......................|:ColorSwapFgBg|
-                1.7 :ColorToggle.........................|:ColorToggle|
+                1.5 :Term2RGB............................|:Term2RGB|
+                1.6 :ColorContrast.......................|:ColorContrast|
+                1.7 :ColorSwapFgBg.......................|:ColorSwapFgBg|
+                1.8 :ColorToggle.........................|:ColorToggle|
         2.  Configuration................................|Colorizer-config|
                 2.1 Automatic loading....................|Colorizer-auto|
                 2.2 Automatically highlight filetypes....|Colorizer-hl-ft|
@@ -114,6 +132,8 @@ Contents                                                        *Colorizer*
                 2.6 Use X11 colornames...................|Colorizer-names|
                 2.7 Use syntax highlighting..............|Colorizer-syntax|
                 2.8 Specify patterns to highlight........|Colorizer-pattern|
+                2.9 Colorizer Taskwarrior files..........|Colorizer-taskwarrior-files|
+                2.10 Colorizer vim syntax files..........|Colorizer-vim-files|
         3.  Colorizer Mappings...........................|Colorizer-maps|
         4.  Colorizer Tips...............................|Colorizer-tips|
         5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -128,17 +148,17 @@ Functionality
 This plugin is based on the css_color plugin by Nikolaus Hofer. The idea is to
 highlight color names and codes in the same color that they represent.
 
-The plugin understands the W3-Colors (used for CSS files for example), the
-Color names from the X11 Window System and also codes in hex notation, like
+The plugin understands the W3C colors (used for CSS files for example), the
+color names from the X11 Window System and also codes in hex notation, like
 #FF0000 (which represents Red in the RGB color system). Additionally, it
 supports the CSS color specifications, e.g. rgb(RR,GG,BB) color representation
-in either absolute or percentage values and also the HVL Color
+in either absolute or percentage values and also the HVL color
 representation like hvl(H,V,L)
 
 It works best in the gui version of Vim, but the plugin also supports 256 and
 88 color terminals and translates the colors to those supported by the
-terminal. 16 and 8 color terminals should work theoretically too, but hasn't
-been widely tested. Note, that translating the colors to the terminal might
+terminal. 16 and 8 color terminals should work theoretically too, but have not
+been widely tested. Note that translating the colors to the terminal might
 impose a performance penalty, depending on the terminal type and the number of
 matches in the file.
 
@@ -147,49 +167,53 @@ This plugin defines the following commands:
                                                               *:ColorHighlight*
 :[range]ColorHighlight[!] [args]
 
-Scan the lines given by [range] for color codes names and highlight those. If
+Scan the lines given by [range] for color code names and highlight those. If
 [range] is omitted, the whole file will be scanned. If the ! is used, the
-plugin will redefine all highlighting groups. If ! is not used, it will also
+plugin will redefine all highlighting groups. If ! is not used, it will
 skip patterns, that would take too long and make Vim unresponsive.
 
-[args] can by any of "syntax" or "match". Syntax means to convert the
+[args] can by any of "syntax" or "match". "syntax" means to convert the
 highlighting to syntax highlighting. This is useful, so a plugin like
-|2html.vim| can convert the colors correctly to website. The default is
-"match", which means to use the |matchadd()| function. (Prepending a "no" is
-allowed, to disable that setting and use the opposite).
+|2html.vim| can convert the colors correctly to HTML. The default is
+"match", which uses the |matchadd()| function. (Prepending "no" is
+supported and will disable that setting and use the opposite).
 
                                                                  *:ColorClear*
-:ColorClear                 Turn off Color highlighting.
+:ColorClear                 Turn off color highlighting.
 
                                                                  *:RGB2Term*
-:RGB2Term <color>           Translate the color code given as argument to a
-                            the closest color, that can be displayed by the
-                            terminal. Note, the color must be given in the
+:RGB2Term <color>           Translate the color code given as argument to
+                            the closest color that can be displayed in the
+                            terminal. The color must be given in the
                             format #RRGGBB (the hex format of the colors red,
-                            green and blue the '#' is optional or
+                            green and blue (the '#' is optional), or
                             alternatively like rgb(X,X,X)
 
                             Uses the number of colors your terminal is capable
-                            to handle (or 256 colors for gVim).
+                            of (or 256 colors for gVim).
 
                                                                 *:HSL2RGB*
 :HSL2RGB hsl(h,v,l)         Translate the HVL color defined by the string
                             'hsl(h,v%,l%)' into a color that the current
-                            terminal can display. Note, that the color must be
+                            terminal can display. Note that the color must be
                             given in the format 'hsl(HH, V, L)' where HH
                             defines the Hue as absolute value between 0 and
                             255 and V and L represent a percentage for value
                             and Lightness.
 
+                                                                *:Term2RGB*
+:Term2RGB number            Translate terminal color <number> to an RGB color
+                            (using the xterm 256 color cube).
+
                                                              *:ColorContrast*
 :ColorContrast              Switch between all different color contrast
-                            settings.
+                            settings (foreground colors).
                                                              *:ColorSwapFgBg*
 :ColorSwapFgBg              Switch between foreground and background colors.
                             This will toggle in 3 ways. From Swapping
                             foreground and background colors, to only
-                            highlight the foreground color back to normal
-                            forground background color.
+                            highlighting the foreground color back to normal
+                            foreground background color.
 
                                                               *:ColorToggle*
 :ColorToggle                Switch between highlighting colors and no
@@ -203,36 +227,36 @@ allowed, to disable that setting and use the opposite).
 ---------------------
 
 The Colorizer plugin can be configured to automatically load when opening a
-new file. Note, that this might slow down the loading process, especially on
-the terminal. To enable this, simply the the variable 'g:colorizer_auto_color'
+new file. Note that this might slow down the loading process, especially on
+the terminal. To enable this, simply set the variable 'g:colorizer_auto_color'
 to 1, e.g. by defining it in your |.vimrc| >
 
     :let g:colorizer_auto_color = 1
 <
-(Not recommended, see below at |Colorizer-hl-ft| for the prefered way)
+(Not recommended, see below at |Colorizer-hl-ft| for the preferred way)
 
 2.2 Automatically highlight filetypes                     *Colorizer-hl-ft*
 -------------------------------------
 
-If you want to have certain filetypes automaticaly highlighted, you can use
-the variable g:colorizer_auto_filetype, e.g. say you want to enable color
-highlighting for html and CSS files, put into your |.vimrc| the following: >
+If you want to have certain filetypes automatically highlighted, you can use
+the variable g:colorizer_auto_filetype, e.g. to enable highlighting for
+HTML and CSS files by default, add the following to your |.vimrc|: >
 
     :let g:colorizer_auto_filetype='css,html'
 <
-After restarting Vim, the plugin will become active, whenever the filetype is
+After restarting Vim, the plugin will become active whenever the filetype is
 set to either html or css.
 
 2.3 Skip coloring comments                                *Colorizer-comments*
 --------------------------
 
-You can skip comments from coloring, by setting the variable
-g:colorizer_skip_comments to 1, e.g. put into your |.vimrc| the following: >
+You can skip comments from being colored by setting the variable
+g:colorizer_skip_comments to 1: >
 
     :let g:colorizer_skip_comments = 1
 <
-The plugin will skip all matches of color codes and names, that appear inside
-comments (only works, when syntax highlighting is enabled |:syn-on|)
+The plugin will skip all matches of color codes and names that appear inside
+comments (this only works when syntax highlighting is enabled |:syn-on|)
 
 Note however, that if the same color is used inside comments and outside
 comments, it will also be highlighted inside the comments, because
@@ -247,7 +271,7 @@ background color. For this, the variable 'g:colorizer_fgcontrast' can be used.
 It can be given any value between -1 and 2 with 2 being the default. Each
 smaller value will decrease the contrast a little bit, with -1 being special,
 as there is the foreground color equals the background color. Use
-|:ColorContrast| to toggle the different values.
+|:ColorContrast| to cycle through the different values.
 
 2.5 Highlight colornames                               *Colorizer-hl-names*
 ------------------------
@@ -262,9 +286,9 @@ into your |.vimrc|
 2.6 Use X11 colornames                                     *Colorizer-names*
 ----------------------
 
-Colorizer can be configured to support all color names, defined by the X11
+Colorizer can be configured to support all color names defined by the X11
 Window System. By default it only supports the colors defined by the W3C for
-the CSS Specification. To use the X11 color names, set the variable
+the CSS specification. To use the X11 color names, set the variable
 'g:colorzer_x11_names' to 1, e,g. put in your |.vimrc| >
 
     let g:colorizer_x11_names = 1
@@ -275,7 +299,7 @@ the CSS Specification. To use the X11 color names, set the variable
 
 The plugin by default uses the |matchadd()| functions for highlighting colors
 on the fly. Unfortunately, this is a problem, if you want to have the result
-successfully transformed to html file with the |2html.vim| plugin. Therefore,
+successfully transformed to a HTML file using the |2html.vim| plugin. Therefore,
 the Colorizer plugin can also convert the highlighting to correct syntax
 highlighting. Use either the >
 
@@ -290,16 +314,16 @@ e.g. in your |.vimrc| put >
 2.8 Specify pattern to highlight                         *Colorizer-pattern*
 --------------------------------
 
-By default, Colorizer detects the following patterns and highlight them as hex
-colors (for better readibility separated into 3 parts by whitespace): >
+By default, Colorizer detects the following patterns and highlights them as
+hex colors (for better readability it is separated into 3 parts): >
 
         #	%(\x\{3}\|\x\{6}\)	\%(\>\|[-_]\)\@=/'
 <
 
 This means it always looks for a '#' followed by either a 3 or 6 hexadecimal
 digits denoting the RGB hex color codes, followed by either the word-boundary
-(|/\>|) or be either a hyphen or a underscore. But highlighted will be only
-the first and middle part (e.g. the RGB color codes).
+(|/\>|), a hyphen or a underscore. But only the first and middle part will be
+highlighted (i.e. the RGB color codes).
 
 You can of course specify a different pattern for your needs by setting the
 g:colorizer_hex_pattern variable. e.g. to display '#RRGGBB' and have all of it
@@ -307,28 +331,49 @@ highlighted, use >
 
         let g:colorizer_hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '']
 
-<
+2.9 Colorizer Taskwarrior files                 *Colorizer-taskwarrior-files*
+-------------------------------
+
+For taskwarrior files, this plugin can also highlight those colors. By
+default, this will only work, if the file name ends with '.theme'
+
+For an example, see this website: 
+http://taskwarrior.org/news/182
+
+2.10 Colorizer vim syntax files                 *Colorizer-vim-files*
+-------------------------------
+
+Colorizer also supports highlighting vim syntax files. For this to work, the
+'filetype' must be set to vim, then the plugin tries to identify the colors
+and highlight them.
 
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
 ==============================================================================
 
-Besides using the commands provided at |Colorizer-manual| the plugin also sets
-up some keymappings. It uses the prefix <leader>c to set all functionality up.
-These mappings are provided:
+By default, the Colorizer plugin does not map any key, so that it won't
+pollute the global mapping namespace. If you want however to have the
+following default maps set up, set the global variable g:colorizer_auto_map
+in your |.vimrc| like this: >
+
+    :let g:colorizer_auto_map = 1
+
+<
+This will set up the following key mappings (if they are not already taken):
 
 Keys            Name                Function
 ----            ----                --------
-<Leader>cC      <Plug>Colorizer     Toggle Highlighting of Colors, in visual
-                                    mode, only highlights the colors in the
+<Leader>cC      <Plug>Colorizer     Toggle highlighting of Colors. In visual
+                                    mode it only highlights the colors in the
                                     selected region (normal and visual mode).
-<Leader>cT      <Plug>ColorContrast Toggle contrast setting |:ColorContrast|
-                                    (normal and visual mode)
-<Leader>cF      <Plug>ColorFgBg     Toggle Foreground and Background Color
+<Leader>cT      <Plug>ColorContrast Cycle through contrast setting
+                                    |:ColorContrast| (normal and visual mode)
+<Leader>cF      <Plug>ColorFgBg     Toggle foreground and background color
                                     |:ColorSwapFgBg|
 
-By default, <Leader> is defined as '\' (|<Leader>|). Use the name provided in
-the second column to map the function to a different key.
+It uses the prefix <leader>c to set all functionality up. By default, <Leader>
+is defined as '\' (|<Leader>|). Use the name provided in the second column to
+map the function to a different key.
 
 ==============================================================================
 4. Colorizer Tips                                           *Colorizer-tips*
@@ -342,10 +387,10 @@ following autocommand in your |.vimrc| >
 <
 
 This will automatically highlight all existing color codes and names if you
-edit either a html file or a css file. Note, that this does not update the
-highlighting, after you have been updating the file.
+edit either a HTML file or a CSS file. Note that this does not update the
+highlighting, after you have been changing the file.
 
-The better way to do this, is to use the g:colorizer_auto_filetype
+The recommended way to do this is to use the g:colorizer_auto_filetype
 variable and set this to the desired filetypes. |Colorizer-hl-ft|
 
 ==============================================================================
@@ -376,10 +421,17 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 0.10 (unreleased) {{{1
 - Also highlight Ansi Term sequences
 - Match colornames using the "old" RE Engine, if Vim supports it.
-- Make |RGB2Xterm| output the color name in its color
-- Rename |RGB2Xterm| to |RGB2Term|
+- Make |:RGB2Xterm| output the color name in its color
+- Rename |:RGB2Xterm| to |:RGB2Term|
+- Highlight Taskwarrior file
+- Code refactoring
+- Make |:ColorSwapFgBg| work as expected (did not always toggle reliably
+  between all states)
+- Correctly parse Ansi Term colors
+- |:Term2RGB|
+- Highlight Vim color files correctly
 
-0.9 Aug 14, 2013: {{{1
+0.9: Aug 14, 2013: {{{1
 - https://github.com/chrisbra/color_highlight/issues/15 (rgba highlighting
   didn't work for floating point value of alpha, reported by LiTuX.S, thanks!)
 - https://github.com/chrisbra/color_highlight/issues/16 (rgb() pattern did
@@ -461,7 +513,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2120
+2250
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -477,14 +529,13 @@ autoload/Colorizer.vim	[[[1
 "               - detect rgb colors like this: rgb(R,G,B)
 "               - detect hvl coloring: hvl(H,V,L)
 "               - fix small bugs
+"               - Color ANSI Term values and hide terminal escape sequences
 
 " Init some variables "{{{1
 let s:cpo_save = &cpo
 set cpo&vim
 
-" enable debug functions
 let s:debug = 0
-
 " the 6 value iterations in the xterm color cube "{{{2
 let s:valuerange6 = [ 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF ]
 
@@ -511,11 +562,13 @@ let s:basic16 = [
     \ [ 0xFF, 0xFF, 0xFF ]
     \ ]
 
-" Window console / ConEmu has different color codes
+" Cygwin / Window console / ConEmu has different color codes
 if (expand("$ComSpec") =~# '^\%(command\.com\|cmd\.exe\)$' &&
     \ !has("gui_running")) ||
-    \ (exists("$ConEmuPID") &&
-    \ expand("$ConEmuANSI") ==# "OFF")
+    \ (exists("$ConEmuPID") && 
+    \ expand("$ConEmuANSI") ==# "OFF") ||
+    \ (expand("$TERM") ==# 'cygwin' && &t_Co == 16)  " Cygwin terminal
+
     " command.com/ConEmu Color Cube (currently only supports 16 colors)
     let s:basic16 = [
     \ [ 0x00, 0x00, 0x00 ],
@@ -1382,23 +1435,22 @@ let s:x11_color_names = {
 \ }
 
 function! s:PreviewColorName(color) "{{{1
-    if s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
-        " skip coloring comments
-        return a:color
-    endif
     let name=tolower(a:color)
     let clr = s:colors[name]
     " Skip color-name, e.g. white-space property
-    call s:SetMatcher(clr[1:], '\<'.name.'\>\c[-]\@!')
-    return a:color
+    call s:SetMatcher('\<'.name.'\>\c-\@!', {'bg': clr[1:]})
+endfu
+
+function! s:IsInComment() "{{{1
+    return s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
 endfu
 
 function! s:PreviewColorHex(match) "{{{1
     if s:skip_comments &&
         \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == 'Comment'
         " skip coloring comments
-        return a:match
+        return
     endif
     let color = (a:match[0] == '#' ? a:match[1:] : a:match)
     let pattern = color
@@ -1411,22 +1463,20 @@ function! s:PreviewColorHex(match) "{{{1
         let idx = match(list, a:match)
         if idx == -1
             " Color can't be displayed by 8 color terminal
-            return a:match
+            return
         else
             let color = list[idx]
         endif
     endif
-    call s:SetMatcher(color, s:hex_pattern[0]. pattern. s:hex_pattern[2])
-    return a:match
+    call s:SetMatcher(s:hex_pattern[0]. pattern. s:hex_pattern[2], {'bg': color})
 endfunction
 
 function! s:PreviewColorTerm(pre, text, post) "{{{1
     " a:pre: Ansi-Sequences determining the highlighting
     " a:text: Text to color
     " a:post: Ansi-Sequences resetting the coloring (might be empty)
-    let retval = a:pre. a:text. a:post
-
     let color = s:Ansi2Color(a:pre)
+    let clr_Dict = {}
 
     if &t_Co == 8 && !has("gui_running")
         " The first 12 color names, can be displayed by 8 color terminals
@@ -1443,15 +1493,130 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
             let i+=1
         endfor
     endif
-"    let old_swap_fg_bg = s:swap_fg_bg
-"    let s:swap_fg_bg = 1
-    call s:SetMatcher(color, '\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', 1)
-"    let s:swap_fg_bg = old_swap_fg_bg
-    return retval
+    let clr_Dict.fg = color[0]
+    let clr_Dict.bg = color[1]
+    call s:SetMatcher('\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', clr_Dict)
 endfunction
+
+function! s:PreviewTaskWarriorColors(submatch) "{{{1
+    " a:submatch is something like 'black on rgb141'
+
+    " this highlighting should overrule e.g. colorname highlighting
+    let s:default_match_priority += 1
+    let color = ['', 'NONE', 'NONE']
+    let color_Dict = {}
+    " The submatch is everything after the first equalsign!
+    let tpat = '\(inverse\|underline\|bright\|bold\)\?\%(\s*\)\(\S\{3,}\)'.
+                \ '\?\%(\s*\)\?\%(on\s\+'.
+                \ '\%(inverse\|underline\|bright\|bold\)\?\%(\s*\)\(\S\{3,}\)\)\?'
+    let colormatch = matchlist(a:submatch, tpat)
+    try
+        if !empty(colormatch) && !empty(colormatch[0])
+            let i=-1
+            for m in colormatch[1:3]
+                let i+=1
+                if i == 0
+                    if (!empty(colormatch[1]))
+                        let color_Dict.special=colormatch[1]
+                    else
+                        continue
+                    endif
+                endif
+                if match(keys(s:colors), '\<'.m.'\>') > -1
+                    if i == 1
+                        let color_Dict.fg = s:colors[m][1:] " skip the # sign
+                    elseif i == 2
+                        let color_Dict.bg = s:colors[m][1:] " skip the # sign
+                    endif
+                    continue
+                elseif match(m, '^rgb...') > -1
+                    let color[i] = m[3] * 36 + m[4] * 6 + m[5] + 16 " (start at index 16)
+                    if color[i] > 231
+                        " invalid color
+                        return
+                    endif
+                elseif match(m, '^color') > -1
+                    let color[i] = matchstr(m, '\d\+')+0
+                    if color[i] > 231
+                        " invalid color
+                        return
+                    endif
+                elseif match(m, '^gray') > -1
+                    let color[i] = matchstr(m, '\d\+') + 232
+                    if color[i] > 231
+                        " invalid color
+                        return
+                    endif
+                endif
+                if i == 1
+                    let color_Dict.ctermfg = color[i]
+                elseif i == 2
+                    let color_Dict.ctermbg = color[i]
+                endif
+            endfor
+
+            let cname = get(color_Dict, 'fg', 'NONE')
+            if cname ==# 'NONE' && get(color_Dict, 'ctermfg')
+                let cname = s:Term2RGB(color_Dict.ctermfg)
+            endif
+            call s:SetMatcher('=\s*\zs\<'.a:submatch.'\>$', color_Dict)
+        endif
+    finally
+        let s:default_match_priority -= 1
+    endtry
+endfunction
+
+function! s:PreviewVimColors(submatch) "{{{1
+    " a:submatch is something like 'black on rgb141'
+
+    " this highlighting should overrule e.g. colorname highlighting
+    let s:default_match_priority += 1
+    if !exists("s:x11_color_pattern")
+        let s:x11_color_pattern =  s:GetColorPattern(keys(s:x11_color_names))
+    endif
+    let color_Dict = {}
+    let pat1 = '\%(\(cterm[fb]g\)\s*=\s*\)\@<=\<\(\d\+\)\>'
+    let pat2 = '\%(\(gui[fb]g\)\s*=\s*\)\@<=#\(\x\{6}\)\>'
+    let pat3 = '\%#=1\%(\(gui[fb]g\)\s*=\s*\)\@<=\('.s:x11_color_pattern.'\)'
+
+    let cterm = matchlist(a:submatch, pat1)
+    let gui   = matchlist(a:submatch, pat2)
+    if (!empty(gui) && (gui[2] ==# 'bg' ||
+      \ gui[2] ==# 'fg' ||
+      \ gui[2] ==# 'foreground' ||
+      \ gui[2] ==# 'background'))
+        let gui=[]
+    endif
+    if  empty(gui)
+        let gui   = matchlist(a:submatch, pat3)
+    endif
+    try
+        if !empty(cterm)
+            let color_Dict.ctermbg = cterm[2]
+        elseif !empty(gui)
+            let color_Dict.bg = gui[2]
+        endif
+
+        if empty(gui) && empty(cterm)
+            return
+        endif
+
+        call s:SetMatcher('\<'.a:submatch.'\>', color_Dict)
+    finally
+        let s:default_match_priority -= 1
+    endtry
+endfunction
+
+function! s:Term2RGB(index) "{{{1
+    " Return index in colortable in RRGGBB form
+    return join(map(copy(s:colortable[a:index]), 'printf("%02X", v:val)'),'')
+endfu
 
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
+
+    " default matchadd priority
+    let s:default_match_priority = -2
 
     " pattern/function dict
     " Needed for s:ColorMatchingLines(), disabled, as this is too slow.
@@ -1470,20 +1635,22 @@ function! s:ColorInit(...) "{{{1
         let s:swap_fg_bg = 0
     endif
 
+    if !exists("s:round")
+        let s:round = 0
+    endif
+
+    let s:keeppatterns = v:version > 704 || v:version == 704 && has("patch38")
+
     " Enable Autocommands
     if exists("g:colorizer_auto_color")
         call Colorizer#AutoCmds(g:colorizer_auto_color)
     endif
 
-    if exists("g:colorizer_debug")
-        let s:debug = 1
-    endif
+    " Debugging
+    let s:debug = get(g:, 'colorizer_debug', 0)
 
-    if exists("g:colorizer_skip_comments")
-        let s:skip_comments = g:colorizer_skip_comments
-    else
-        let s:skip_comments = 0
-    endif
+    " Don't highlight comment?
+    let s:skip_comments = get(g:, 'colorizer_skip_comments', 0)
 
     " foreground / background contrast
     let s:predefined_fgcolors = {}
@@ -1563,20 +1730,8 @@ function! s:ColorInit(...) "{{{1
         let s:conceal = [&l:cole, &l:cocu]
     endif
 
-    if !exists("g:colorizer_hex_pattern")
-        let s:hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@=']
-    else
-        let s:hex_pattern = g:colorizer_hex_pattern
-    endif
-
-    let s:color_patterns = { 'hex': join(s:hex_pattern, ''),
-        \ 'rgb': ['rgb(\s*\%(\d\+%\?[^)]*\)\{3})', function("s:ColorRGBValues")],
-        \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\%(.\d\+\)\?\)\|1\))', function("s:ColorRGBValues")],
-        \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})', function("s:ColorRGBValues")],
-        \ 'term': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)\([^\e]*\)\(\%x1b\[0m\)\=', function("s:PreviewColorTerm")],
-        \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)']
-        \ }
-
+    let s:hex_pattern = get(g:, 'colorizer_hex_pattern',
+                \ ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@='])
 
     if has("gui_running") || &t_Co >= 8 || s:HasColorPattern()
 	" The list of available match() patterns
@@ -1601,15 +1756,62 @@ function! s:ColorInit(...) "{{{1
     else
         throw "nocolor"
     endif
+
+    " Dictionary, containing all information on what to color
+    " Key: Name
+    " Value: List, containing 1) Pattern to find color
+    "                         2) func ref to call on the match of 1
+    "                         3) Name of variable, to enable or this enty
+    "                         4) condition, that must be fullfilled, before
+    "                            using this entry
+    let s:color_patterns = {
+        \ 'rgb': ['rgb(\s*\%(\d\+%\?[^)]*\)\{3})',
+            \ function("s:ColorRGBValues"), 'colorizer_rgb', 1 ],
+        \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\))',
+            \ function("s:ColorRGBValues"), 'colorizer_rgba', 1 ],
+        \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
+            \ function("s:ColorRGBValues"), 'colorizer_hsla', 1 ],
+        \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
+            \ function("s:PreviewVimColors"), 'colorizer_vimcolors', '&ft ==# "vim"' ],
+        \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
+            \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior', 'expand("%:e") ==# "theme"' ],
+        \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex', 1],
+        \ }
+
+    let s:color_patterns_special = {
+        \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%(;\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\[0m\)\=',
+            \ function("s:PreviewColorTerm"), 'colorizer_term'],
+        \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)', '',
+            \ 'colorizer_term_conceal' ] }
+
+    if exists("s:colornamepattern")
+        let s:color_patterns["colornames"] = [ s:colornamepattern, 
+            \ function("s:PreviewColorName"), 'colorizer_names', 1]
+    endif
+endfu
+
+function! s:SwapColors(list) "{{{1
+    if s:swap_fg_bg > 0
+        return [a:list[1]] + ['NONE']
+    elseif s:swap_fg_bg == -1
+        return [a:list[1], a:list[0]]
+    else
+        return a:list
+    endif
 endfu
 
 function! s:FGforBG(bg) "{{{1
    " takes a 6hex color code and returns a matching color that is visible
    let fgc = g:colorizer_fgcontrast
-   let pure = a:bg
-   let r = '0x'.pure[0:1]+0
-   let g = '0x'.pure[2:3]+0
-   let b = '0x'.pure[4:5]+0
+   if fgc == -1
+       return a:bg
+   endif
+   if a:bg ==# 'NONE'
+       return (&bg==#'dark' ? s:predefined_fgcolors['dark'][fgc] : s:predefined_fgcolors['light'][fgc])
+   endif
+   let r = '0x'.a:bg[0:1]+0
+   let g = '0x'.a:bg[2:3]+0
+   let b = '0x'.a:bg[4:5]+0
    if r*30 + g*59 + b*11 > 12000
         return s:predefined_fgcolors['dark'][fgc]
     else
@@ -1619,53 +1821,50 @@ endfunction
 
 function! s:DidColor(clr, pat) "{{{1
     let idx = index(w:match_list, a:pat)
+    let cache_hl_group = get(filter(copy(getmatches()), 'v:val.pattern ==# a:pat'), 0, {})
     if idx > -1
         if a:pat[0] == '#' ||
-        \ !empty(synIDattr(hlID(a:clr), 'fg'))
+        \ (!empty(synIDattr(hlID(a:clr), 'fg')) && 
+        \ get(cache_hl_group, 'pattern', a:clr) ==# a:clr)
             return 1
         endif
+    endif
+    if (!empty(cache_hl_group) &&
+    \ get(cache_hl_group, 'pattern', a:clr) !=# a:clr)
+        sil! call matchdelete(get(cache_hl_group, 'id'))
     endif
     return 0
 endfu
 
-function! s:DoHlGroup(clr, group) "{{{1
-    let colorlist = 0
-    if type(a:clr) == type([])
-        " a:clr is a list, containing fg and bg colors
-        " e.g. for TERM coloring
-        let colorlist = 1
-    endif
-    let group = a:group
-
+function! s:DoHlGroup(group, Dict) "{{{1
     if !s:force_hl
-        let syn = synIDattr(hlID(group), 'fg')
+        let syn = synIDattr(hlID(a:group), 'fg')
         if !empty(syn) && syn > -1
             " highlighting already exists
             return
         endif
     endif
-    let clr = (colorlist ? a:clr[0] : a:clr)
-    let bg  = (colorlist ? a:clr[1] : a:clr)
-    if !colorlist
-        let fg = g:colorizer_fgcontrast < 0 ? clr : s:FGforBG(clr)
-    else
-        let fg=clr "explicit foreground color has been given
+    let fg = get(a:Dict, 'fg')
+    let bg = get(a:Dict, 'bg')
+    let [fg, bg] = s:SwapColors([fg, bg])
+    if fg[0] !=# '#' && fg !=# 'NONE'
+        let fg='#'.fg
     endif
-    if s:swap_fg_bg > 0 || (exists("a:1") && a:1)
-        let fg  = clr
-        let bg  = 'NONE'
-    elseif s:swap_fg_bg == -1
-        let t   = fg
-        let fg  = clr
-        let bg  = t
-        unlet t
+    if bg[0] !=# '#' && bg !=# 'NONE'
+        let bg='#'.bg
     endif
-    let hi  = printf('hi %s guifg=#%s', group, fg)
-    let hi .= printf(' guibg=%s', (bg != 'NONE' ? '#'.bg : bg))
+    let hi  = printf('hi %s guifg=%s', a:group, fg)
+    let hi .= printf(' guibg=%s', bg)
+    let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
+        \ (' gui='. a:Dict.special) : '')
     if !has("gui_running")
-        let fg = s:Rgb2xterm(fg)
-        let bg = bg != 'NONE' ? s:Rgb2xterm(bg) : bg
+        let fg = get(a:Dict, 'ctermfg')
+        let bg = get(a:Dict, 'ctermbg')
+        let [fg, bg] = s:SwapColors([fg, bg])
+
 	let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
+        let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
+          \ (' cterm='. a:Dict.special) : '')
     endif
     "Don't error out for invalid colors
     try
@@ -1678,20 +1877,49 @@ function! s:DoHlGroup(clr, group) "{{{1
     endtry
 endfunction
 
-function! s:SetMatcher(clr, pattern, ...) "{{{1
-    if (exists("a:1") && type(a:clr) == type([]))
-        " a:clr is a list, containing foreground and background color (e.g.
-        " from TERM highlighting
-        let clr = 'TermColor_'.a:clr[0].'_'.a:clr[1]
-    else
-        let clr = 'Color_'. a:clr
+function! s:GenerateColors(dict) "{{{1
+    let result=copy(a:dict)
+
+    if !has_key(result, 'bg') && has_key(result, 'ctermbg')
+        let result.bg = s:Term2RGB(result.ctermbg)
     endif
-    call s:DoHlGroup(a:clr, clr)
+    if !has_key(result, 'fg') && has_key(result, 'ctermfg')
+        let result.fg = s:Term2RGB(result.ctermfg)
+    endif
+    if !has_key(result, 'bg')
+        let result.bg = 'NONE'
+    endif
+
+    if !has_key(result, 'fg') &&
+      \ has_key(result, 'bg')
+        let result.fg = toupper(s:FGforBG(result.bg))
+    endif
+    if !has("gui_running")
+        " need to make sure, we have ctermfg/ctermbg values
+        if !has_key(result, 'ctermfg') &&
+            \ has_key(result, 'fg')
+            let result.ctermfg  = s:Rgb2xterm(result.fg)
+        endif
+        if !has_key(result, 'ctermbg') &&
+            \ has_key(result, 'bg')
+            let result.ctermbg  = s:Rgb2xterm(result.bg)
+        endif
+    endif
+    return result
+endfunction
+
+function! s:SetMatcher(pattern, Dict) "{{{1
+    let param = s:GenerateColors(a:Dict)
+    let clr = 'Color_'. get(param, 'fg'). '_'. get(param, 'bg'). 
+            \ (!empty(get(param, 'special', '')) ?
+            \ ('_'. get(param, 'special')) : '')
+
+    call s:DoHlGroup(clr, param)
     if s:DidColor(clr, a:pattern)
         return
     endif
     " let 'hls' overrule our syntax highlighting
-    call matchadd(clr, a:pattern, -1)
+    call matchadd(clr, a:pattern, s:default_match_priority)
     call add(w:match_list, a:pattern)
 endfunction
 
@@ -1785,7 +2013,6 @@ function! s:RoundColor(...) "{{{1
     " Check with the values from the 16 color xterm, if the difference
     " is lower
     let result = s:Check16ColorTerm(result, minlist)
-
     return result
 endfunction
 
@@ -1801,8 +2028,8 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
             " euclidian distance would be needed,
             " but this works good enough and is faster.
             let t = abs(value[0] - a:rgblist[0]) +
-                    \ abs(value[1] - a:rgblist[1]) +
-                    \ abs(value[2] - a:rgblist[2])
+                  \ abs(value[1] - a:rgblist[1]) +
+                  \ abs(value[2] - a:rgblist[2])
             if min > t
                 return value
             endif
@@ -1823,8 +2050,8 @@ function! s:Check16ColorTerm(rgblist, minlist) "{{{1
         let list = (&t_Co == 16 ? s:basic16 : s:basic16[:7])
         for value in list
             let t = abs(value[0] - a:rgblist[0]) +
-                    \ abs(value[1] - a:rgblist[1]) +
-                    \ abs(value[2] - a:rgblist[2])
+                  \ abs(value[1] - a:rgblist[1]) +
+                  \ abs(value[2] - a:rgblist[2])
             if min > t
                 let min = t
                 let best = value
@@ -1903,23 +2130,25 @@ function! s:Ansi2Color(chars) "{{{1
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
-    if has("conceal") && hlID('ColorTermESC') == 0
+    if has("conceal")
         exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
         setl cocu=nv cole=2
     endif
 endfu
 function! s:GetColorPattern(list) "{{{1
-    let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>\)'' ')
+    let list = map(copy(a:list), ' ''\%(\<'' . v:val . ''\>-\@!\)'' ')
     " Force the old re engine. It should be faster without backtracking.
-    return (exists("+re") ? '\%#=1' : '').join(list, '\|')
+    return '\%#=1'.join(list, '\|')
 endfunction
 
 function! s:GetMatchList() "{{{1
     " this is window-local!
-    return filter(getmatches(), 'v:val.group =~ ''^Color_\x\{6}$''')
+    return filter(getmatches(), 'v:val.group =~ ''^\(Color_\x\{6}\)\|NONE''')
 endfunction
 
 function! s:CheckTimeout(pattern, force) "{{{1
+    " Abort, if pattern is not found within 100 ms and force
+    " is not set
     return (!empty(a:force) || search(a:pattern, 'cnw', '', 100))
 endfunction
 
@@ -2006,13 +2235,13 @@ function! s:ColorRGBValues(val) "{{{1
     if s:skip_comments &&
         \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
         " skip coloring comments
-        return a:val
+        return
     endif
     " strip parantheses and split on comma
     let rgb = s:StripParentheses(a:val)
     if empty(rgb)
         call s:Warn("Error in expression". a:val. "! Please report as bug.")
-        return a:val
+        return
     endif
     for i in range(3)
         if rgb[i][-1:-1] == '%'
@@ -2033,26 +2262,25 @@ function! s:ColorRGBValues(val) "{{{1
         let rgb = s:ApplyAlphaValue(rgb)
     endif
     let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
-    call s:SetMatcher(clr, a:val)
-    return a:val
+    call s:SetMatcher(a:val, {'bg': clr})
 endfunction
 
 function! s:ColorHSLValues(val) "{{{1
     if s:skip_comments &&
         \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
         " skip coloring comments
-        return a:val
+        return
     endif
     " strip parantheses and split on comma
     let hsl = s:StripParentheses(a:val)
     if empty(hsl)
         call s:Warn("Error in expression". a:val. "! Please report as bug.")
-        return a:val
+        return
     endif
     let str = s:PrepareHSLArgs(hsl)
 
-    call s:SetMatcher(str, a:val)
-    return a:val
+    call s:SetMatcher(a:val, {'bg': str})
+    return
 endfu
 
 function! s:HSL2RGB(h, s, l) "{{{1
@@ -2089,22 +2317,13 @@ function! s:Hue2RGB(m1, m2, h) "{{{1
     return round(res * 255)
 endfunction
 
-function! s:Modifylists(la, lb, op) "{{{1
-    if a:op == '+'
-        return [ a:la[0] + a:lb[0],
-            \    a:la[1] + a:lb[1],
-            \    a:la[2] + a:lb[2]]
-    else
-        return [ a:la[0] - a:lb[0],
-            \    a:la[1] - a:lb[1],
-            \    a:la[2] - a:lb[2]]
-    endif
-endfu
-
 function! s:Rgb2xterm(color) "{{{1
 " selects the nearest xterm color for a rgb value like #FF0000
 " hard code values for 000000 and FFFFFF, they will be called many times
 " so make this fast
+    if a:color ==# 'NONE'
+        return 'NONE'
+    endif
     if len(a:color) <= 3
         " a:color is already a terminal color
         return a:color
@@ -2134,10 +2353,6 @@ function! s:Rgb2xterm(color) "{{{1
                 " 0 and 15 have already been take care of
                 if r < 5
                     return 0 " black
-    "            elseif r == 127
-    "                return 8 " from 16 color xterm
-    "            elseif r == 229
-    "                return 7 " from 16 color xterm
                 elseif r > 244
                     return 15 " white
                 endif
@@ -2206,6 +2421,9 @@ function! s:PrepareHSLArgs(list) "{{{1
     return s:HSL2RGB(hsl[0], hsl[1], hsl[2])
 endfu
 function! s:SyntaxMatcher(enable) "{{{1
+    if !a:enable
+        return
+    endif
     let did_clean = {}
     for hi in s:GetMatchList()
         if !get(did_clean, hi.group, 0)
@@ -2219,9 +2437,6 @@ function! s:SyntaxMatcher(enable) "{{{1
             sil! call matchdelete(hi.id)
         endif
     endfor
-"    if a:enable
-"        unlet w:match_list
-"    endif
 endfu
 
 function! Colorizer#ColorToggle() "{{{1
@@ -2239,15 +2454,17 @@ function! Colorizer#ColorOff() "{{{1
     call Colorizer#LocalFTAutoCmds(0)
     if exists("s:conceal") && has("conceal")
         let [&l:cole, &l:cocu] = s:conceal
-        unlet! s:conceal
     endif
-    unlet! w:match_list
-    unlet! b:Colorizer_force
+    unlet! w:match_list s:conceal
 endfu
 
 function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " initialize plugin
     try
+        if v:version < 704
+            call s:Warn("Colorizer needs Vim 7.4")
+            return
+        endif
         call s:ColorInit(a:force)
         if exists("a:1") && !empty(a:1)
             let s:color_syntax = ( a:1 =~# '^\%(syntax\|nomatch\)$' )
@@ -2260,22 +2477,10 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     endtry
     let error = ""
 
-    " too slow
-    "for name in keys(s:colors)
-    "    call s:PreviewColorName(name)
-    "endfor
-
-    " too slow:
-    "for line in range(1,line('$'))
-    "    call s:ColorMatchingLines(line)
-    "endfor
     let _a   = winsaveview()
     let save = s:SaveRestoreOptions(1, {},
             \ ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
 
-    if !exists("n_flag")
-        let n_flag = v:version > 703 || ( v:version == 703 && has("patch627"))
-    endif
     " highlight Hex Codes:
     "
     " The :%s command is a lot faster than this:
@@ -2284,20 +2489,6 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "              #F0F
     "              #FFF
     "
-    " Hexcodes should be word-bounded, but could also be delimited by [-_], so
-    " allow those to delimit the end of the pattern
-    if (s:CheckTimeout(s:color_patterns.hex, a:force))
-        let cmd = printf(':sil %d,%d%ss/%s/'.
-            \ '\=s:PreviewColorHex(submatch(0))/egi%s', a:line1, a:line2,
-            \ s:color_unfolded, s:color_patterns.hex, n_flag ? 'n' : '')
-        try
-            exe cmd
-        catch
-            " some error occured, stop when finished (and don't setup auto
-            " comands
-            let error.=" ColorHex "
-        endtry
-    endif
     if &t_Co > 16 || has("gui_running")
     " Also support something like
     " CSS rgb(255,0,0)
@@ -2311,72 +2502,70 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-        for Pat in [ s:color_patterns.rgb, s:color_patterns.rgba, s:color_patterns.hsla]
+        for Pat in values(s:color_patterns) + 
+            \ (exists("s:color_names") ? [s:color_patterns.colornames] : [])
+            if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
+                " Coloring disabled
+                continue
+            endif
+
+            " 4th element in pattern is condition, that must be fullfilled,
+            " before we continue
+            if !eval(Pat[3])
+                continue
+            endif
+
             " Check, the pattern isn't too costly...
-            if s:CheckTimeout(Pat[0], a:force)
-                let cmd = printf(':sil %d,%d%ss/%s/'.
-                    \ '\=call(Pat[1], [submatch(0)])/egi%s', a:line1, a:line2,
-                    \ s:color_unfolded, Pat[0], n_flag ? 'n' : '')
+            if s:CheckTimeout(Pat[0], a:force) && !s:IsInComment()
+                let cmd = printf(':sil %s %d,%d%ss/%s/'.
+                    \ '\=call(Pat[1], [submatch(0)])/egin',
+                    \ (s:keeppatterns ? "keeppatterns" : ''),
+                    \ a:line1, a:line2,
+                    \ s:color_unfolded, Pat[0])
                 try
                     exe cmd
                 catch
                     " some error occured, stop when finished (and don't setup auto
                     " comands
-                    let error.=" ColorRGBValues: pat "
+                    let error.=" Colorize: ". string(Pat)
+                    break
                 endtry
             endif
         endfor
-        " highlight hsl(X,X,X) values
-        " Check, the pattern isn't too costly...
-"        for pat in [ s:color_patterns.hsla ]
-"            if s:CheckTimeout(pat, a:force)
-"                let cmd = printf(':sil %d,%d%ss/%s/'.
-"                    \'\=s:ColorHSLValues(submatch(0))/egi%s', a:line1, a:line2,
-"                    \ s:color_unfolded, pat, n_flag ? 'n' : '')
-"                exe cmd
-"            endif
-"        endfor
     endif
-    " highlight Colornames
-    " only highlight, if either force is given, or the pattern matches within
-    " 100ms, so this won't slow down loading too long
-    if (exists("s:color_names") && s:color_names) && s:CheckTimeout(s:colornamepattern, a:force)
-        let s_cmd = printf(':sil %d,%d%ss/%s/\=s:PreviewColorName(submatch(0))/egi%s',
-            \ a:line1, a:line2, s:color_unfolded, s:colornamepattern, n_flag ? 'n' : '')
-        try
-            exe s_cmd
-        catch
-            " some error occured, stop when finished (and don't setup auto
-            " comands
-            let error=" ColorNames "
-        endtry
-        " Somehow, when performing above search, the pattern remains in the
-        " search history and this can be disturbing, so delete it from there.
-        call histdel('/', -1)
-    endif
-    for Pat in [ s:color_patterns.term ]
-        if (s:CheckTimeout(Pat[0], a:force))
-            let cmd = printf(':sil %d,%d%ss/%s/'.
-                \ '\=call(Pat[1],[submatch(1),submatch(2),submatch(3)])/egi%s',
-                \ a:line1, a:line2,  s:color_unfolded, Pat[0],
-                \ n_flag ? 'n' : '')
+
+    for Pat in [ s:color_patterns_special.term ]
+        if (s:CheckTimeout(Pat[0], a:force)) && !s:IsInComment()
+
+            if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
+                " Coloring disabled
+                continue
+            endif
+
+            let cmd = printf(':sil %s %d,%d%ss/%s/'.
+                \ '\=call(Pat[1],[submatch(1),submatch(2),submatch(3)])/egin',
+                \ (s:keeppatterns ? "keeppatterns" : ''),
+                \ a:line1, a:line2,  s:color_unfolded, Pat[0])
             try
                 exe cmd
                 " Hide ESC Terminal Chars
-                call s:TermConceal(s:color_patterns.term_conceal[0])
+                call s:TermConceal(s:color_patterns_special.term_conceal[0])
             catch
                 " some error occured, stop when finished (and don't setup auto
                 " comands
                 let error=" ColorTerm "
+                break
             endtry
         endif
     endfor
+
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
-    if !exists("#FTColorizer#BufEnter") && empty(error)
-        let b:Colorizer_force = 1
+    if !exists("#FTColorizer#BufWinEnter#<buffer>") && empty(error)
+        " Initialise current window.
         call Colorizer#LocalFTAutoCmds(1)
+        call Colorizer#ColorWinEnter(1)
     endif
     if !empty(error)
         " Some error occured, stop trying to color the file
@@ -2392,15 +2581,35 @@ function! Colorizer#RGB2Term(arg) "{{{1
         let clr    = s:StripParentheses(a:arg)
         let color  = printf("#%02X%02X%02X", clr[0], clr[1], clr[2])
     else
-        let color  = a:arg[0] == '#' ? a:arg : #.a:arg
+        let color  = a:arg[0] == '#' ? a:arg : '#'.a:arg
     endif
 
     let tcolor = s:Rgb2xterm(color)
-    call s:DoHlGroup(color[1:], "Color_". color[1:])
+    call s:DoHlGroup("Color_". color[1:], s:GenerateColors({'bg': color[1:]}))
     exe "echohl" "Color_".color[1:]
     echo a:arg. " => ". tcolor
     echohl None
 endfu
+
+function! Colorizer#Term2RGB(arg) "{{{1
+    let index = a:arg + 0
+    if a:arg > 255 || a:arg < 0
+        call s:Warn('invalid index')
+        return
+    endif
+
+    let _t_Co=&t_Co
+    let &t_Co = 256
+    call s:ColorInit(1)
+
+    let rgb = s:Term2RGB(index)
+    call s:DoHlGroup("Color_". rgb, s:GenerateColors({'bg': rgb, 'ctermbg': index}))
+    exe "echohl" "Color_".rgb
+    echo "TerminalColor: ". a:arg. " => ". rgb
+    echohl None
+    let &t_Co = _t_Co
+endfu
+
 
 function! Colorizer#HSL2Term(arg) "{{{1
     let hsl = s:StripParentheses(a:arg)
@@ -2411,7 +2620,7 @@ function! Colorizer#HSL2Term(arg) "{{{1
     let str = s:PrepareHSLArgs(hsl)
 
     let tcolor = s:Rgb2xterm('#'.str)
-    call s:DoHlGroup(str, "Color_".str)
+    call s:DoHlGroup("Color_".str, s:GenerateColors({'bg': str}))
     exe "echohl" str
     echo a:arg. " => ". tcolor
     echohl None
@@ -2468,27 +2677,28 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
     endif
 endfu
 
-function! Colorizer#ColorWinEnter() "{{{1
+function! Colorizer#ColorWinEnter(...) "{{{1
+    let force = a:0 ? a:1 : 0
     " be fast!
-    let ft_list = split(get(g:, "colorizer_auto_filetype", ""), ',')
-    if match(ft_list, "^".&ft."$") == -1 && !get(b:, 'Colorizer_force', 0)
-        " current filetype doesn't match g:colorizer_auto_filetype,
-        " so nothing to do
-        return
+    if !force
+        let ft_list = split(get(g:, "colorizer_auto_filetype", ""), ',')
+        if match(ft_list, "^".&ft."$") == -1
+            " current filetype doesn't match g:colorizer_auto_filetype,
+            " so nothing to do
+            return
+        endif
+        if get(b:, 'Colorizer_changedtick', 0) == b:changedtick &&
+                    \ !empty(getmatches())
+            " nothing to do
+            return
+        endif
     endif
-    if get(b:, 'Colorizer_changedtick', 0) == b:changedtick &&
-                \ !empty(getmatches()) &&
-                \ !get(b:, 'Colorizer_force', 0)
-        " nothing to do
-        return
-    else
-        let g:colorizer_only_unfolded = 1
-        let _c = getpos('.')
-        call Colorizer#DoColor('', 1, line('$'))
-        let b:Colorizer_changedtick = b:changedtick
-        unlet! g:colorizer_only_unfolded
-        call setpos('.', _c)
-    endif
+    let g:colorizer_only_unfolded = 1
+    let _c = getpos('.')
+    call Colorizer#DoColor('', 1, line('$'))
+    let b:Colorizer_changedtick = b:changedtick
+    unlet! g:colorizer_only_unfolded
+    call setpos('.', _c)
 endfu
 
 function! Colorizer#ColorLine() "{{{1
@@ -2515,17 +2725,18 @@ function! Colorizer#SwitchContrast() "{{{1
     if g:colorizer_fgcontrast < -1
         let g:colorizer_fgcontrast = len(s:predefined_fgcolors['dark']) - 1
     endif
+    echom 'Colorizer: using fgcontrast' g:colorizer_fgcontrast
     call Colorizer#DoColor(1, 1, line('$'))
 endfu
 
 function! Colorizer#SwitchFGBG() "{{{1
+    let range = [ 0, 1, -1 ]
     if !exists("s:round")
-        let s:round = 1
+        let s:round = 0
     else
-        let s:round += 1
+        let s:round = (s:round >= 2 ? 0 : s:round+1)
     endif
-    let range = [ 1, -1, 0]
-    let s:swap_fg_bg = range[s:round % 3]
+    let s:swap_fg_bg = range[s:round]
     call Colorizer#DoColor(1, 1, line('$'))
 endfu
 
@@ -2535,35 +2746,6 @@ if !s:debug
     unlet s:cpo_save
     finish
 endif
-
-function! s:ColorMatchingLines() "{{{2
-    " Programmatic approach to highlight all hex values as colors.
-    " Surprisingly a lot slower than calling
-    " :s/#\x\{3,6}/\=s:ColorMatchingLines1(submatch(0))/g
-    let pat = s:GetColorPattern(keys(s:pat_func)). '\|'.
-            \ s:GetColorPattern(keys(s:colors))
-    let pat = substitute(pat, '\\<#', '#', 'g')
-    for content in range(1, line('$'))
-        let line = getline(content)
-        let cnt  = 0
-        while 1
-            let color = matchstr(line, pat, 0, cnt)
-            if empty(color)
-                break
-            else
-                let key  = color
-                if color =~ keys(s:pat_func)[0]
-                    let key = keys(s:pat_func)[0]
-                endif
-                let Func = get(s:pat_func, key,
-                            \ function('s:PreviewColorName'))
-                call call(Func, [color])
-                let cnt  += 1
-            endif
-        endw
-    endfor
-endfu
-" Autoloadable functions
 
 fu! Test1() "{{{2
     return map(range(0,254), 's:Xterm2rgb256(v:val)')

@@ -50,12 +50,28 @@ xnoremap <Plug>ColorContrast    :<C-U>ColorContrast<CR>
 nnoremap <Plug>ColorFgBg        :<C-U>ColorSwapFgBg<CR>
 xnoremap <Plug>ColorFgBg        :<C-U>ColorSwapFgBg<CR>
 
-nmap <silent> <Leader>cC <Plug>Colorizer
-xmap <silent> <Leader>cC <Plug>Colorizer
-nmap <silent> <Leader>cT <Plug>ColorContrast
-xmap <silent> <Leader>cT <Plug>ColorContrast
-nmap <silent> <Leader>cF <Plug>ColorFgBg
-xmap <silent> <Leader>cF <Plug>ColorFgBg
+if get(g:, 'colorizer_auto_map', 0)
+    " only map, if the mapped keys are not yet taken by a different plugin
+    " and the user hasn't mapped the function to different keys
+    if empty(maparg('<Leader>cC', 'n')) && empty(hasmapto('<Plug>Colorizer', 'n'))
+        nmap <silent> <Leader>cC <Plug>Colorizer
+    endif
+    if empty(maparg('<Leader>cC', 'x')) && empty(hasmapto('<Plug>Colorizer', 'x'))
+        xmap <silent> <Leader>cC <Plug>Colorizer
+    endif
+    if empty(maparg('<Leader>cT', 'n')) && empty(hasmapto('<Plug>ColorContrast', 'n'))
+        nmap <silent> <Leader>cT <Plug>ColorContrast
+    endif
+    if empty(maparg('<Leader>cT', 'x')) && empty(hasmapto('<Plug>ColorContrast', 'n'))
+        xmap <silent> <Leader>cT <Plug>ColorContrast
+    endif
+    if empty(maparg('<Leader>cF', 'n')) && empty(hasmapto('<Plug>ColorFgBg', 'n'))
+        nmap <silent> <Leader>cF <Plug>ColorFgBg
+    endif
+    if empty(maparg('<Leader>cF', 'x')) && empty(hasmapto('<Plug>ColorFgBg', 'x'))
+        xmap <silent> <Leader>cF <Plug>ColorFgBg
+    endif
+endif
 
 " Enable Autocommands "{{{1
 if exists("g:colorizer_auto_color")
