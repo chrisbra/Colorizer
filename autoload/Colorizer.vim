@@ -918,16 +918,16 @@ let s:x11_color_names = {
 \ 'lightgreen': '#90EE90'
 \ }
 
+function! s:IsInComment() "{{{1
+    return s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+endfu
+
 function! s:PreviewColorName(color) "{{{1
     let name=tolower(a:color)
     let clr = s:colors[name]
     " Skip color-name, e.g. white-space property
     call s:SetMatcher('-\@<!\<'.name.'\>\c-\@!', {'bg': clr[1:]})
-endfu
-
-function! s:IsInComment() "{{{1
-    return s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
 endfu
 
 function! s:PreviewColorHex(match) "{{{1
@@ -979,7 +979,7 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
     endif
     let clr_Dict.fg = color[0]
     let clr_Dict.bg = color[1]
-    call s:SetMatcher('\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', clr_Dict)
+    call s:SetMatcher('\%('. a:pre. '\)\@<='.a:text. '\('.a:post.'\)\@=', clr_Dict)
 endfunction
 
 function! s:PreviewTaskWarriorColors(submatch) "{{{1
@@ -1091,6 +1091,38 @@ function! s:PreviewVimColors(submatch) "{{{1
     endtry
 endfunction
 
+function! s:PreviewVimHighlight(match) "{{{1
+    " like colorhighlight plugin,
+    " colorizer highlight statements in .vim files
+    let tmatch = a:match
+    let def    = []
+    let dict   = {}
+    try
+        if a:match =~ '^\s*hi\%[ghlight]\s\+clear'
+            " highlight clear lines, don't colorize!
+            return
+        endif
+        " HtmlHiLink / HiLink line?
+        let match = matchlist(tmatch, '\C\%[Html\]HiLink\s\+\(\w\+\)\s\+\(\w\+\)')
+        " Hopefully tmatch[2] has already been defined ;(
+        if len(match)
+            call s:SetMatch('Color_'.match[2], '^\V'.escape(a:match, '\\'), {})
+            return
+        endif
+        let match = map(split(tmatch), 'substitute(v:val, ''^\s\+\|\s\+$'', "", "g")')
+        if len(match) < 4
+            return
+        else
+            let dict.name = 'Color_'.get(match, 2)
+            let match = filter(match, 'v:val =~# ''=''')
+            for item in match
+                let [t1, t2] = split(item, '=')
+                let dict[t1] = t2
+            endfor
+            call s:SetMatcher('^\V'.escape(a:match, '\\'), dict)
+        endif
+    endtry
+endfunction
 function! s:Term2RGB(index) "{{{1
     " Return index in colortable in RRGGBB form
     return join(map(copy(s:colortable[a:index]), 'printf("%02X", v:val)'),'')
@@ -1257,6 +1289,9 @@ function! s:ColorInit(...) "{{{1
             \ function("s:ColorRGBValues"), 'colorizer_hsla', 1 ],
         \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
             \ function("s:PreviewVimColors"), 'colorizer_vimcolors', '&ft ==# "vim"' ],
+        \ 'vimhighlight': ['^\s*\%(\%[Html]HiLink\s\+\w\+\s\+\w\+\)\|'.
+        \ '\(hi\%[ghlight]!\?\s\+\(clear\)\@!\S\+.*\)',
+            \ function("s:PreviewVimHighlight"), 'colorizer_vimhighlight', '&ft ==# "vim"' ],
         \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
             \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior', 'expand("%:e") ==# "theme"' ],
         \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex', 1],
@@ -1328,6 +1363,13 @@ function! s:DoHlGroup(group, Dict) "{{{1
             return
         endif
     endif
+
+    if empty(a:Dict)
+        " try to link the given highlight group
+        call s:Exe("hi link ". a:group. " ". matchstr(a:group, 'Color_\zs.*'))
+        return
+    endif
+
     let fg = get(a:Dict, 'fg')
     let bg = get(a:Dict, 'bg')
     let [fg, bg] = s:SwapColors([fg, bg])
@@ -1338,6 +1380,9 @@ function! s:DoHlGroup(group, Dict) "{{{1
         let bg='#'.bg
     endif
     let hi  = printf('hi %s guifg=%s', a:group, fg)
+    if has_key(a:Dict, "gui")
+        let hi.=printf(" gui=%s ", a:Dict['cterm'])
+    endif
     let hi .= printf(' guibg=%s', bg)
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
@@ -1349,17 +1394,27 @@ function! s:DoHlGroup(group, Dict) "{{{1
 	let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
         let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
           \ (' cterm='. a:Dict.special) : '')
+        if has_key(a:Dict, "term")
+            let hi.=printf(" term=%s ", a:Dict['term'])
+        endif
+        if has_key(a:Dict, "cterm")
+            let hi.=printf(" cterm=%s ", a:Dict['cterm'])
+        endif
     endif
+    call s:Exe(hi)
+endfunction
+
+function! s:Exe(stmt) "{{{1
     "Don't error out for invalid colors
     try
-        exe hi
+        exe a:stmt
     catch
         " Only report errors, when debugging info is turned on
         if s:debug
-            call s:Warn("Invalid color: ".hi)
+            call s:Warn("Invalid statement: ".a:stmt)
         endif
     endtry
-endfunction
+endfu
 
 function! s:GenerateColors(dict) "{{{1
     let result=copy(a:dict)
@@ -1394,18 +1449,25 @@ endfunction
 
 function! s:SetMatcher(pattern, Dict) "{{{1
     let param = s:GenerateColors(a:Dict)
-    let clr = 'Color_'. get(param, 'fg'). '_'. get(param, 'bg'). 
-            \ (!empty(get(param, 'special', '')) ?
-            \ ('_'. get(param, 'special')) : '')
+    let clr = get(param, 'name', '')
+    if empty(clr)
+        let clr = 'Color_'. get(param, 'fg'). '_'. get(param, 'bg'). 
+                \ (!empty(get(param, 'special', '')) ?
+                \ ('_'. get(param, 'special')) : '')
+    endif
+    call s:SetMatch(clr, a:pattern, param)
+endfunction
 
-    call s:DoHlGroup(clr, param)
-    if s:DidColor(clr, a:pattern)
+function! s:SetMatch(group, pattern, param_dict) "{{{1
+    call s:DoHlGroup(a:group, a:param_dict)
+    if s:DidColor(a:group, a:pattern)
         return
     endif
     " let 'hls' overrule our syntax highlighting
-    call matchadd(clr, a:pattern, s:default_match_priority)
+    call matchadd(a:group, a:pattern, s:default_match_priority)
     call add(w:match_list, a:pattern)
 endfunction
+
 
 function! s:Xterm2rgb16(color) "{{{1
         " 16 basic colors
@@ -1627,7 +1689,7 @@ endfunction
 
 function! s:GetMatchList() "{{{1
     " this is window-local!
-    return filter(getmatches(), 'v:val.group =~ ''^\(Color_\x\{6}\)\|NONE''')
+    return filter(getmatches(), 'v:val.group =~ ''^\(Color_\w\+\)\|NONE''')
 endfunction
 
 function! s:CheckTimeout(pattern, force) "{{{1
