@@ -245,6 +245,16 @@ Colorizer also supports highlighting vim syntax files. For this to work, the
 'filetype' must be set to vim, then the plugin tries to identify the colors
 and highlight them.
 
+2.11 Use custom colornames                    *Colorizer-custom-colornames*
+--------------------------
+
+You can add separate colornames to be colored. For this to work, set the
+variable g:colorizer_custom_colors to your liking, e.g. like this: >
+
+    let g:colorizer_custom_colors = { 'blue': '#ff0000'}
+
+Guess what, this will color the word blue in red.
+
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
 ==============================================================================
