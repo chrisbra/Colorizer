@@ -979,7 +979,8 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
     endif
     let clr_Dict.fg = color[0]
     let clr_Dict.bg = color[1]
-    call s:SetMatcher('\%('.a:pre.'\)\@<='.a:text.'\('.a:post.'\)\@=', clr_Dict)
+    let pattern = '\%('. a:pre. '\)\@<='.escape(a:text, '\^$.*~[]'). '\('.a:post.'\)\@='
+    call s:SetMatcher(pattern, clr_Dict)
 endfunction
 
 function! s:PreviewTaskWarriorColors(submatch) "{{{1
