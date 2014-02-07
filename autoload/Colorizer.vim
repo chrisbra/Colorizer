@@ -1340,8 +1340,9 @@ function! s:ColorInit(...) "{{{1
         \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
             \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior', 'expand("%:e") ==# "theme"' ],
         \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex', 1],
-        \ 'vimhighlight_dump': ['^\v\w+\s+xxx%((\s+(term|cterm%([bf]g)?|gui%(%([bf]g|sp))?)\=[#0-9A-Za-z_,]+)+)?%(\_\s+links to \w+)?%( cleared)@!',
-        \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighlight_dump', 1 ]
+        \ 'vimhighlight_dump': ['^\v\w+\s+xxx%((\s+(term|cterm%([bf]g)?|gui%(%([bf]g|sp))?'.
+            \ ')\=[#0-9A-Za-z_,]+)+)?%(\_\s+links to \w+)?%( cleared)@!',
+            \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighlight_dump', 'empty(&ft)' ]
         \ }
 
     let s:color_patterns_special = {
