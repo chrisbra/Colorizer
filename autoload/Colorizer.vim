@@ -1998,7 +1998,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
 
             " 4th element in pattern is condition, that must be fullfilled,
             " before we continue
-            if !eval(Pat[3])
+            if !empty(Pat[3]) && eval(Pat[3])
                 continue
             endif
 
