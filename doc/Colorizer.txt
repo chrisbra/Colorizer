@@ -22,16 +22,18 @@ Contents                                                        *Colorizer*
                 1.7 :ColorSwapFgBg.......................|:ColorSwapFgBg|
                 1.8 :ColorToggle.........................|:ColorToggle|
         2.  Configuration................................|Colorizer-config|
-                2.1 Automatic loading....................|Colorizer-auto|
-                2.2 Automatically highlight filetypes....|Colorizer-hl-ft|
-                2.3 Skip coloring comments...............|Colorizer-comments|
-                2.4 Adjust the contrast..................|Colorizer-contrast|
-                2.5 Highlight colornames.................|Colorizer-hl-names|
-                2.6 Use X11 colornames...................|Colorizer-names|
-                2.7 Use syntax highlighting..............|Colorizer-syntax|
-                2.8 Specify patterns to highlight........|Colorizer-pattern|
-                2.9 Colorizer Taskwarrior files..........|Colorizer-taskwarrior-files|
-                2.10 Colorizer vim syntax files..........|Colorizer-vim-files|
+                2.1  Automatic loading...................|Colorizer-auto|
+                2.2  Automatically highlight filetypes...|Colorizer-hl-ft|
+                2.3  Skip coloring comments..............|Colorizer-comments|
+                2.4  Adjust the contrast.................|Colorizer-contrast|
+                2.5  Highlight colornames................|Colorizer-hl-names|
+                2.6  Use X11 colornames..................|Colorizer-names|
+                2.7  Use syntax highlighting.............|Colorizer-syntax|
+                2.8  Specify patterns to highlight.......|Colorizer-pattern|
+                2.9  Colorizing Taskwarrior files........|Colorizer-taskwarrior-files|
+                2.10 Colorizing vim syntax files.........|Colorizer-vim-files|
+                2.11 Use custom colornames...............|Colorizer-custom-colornames|
+                2.12 Colorizing :hi statements...........|Colorizer-vim-hi|
         3.  Colorizer Mappings...........................|Colorizer-maps|
         4.  Colorizer Tips...............................|Colorizer-tips|
         5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -229,8 +231,8 @@ highlighted, use >
 
         let g:colorizer_hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '']
 
-2.9 Colorizer Taskwarrior files                 *Colorizer-taskwarrior-files*
--------------------------------
+2.9 Colorizing Taskwarrior files                 *Colorizer-taskwarrior-files*
+--------------------------------
 
 For taskwarrior files, this plugin can also highlight those colors. By
 default, this will only work, if the file name ends with '.theme'
@@ -238,8 +240,8 @@ default, this will only work, if the file name ends with '.theme'
 For an example, see this website: 
 http://taskwarrior.org/news/182
 
-2.10 Colorizer vim syntax files                 *Colorizer-vim-files*
--------------------------------
+2.10 Colorizing vim syntax files                 *Colorizer-vim-files*
+--------------------------------
 
 Colorizer also supports highlighting vim syntax files. For this to work, the
 'filetype' must be set to vim, then the plugin tries to identify the colors
@@ -254,6 +256,14 @@ variable g:colorizer_custom_colors to your liking, e.g. like this: >
     let g:colorizer_custom_colors = { 'blue': '#ff0000'}
 
 Guess what, this will color the word blue in red.
+
+2.12 Colorizing :highlight statements                 *Colorizer-vim-hi*
+-------------------------------------
+
+Colorizer also supports highlighting |:hi| statements, that are used by vim
+colorschemes and syntax files as well as a dump of the |:hi| command
+To colorizer :hi statements, the 'filetype' must be set to vim, while for :hi
+dumps, the 'filetype' must be empty.
 
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
