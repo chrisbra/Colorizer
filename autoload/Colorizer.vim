@@ -1272,7 +1272,7 @@ function! s:ColorInit(...) "{{{1
         \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)', '',
             \ 'colorizer_term_conceal' ] }
 
-    if exists("s:colornamepattern")
+    if exists("s:colornamepattern") && s:color_names
         let s:color_patterns["colornames"] = [ s:colornamepattern, 
             \ function("s:PreviewColorName"), 'colorizer_names', 1]
     endif
@@ -1990,8 +1990,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-        for Pat in values(s:color_patterns) + 
-            \ (exists("s:color_names") ? [s:color_patterns.colornames] : [])
+        for Pat in values(s:color_patterns)
             if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
                 " Coloring disabled
                 continue
