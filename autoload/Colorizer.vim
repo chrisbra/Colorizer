@@ -1291,7 +1291,7 @@ function! s:ColorInit(...) "{{{1
         \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
             \ function("s:PreviewVimColors"), 'colorizer_vimcolors', '&ft ==# "vim"' ],
         \ 'vimhighlight': ['^\s*\%(\%[Html]HiLink\s\+\w\+\s\+\w\+\)\|'.
-        \ '\(hi\%[ghlight]!\?\s\+\(clear\)\@!\S\+.*\)',
+        \ '\(^\s*hi\%[ghlight]!\?\s\+\(clear\)\@!\S\+.*\)',
             \ function("s:PreviewVimHighlight"), 'colorizer_vimhighlight', '&ft ==# "vim"' ],
         \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
             \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior', 'expand("%:e") ==# "theme"' ],
@@ -1311,7 +1311,9 @@ function! s:ColorInit(...) "{{{1
 endfu
 
 function! s:SwapColors(list) "{{{1
-    if s:swap_fg_bg > 0
+    if empty(a:list[0]) && empty(a:list[1])
+        return a:list
+    elseif s:swap_fg_bg > 0
         return [a:list[1]] + ['NONE']
     elseif s:swap_fg_bg == -1
         return [a:list[1], a:list[0]]
@@ -1371,28 +1373,36 @@ function! s:DoHlGroup(group, Dict) "{{{1
         return
     endif
 
-    let fg = get(a:Dict, 'fg')
-    let bg = get(a:Dict, 'bg')
-    let [fg, bg] = s:SwapColors([fg, bg])
-    if fg[0] !=# '#' && fg !=# 'NONE'
-        let fg='#'.fg
-    endif
-    if bg[0] !=# '#' && bg !=# 'NONE'
-        let bg='#'.bg
-    endif
-    let hi  = printf('hi %s guifg=%s', a:group, fg)
+    let hi = printf('hi %s ', a:group)
+        let fg = get(a:Dict, 'fg', '')
+        let bg = get(a:Dict, 'bg', '')
+        let [fg, bg] = s:SwapColors([fg, bg])
+
+        if !empty(fg) && fg[0] !=# '#' && fg !=# 'NONE'
+            let fg='#'.fg
+        endif
+        if !empty(bg) && bg[0] !=# '#' && bg !=# 'NONE'
+            let bg='#'.bg
+        endif
+        if !empty(fg)
+            let hi .= printf('guifg=%s', fg)
+        endif
     if has_key(a:Dict, "gui")
         let hi.=printf(" gui=%s ", a:Dict['cterm'])
     endif
-    let hi .= printf(' guibg=%s', bg)
+    if !empty(bg)
+        let hi .= printf(' guibg=%s', bg)
+    endif
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
     if !has("gui_running")
-        let fg = get(a:Dict, 'ctermfg')
-        let bg = get(a:Dict, 'ctermbg')
-        let [fg, bg] = s:SwapColors([fg, bg])
+        let fg = get(a:Dict, 'ctermfg', '')
+        let bg = get(a:Dict, 'ctermbg', '')
+        if !empty(bg) && !empty(fg)
+            let [fg, bg] = s:SwapColors([fg, bg])
 
-	let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
+            let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
+        endif
         let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
           \ (' cterm='. a:Dict.special) : '')
         if has_key(a:Dict, "term")
@@ -1425,9 +1435,6 @@ function! s:GenerateColors(dict) "{{{1
     endif
     if !has_key(result, 'fg') && has_key(result, 'ctermfg')
         let result.fg = s:Term2RGB(result.ctermfg)
-    endif
-    if !has_key(result, 'bg')
-        let result.bg = 'NONE'
     endif
 
     if !has_key(result, 'fg') &&
@@ -1936,7 +1943,7 @@ function! s:Warn(msg) "{{{1
     let v:errmsg = msg
 endfu
 
-function! s:Load(file) "{{{1
+function! s:LoadSyntax(file) "{{{1
     unlet! b:current_syntax
     exe "sil! ru! syntax/".a:file. ".vim"
 endfu
@@ -2080,20 +2087,22 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                         " groups will be defined
                         let s:extension = fnamemodify(expand('%'), ':t:r')
                         let s:old_syntax = exists("b:current_syntax") ? b:current_syntax : ''
-                        call s:Load(s:extension)
+                        call s:LoadSyntax(s:extension)
                     endif
 
                     exe cmd
-                    if exists("s:extension")
-                        call s:Load(&ft)
-                        unlet! s:extension
-                    endif
 
                 catch
                     " some error occured, stop when finished (and don't setup auto
                     " comands
                     let error.=" Colorize: ". string(Pat)
                     break
+
+                finally 
+                    if exists("s:extension")
+                        call s:LoadSyntax(&ft)
+                        unlet! s:extension
+                    endif
                 endtry
             endif
         endfor
