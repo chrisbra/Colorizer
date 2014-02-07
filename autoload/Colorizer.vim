@@ -1106,20 +1106,21 @@ function! s:PreviewVimHighlight(match) "{{{1
         let match = matchlist(tmatch, '\C\%[Html\]HiLink\s\+\(\w\+\)\s\+\(\w\+\)')
         " Hopefully tmatch[2] has already been defined ;(
         if len(match)
-            call s:SetMatch('Color_'.match[2], '^\V'.escape(a:match, '\\'), {})
+            call s:SetMatch('Color_'.match[1], '^\V'.escape(a:match, '\\'), {})
             return
         endif
+        let tmatch = substitute(tmatch, '^\c\s*hi\%[ghlight]\(\s*def\%[ault]\)\?', '', '')
         let match = map(split(tmatch), 'substitute(v:val, ''^\s\+\|\s\+$'', "", "g")')
-        if len(match) < 4
+        if len(match) < 2
             return
         else
-            let dict.name = 'Color_'.get(match, 2)
+            let dict.name = 'Color_'.get(match, 0)
             let match = filter(match, 'v:val =~# ''=''')
             for item in match
                 let [t1, t2] = split(item, '=')
                 let dict[t1] = t2
             endfor
-            call s:SetMatcher('^\V'.escape(a:match, '\\'), dict)
+            call s:SetMatcher('\V'.escape(a:match, '\\'), dict)
         endif
     endtry
 endfunction
@@ -1935,6 +1936,10 @@ function! s:Warn(msg) "{{{1
     let v:errmsg = msg
 endfu
 
+function! s:Load(file) "{{{1
+    unlet! b:current_syntax
+    exe "sil! ru! syntax/".a:file. ".vim"
+endfu
 function! s:HasColorPattern() "{{{1
     let _pos    = winsaveview()
     try
@@ -2069,7 +2074,21 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                     \ a:line1, a:line2,
                     \ s:color_unfolded, Pat[0])
                 try
+                    if Pat[2] ==# 'colorizer_vimhighlight' && has('windows')
+                        \ && has('syntax') && !empty(bufname(''))
+                        " try to load the corresponding syntax file so the syntax
+                        " groups will be defined
+                        let s:extension = fnamemodify(expand('%'), ':t:r')
+                        let s:old_syntax = exists("b:current_syntax") ? b:current_syntax : ''
+                        call s:Load(s:extension)
+                    endif
+
                     exe cmd
+                    if exists("s:extension")
+                        call s:Load(&ft)
+                        unlet! s:extension
+                    endif
+
                 catch
                     " some error occured, stop when finished (and don't setup auto
                     " comands
