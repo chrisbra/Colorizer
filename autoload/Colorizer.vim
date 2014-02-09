@@ -931,8 +931,7 @@ function! s:PreviewColorName(color) "{{{1
 endfu
 
 function! s:PreviewColorHex(match) "{{{1
-    if s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == 'Comment'
+    if <sid>IsInComment()
         " skip coloring comments
         return
     endif
@@ -1105,9 +1104,9 @@ function! s:PreviewVimHighlightDump(match) "{{{1
             return
         elseif a:match =~# 'links to'
             " try to find a non-cleared group
-            let c1 =  synIDattr(synIDtrans(hlID(match[0])), 'fg')
+            let c1 =  <sid>SynID(match[0])
             let group = match[0]
-            if empty(c1) || c1 < 0
+            if empty(c1)
                 let group = match[-1]
             endif
             call s:SetMatch('Color_'.group, '^'.s:GetPatternLiteral(a:match), {})
@@ -1300,8 +1299,7 @@ function! s:ColorInit(...) "{{{1
 	let w:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
 	if ((empty(w:match_list) || !hlexists(w:match_list[0].group) ||
-	    \ empty(synIDattr(hlID(w:match_list[0].group), 'fg'))) &&
-            \ !s:force_hl)
+	    \ (empty(<sid>SynID(w:match_list[0].group)) && !s:force_hl)))
 	    let s:force_hl = 1
 	endif
         if &t_Co > 16 || has("gui_running")
@@ -1395,8 +1393,8 @@ endfunction
 function! s:DidColor(clr, pat) "{{{1
     let idx = index(w:match_list, a:pat)
     if idx > -1
-        let attr = synIDattr(hlID(a:clr), 'fg')
-        if (!empty(attr) && attr != -1 && get(w:match_list, idx) ==# a:pat)
+        let attr = <sid>SynID(a:clr)
+        if (!empty(attr) && get(w:match_list, idx) ==# a:pat)
             return 1
         endif
     endif
@@ -1405,8 +1403,8 @@ endfu
 
 function! s:DoHlGroup(group, Dict) "{{{1
     if !s:force_hl
-        let syn = synIDattr(hlID(a:group), 'fg')
-        if !empty(syn) && syn > -1
+        let syn = <sid>SynID(a:group)
+        if !empty(syn)
             " highlighting already exists
             return
         endif
@@ -1472,6 +1470,17 @@ function! s:Exe(stmt) "{{{1
             call s:Warn("Invalid statement: ".a:stmt)
         endif
     endtry
+endfu
+
+function! s:SynID(group, ...)
+    let property = exists("a:1") ? a:1 : 'fg'
+    let c1 = synIDattr(synIDtrans(hlID(a:group)), property)
+    " since when can c1 be negative? Is this a vim bug?
+    " it used to be empty on errors or non-existing properties...
+    if empty(c1) || c1 < 0
+        return ''
+    else
+        return c1
 endfu
 
 function! s:GenerateColors(dict) "{{{1
@@ -1799,8 +1808,8 @@ endfunction
 
 function! s:ApplyAlphaValue(rgb) "{{{1
     " Add Alpha Value to RGB values
-    let bg = synIDattr(synIDtrans(hlID("Normal")), "bg")
-    if bg == -1 || empty(bg) || !has('float')
+    let bg = <sid>SynID('Normal', 'bg')
+    if empty(bg) || !has('float')
         return a:rgb[0:3]
     else
         if (bg =~? '\d\{1,3}') && bg < 256
@@ -1833,8 +1842,7 @@ function! s:ApplyAlphaValue(rgb) "{{{1
 endfunction
 
 function! s:ColorRGBValues(val) "{{{1
-    if s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+    if <sid>IsInComment()
         " skip coloring comments
         return
     endif
@@ -1867,8 +1875,7 @@ function! s:ColorRGBValues(val) "{{{1
 endfunction
 
 function! s:ColorHSLValues(val) "{{{1
-    if s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+    if <sid>IsInComment()
         " skip coloring comments
         return
     endif
@@ -2115,7 +2122,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
 
             " 4th element in pattern is condition, that must be fullfilled,
             " before we continue
-            if !empty(Pat[3]) && eval(Pat[3])
+            if !empty(Pat[3]) && !eval(Pat[3])
                 continue
             endif
 
