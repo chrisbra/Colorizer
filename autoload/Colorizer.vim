@@ -1445,7 +1445,7 @@ function! s:DoHlGroup(group, Dict) "{{{1
         let fg = get(a:Dict, 'ctermfg', '')
         let bg = get(a:Dict, 'ctermbg', '')
         let [fg, bg] = s:SwapColors([fg, bg])
-        if !empty(bg) && !empty(fg)
+        if !empty(string(bg)) && !empty(string(fg))
             let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
         endif
         let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
