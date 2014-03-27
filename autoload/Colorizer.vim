@@ -2268,8 +2268,12 @@ function! Colorizer#AutoCmds(enable) "{{{1
             au GUIEnter * silent call Colorizer#DoColor('!', 1, line('$'))
             au WinEnter,BufWinEnter * silent call Colorizer#ColorWinEnter()
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
-            if get(g:, 'colorizer_cursormoved', 0)
-                au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
+            if exists("##TextChanged") && (v:version > 704 || v:version == 704 && has('patch143'))
+                au TextChangedI * call Colorizer#ColorLine()
+            else
+                if get(g:, 'colorizer_cursormoved', 0)
+                    au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
+                endif
             endif
         aug END
     else

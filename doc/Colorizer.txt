@@ -335,6 +335,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
+0.11 (unreleased) {{{1
+- use |TextChanged| autocommand if possible
+
 0.10 Mar 27, 2014 {{{1
 - Also highlight Ansi Term sequences
 - Match colornames using the "old" RE Engine, if Vim supports it.
