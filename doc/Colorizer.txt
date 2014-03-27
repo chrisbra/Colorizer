@@ -7,37 +7,36 @@ Copyright:  (c) 2009-2013 by Christian Brabandt
             (see |copyright|) except use ColorizerPlugin instead of "Vim".
             NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK.
 
-
 ==============================================================================
 Contents                                                        *Colorizer*
 ==============================================================================
 
-        1.  Colorizer Manual.............................|Colorizer-manual|
-                1.1 :ColorHighlight......................|:ColorHighlight|
-                1.2 :ColorClear..........................|:ColorClear|
-                1.3 :RGB2Term............................|:RGB2Term|
-                1.4 :HSL2RGB.............................|:HSL2RGB|
-                1.5 :Term2RGB............................|:Term2RGB|
-                1.6 :ColorContrast.......................|:ColorContrast|
-                1.7 :ColorSwapFgBg.......................|:ColorSwapFgBg|
-                1.8 :ColorToggle.........................|:ColorToggle|
-        2.  Configuration................................|Colorizer-config|
-                2.1  Automatic loading...................|Colorizer-auto|
-                2.2  Automatically highlight filetypes...|Colorizer-hl-ft|
-                2.3  Skip coloring comments..............|Colorizer-comments|
-                2.4  Adjust the contrast.................|Colorizer-contrast|
-                2.5  Highlight colornames................|Colorizer-hl-names|
-                2.6  Use X11 colornames..................|Colorizer-names|
-                2.7  Use syntax highlighting.............|Colorizer-syntax|
-                2.8  Specify patterns to highlight.......|Colorizer-pattern|
-                2.9  Colorizing Taskwarrior files........|Colorizer-taskwarrior-files|
-                2.10 Colorizing vim syntax files.........|Colorizer-vim-files|
-                2.11 Use custom colornames...............|Colorizer-custom-colornames|
-                2.12 Colorizing :hi statements...........|Colorizer-vim-hi|
-        3.  Colorizer Mappings...........................|Colorizer-maps|
-        4.  Colorizer Tips...............................|Colorizer-tips|
-        5.  Colorizer Feedback...........................|Colorizer-feedback|
-        6.  Colorizer History............................|Colorizer-history|
+    1.  Colorizer Manual.............................|Colorizer-manual|
+            1.1 :ColorHighlight......................|:ColorHighlight|
+            1.2 :ColorClear..........................|:ColorClear|
+            1.3 :RGB2Term............................|:RGB2Term|
+            1.4 :HSL2RGB.............................|:HSL2RGB|
+            1.5 :Term2RGB............................|:Term2RGB|
+            1.6 :ColorContrast.......................|:ColorContrast|
+            1.7 :ColorSwapFgBg.......................|:ColorSwapFgBg|
+            1.8 :ColorToggle.........................|:ColorToggle|
+    2.  Configuration................................|Colorizer-config|
+            2.1  Automatic loading...................|Colorizer-auto|
+            2.2  Automatically highlight filetypes...|Colorizer-hl-ft|
+            2.3  Skip coloring comments..............|Colorizer-comments|
+            2.4  Adjust the contrast.................|Colorizer-contrast|
+            2.5  Highlight colornames................|Colorizer-hl-names|
+            2.6  Use X11 colornames..................|Colorizer-names|
+            2.7  Use syntax highlighting.............|Colorizer-syntax|
+            2.8  Specify patterns to highlight.......|Colorizer-pattern|
+            2.9  Colorizing Taskwarrior files........|Colorizer-taskwarrior-files|
+            2.10 Colorizing vim syntax files.........|Colorizer-vim-files|
+            2.11 Use custom colornames...............|Colorizer-custom-colornames|
+            2.12 Colorizing :hi statements...........|Colorizer-vim-hi|
+    3.  Colorizer Mappings...........................|Colorizer-maps|
+    4.  Colorizer Tips...............................|Colorizer-tips|
+    5.  Colorizer Feedback...........................|Colorizer-feedback|
+    6.  Colorizer History............................|Colorizer-history|
 
 ==============================================================================
 1. Colorizer Manual                                       *Colorizer-manual*
@@ -336,7 +335,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
-0.10 (unreleased) {{{1
+0.10 Mar 27, 2014 {{{1
 - Also highlight Ansi Term sequences
 - Match colornames using the "old" RE Engine, if Vim supports it.
 - Make |:RGB2Xterm| output the color name in its color
