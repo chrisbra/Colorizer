@@ -99,7 +99,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-432
+436
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -437,6 +437,10 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
+0.11 (unreleased) {{{1
+- use |TextChanged| autocommand if possible
+- Support Ansi True Color support if possible
+
 0.10 Mar 27, 2014 {{{1
 - Also highlight Ansi Term sequences
 - Match colornames using the "old" RE Engine, if Vim supports it.
@@ -533,7 +537,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2397
+2425
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -1884,7 +1888,7 @@ function! s:ColorInit(...) "{{{1
         \ }
 
     let s:color_patterns_special = {
-        \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%(;\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\[0m\)\=',
+        \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%(;\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term'],
         \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)', '',
             \ 'colorizer_term_conceal' ] }
@@ -2044,6 +2048,11 @@ function! s:GenerateColors(dict) "{{{1
             let result.ctermbg  = s:Rgb2xterm(result.bg)
         endif
     endif
+    for key in keys(result)
+        if empty(result[key])
+            let result[key] = 0
+        endif
+    endfor
     return result
 endfunction
 
@@ -2241,37 +2250,56 @@ function! s:Ansi2Color(chars) "{{{1
 
     if a:chars=~ '.*3[0-7]\(;1\)\?[m;]'
         let check[0] = 1
+    elseif a:chars =~ '.*38\([:;]\)2\1'
+        let check[0] = 2 " Uses True Color Support
     else
         let fground = "NONE"
     endif
     if a:chars=~ '.*4[0-7]\(;1\)\?[m;]'
         let check[1] = 1
+    elseif a:chars =~ '.*48\([:;]\)2\1'
+        let check[1] = 2
     else
         let bground = "NONE"
     endif
 
-    for val in ["std", "bold"]
-        for key in keys(s:term2ansi[val])
-            let bright = (val == "std" ? "" : ";1")
+    if check[0] == 2
+        " Check for TrueColor Support
+        " Esc[38;2;<red>;<green>;<blue>
+        " 38: background color
+        " 48: foregournd color
+        " delimiter could be either : or ;
+        " skip leading ESC [ and trailing m char
+        let pat = split(a:chars[2:-2], '[:;]')
+        if pat[0] == 38 " background color
+            let fground = printf("%.2X%.2X%.2X", pat[2], pat[3], pat[4])
+        elseif a:pat[1] == 48 " foreground color
+            let bground = printf("%.2X%.2X%.2X", pat[2], pat[3], pat[4])
+        endif
+    else
+        for val in ["std", "bold"]
+            for key in keys(s:term2ansi[val])
+                let bright = (val == "std" ? "" : ";1")
 
-            if check[0] " Check for a match of the foreground color
-                if a:chars =~ ".*".key.bright."[m;]"
-                    let fground = s:term2ansi[val][key]
+                if check[0] " Check for a match of the foreground color
+                    if a:chars =~ ".*".key.bright."[m;]"
+                        let fground = s:term2ansi[val][key]
+                    endif
                 endif
-            endif
-            if check[1] "Check for background color
-                if a:chars =~ ".*".(key+10).bright."[m;]"
-                    let bground = s:term2ansi[val][key]
+                if check[1] "Check for background color
+                    if a:chars =~ ".*".(key+10).bright."[m;]"
+                        let bground = s:term2ansi[val][key]
+                    endif
                 endif
-            endif
-            if !empty(bground) && !empty(fground)
+                if !empty(bground) && !empty(fground)
+                    break
+                endif
+            endfor
+            if !empty(fground) && !empty(bground)
                 break
             endif
         endfor
-        if !empty(fground) && !empty(bground)
-            break
-        endif
-    endfor
+    endif
     return [fground, bground]
 endfunction
 
@@ -2804,8 +2832,12 @@ function! Colorizer#AutoCmds(enable) "{{{1
             au GUIEnter * silent call Colorizer#DoColor('!', 1, line('$'))
             au WinEnter,BufWinEnter * silent call Colorizer#ColorWinEnter()
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
-            if get(g:, 'colorizer_cursormoved', 0)
-                au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
+            if exists("##TextChanged") && (v:version > 704 || v:version == 704 && has('patch143'))
+                au TextChangedI * call Colorizer#ColorLine()
+            else
+                if get(g:, 'colorizer_cursormoved', 0)
+                    au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
+                endif
             endif
         aug END
     else
