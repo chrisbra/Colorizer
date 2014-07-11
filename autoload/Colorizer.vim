@@ -1348,7 +1348,7 @@ function! s:ColorInit(...) "{{{1
         \ }
 
     let s:color_patterns_special = {
-        \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%(;\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\[0m\)\=',
+        \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%(;\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term'],
         \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)', '',
             \ 'colorizer_term_conceal' ] }
@@ -1705,37 +1705,56 @@ function! s:Ansi2Color(chars) "{{{1
 
     if a:chars=~ '.*3[0-7]\(;1\)\?[m;]'
         let check[0] = 1
+    elseif a:chars =~ '.*38\([:;]\)2\1'
+        let check[0] = 2 " Uses True Color Support
     else
         let fground = "NONE"
     endif
     if a:chars=~ '.*4[0-7]\(;1\)\?[m;]'
         let check[1] = 1
+    elseif a:chars =~ '.*48\([:;]\)2\1'
+        let check[1] = 2
     else
         let bground = "NONE"
     endif
 
-    for val in ["std", "bold"]
-        for key in keys(s:term2ansi[val])
-            let bright = (val == "std" ? "" : ";1")
+    if check[0] == 2
+        " Check for TrueColor Support
+        " Esc[38;2;<red>;<green>;<blue>
+        " 38: background color
+        " 48: foregournd color
+        " delimiter could be either : or ;
+        " skip leading ESC [ and trailing m char
+        let pat = split(a:chars[2:-2], '[:;]')
+        if pat[0] == 38 " background color
+            let fground = printf("%.2X%.2X%.2X", pat[2], pat[3], pat[4])
+        elseif a:pat[1] == 48 " foreground color
+            let bground = printf("%.2X%.2X%.2X", pat[2], pat[3], pat[4])
+        endif
+    else
+        for val in ["std", "bold"]
+            for key in keys(s:term2ansi[val])
+                let bright = (val == "std" ? "" : ";1")
 
-            if check[0] " Check for a match of the foreground color
-                if a:chars =~ ".*".key.bright."[m;]"
-                    let fground = s:term2ansi[val][key]
+                if check[0] " Check for a match of the foreground color
+                    if a:chars =~ ".*".key.bright."[m;]"
+                        let fground = s:term2ansi[val][key]
+                    endif
                 endif
-            endif
-            if check[1] "Check for background color
-                if a:chars =~ ".*".(key+10).bright."[m;]"
-                    let bground = s:term2ansi[val][key]
+                if check[1] "Check for background color
+                    if a:chars =~ ".*".(key+10).bright."[m;]"
+                        let bground = s:term2ansi[val][key]
+                    endif
                 endif
-            endif
-            if !empty(bground) && !empty(fground)
+                if !empty(bground) && !empty(fground)
+                    break
+                endif
+            endfor
+            if !empty(fground) && !empty(bground)
                 break
             endif
         endfor
-        if !empty(fground) && !empty(bground)
-            break
-        endif
-    endfor
+    endif
     return [fground, bground]
 endfunction
 
