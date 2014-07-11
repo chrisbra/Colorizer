@@ -1508,6 +1508,11 @@ function! s:GenerateColors(dict) "{{{1
             let result.ctermbg  = s:Rgb2xterm(result.bg)
         endif
     endif
+    for key in keys(result)
+        if empty(result[key])
+            let result[key] = 0
+        endif
+    endfor
     return result
 endfunction
 
