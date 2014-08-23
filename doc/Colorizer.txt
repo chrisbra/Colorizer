@@ -338,6 +338,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 0.11 (unreleased) {{{1
 - use |TextChanged| autocommand if possible
 - Support Ansi True Color support if possible
+- Hide ^[[K$ for terminal colors (reported by masukomi at
+  https://github.com/chrisbra/Colorizer/issues/36, thanks!)
 
 0.10 Mar 27, 2014 {{{1
 - Also highlight Ansi Term sequences

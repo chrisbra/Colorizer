@@ -99,7 +99,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-436
+438
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -440,6 +440,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 0.11 (unreleased) {{{1
 - use |TextChanged| autocommand if possible
 - Support Ansi True Color support if possible
+- Hide ^[[K$ for terminal colors (reported by masukomi at
+  https://github.com/chrisbra/Colorizer/issues/36, thanks!)
 
 0.10 Mar 27, 2014 {{{1
 - Also highlight Ansi Term sequences
@@ -537,7 +539,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2425
+2426
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -1887,10 +1889,11 @@ function! s:ColorInit(...) "{{{1
             \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighlight_dump', 'empty(&ft)' ]
         \ }
 
+    " term_conceal: patterns to hide, currently: [K$ and the color patterns [0m[01;32m
     let s:color_patterns_special = {
-        \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%(;\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
+        \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term'],
-        \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%(;\d\+\)*m\)', '',
+        \ 'term_conceal': ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*m\)\|\%x1b\[K$\)', '',
             \ 'colorizer_term_conceal' ] }
 
     if exists("s:colornamepattern") && s:color_names

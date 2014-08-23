@@ -1347,10 +1347,11 @@ function! s:ColorInit(...) "{{{1
             \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighlight_dump', 'empty(&ft)' ]
         \ }
 
+    " term_conceal: patterns to hide, currently: [K$ and the color patterns [0m[01;32m
     let s:color_patterns_special = {
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term'],
-        \ 'term_conceal': ['\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*m\)', '',
+        \ 'term_conceal': ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*m\)\|\%x1b\[K$\)', '',
             \ 'colorizer_term_conceal' ] }
 
     if exists("s:colornamepattern") && s:color_names
