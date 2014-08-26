@@ -1355,7 +1355,7 @@ function! s:ColorInit(...) "{{{1
             \ 'colorizer_term_conceal' ] }
 
     if exists("s:colornamepattern") && s:color_names
-        let s:color_patterns["colornames"] = [ s:colornamepattern, 
+        let s:color_patterns["colornames"] = [ s:colornamepattern,
             \ function("s:PreviewColorName"), 'colorizer_names', 1]
     endif
 endfu
@@ -1521,7 +1521,7 @@ function! s:SetMatcher(pattern, Dict) "{{{1
     let param = s:GenerateColors(a:Dict)
     let clr = get(param, 'name', '')
     if empty(clr)
-        let clr = 'Color_'. get(param, 'fg'). '_'. get(param, 'bg'). 
+        let clr = 'Color_'. get(param, 'fg'). '_'. get(param, 'bg').
                 \ (!empty(get(param, 'special', '')) ?
                 \ ('_'. get(param, 'special')) : '')
     endif
@@ -2180,7 +2180,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                     let error.=" Colorize: ". string(Pat)
                     break
 
-                finally 
+                finally
                     if exists("s:extension")
                         call s:LoadSyntax(&ft)
                         unlet! s:extension
