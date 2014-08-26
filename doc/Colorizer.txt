@@ -340,6 +340,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - Support Ansi True Color support if possible
 - Hide ^[[K$ for terminal colors (reported by masukomi at
   https://github.com/chrisbra/Colorizer/issues/36, thanks!)
+- Do not expand() to expand shellvars (fixed by Daniel Hahler in
+  https://github.com/chrisbra/Colorizer/issues/37, thanks!)
 
 0.10 Mar 27, 2014 {{{1
 - Also highlight Ansi Term sequences
