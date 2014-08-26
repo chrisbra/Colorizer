@@ -47,11 +47,11 @@ let s:basic16 = [
     \ ]
 
 " Cygwin / Window console / ConEmu has different color codes
-if (expand("$ComSpec") =~# '^\%(command\.com\|cmd\.exe\)$' &&
+if ($ComSpec =~# '^\%(command\.com\|cmd\.exe\)$' &&
     \ !has("gui_running")) ||
-    \ (exists("$ConEmuPID") && 
-    \ expand("$ConEmuANSI") ==# "OFF") ||
-    \ (expand("$TERM") ==# 'cygwin' && &t_Co == 16)  " Cygwin terminal
+    \ (exists("$ConEmuPID") &&
+    \ $ConEmuANSI ==# "OFF") ||
+    \ ($TERM ==# 'cygwin' && &t_Co == 16)  " Cygwin terminal
 
     " command.com/ConEmu Color Cube (currently only supports 16 colors)
     let s:basic16 = [
