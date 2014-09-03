@@ -1174,10 +1174,20 @@ function! s:Term2RGB(index) "{{{1
     return join(map(copy(s:colortable[a:index]), 'printf("%02X", v:val)'),'')
 endfu
 
+function! s:Reltime(...) "{{{1
+    if s:reltime
+        return exists("a:1") ? reltime(a:1) : reltime()
+    else
+        return []
+    endif
+endfu
+
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
 
     let s:stop = 0
+    
+    let s:reltime = has('reltime')
 
     " default matchadd priority
     let s:default_match_priority = -2
@@ -1330,36 +1340,37 @@ function! s:ColorInit(...) "{{{1
     "                         3) Name of variable, to enable or this enty
     "                         4) condition, that must be fullfilled, before
     "                            using this entry
+    "                       ´ 5) reltime for dumping statistics
     let s:color_patterns = {
         \ 'rgb': ['rgb(\s*\%(\d\+%\?[^)]*\)\{3})',
-            \ function("s:ColorRGBValues"), 'colorizer_rgb', 1 ],
+            \ function("s:ColorRGBValues"), 'colorizer_rgb', 1, [] ],
         \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\))',
-            \ function("s:ColorRGBValues"), 'colorizer_rgba', 1 ],
+            \ function("s:ColorRGBValues"), 'colorizer_rgba', 1, [] ],
         \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
-            \ function("s:ColorRGBValues"), 'colorizer_hsla', 1 ],
+            \ function("s:ColorRGBValues"), 'colorizer_hsla', 1, [] ],
         \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
-            \ function("s:PreviewVimColors"), 'colorizer_vimcolors', '&ft ==# "vim"' ],
+            \ function("s:PreviewVimColors"), 'colorizer_vimcolors', '&ft ==# "vim"', [] ],
         \ 'vimhighlight': ['^\s*\%(\%[Html]HiLink\s\+\w\+\s\+\w\+\)\|'.
         \ '\(^\s*hi\%[ghlight]!\?\s\+\(clear\)\@!\S\+.*\)',
-            \ function("s:PreviewVimHighlight"), 'colorizer_vimhighlight', '&ft ==# "vim"' ],
+            \ function("s:PreviewVimHighlight"), 'colorizer_vimhighlight', '&ft ==# "vim"', [] ],
         \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
-            \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior', 'expand("%:e") ==# "theme"' ],
-        \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex', 1],
+            \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior', 'expand("%:e") ==# "theme"', [] ],
+        \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex', 1, [] ],
         \ 'vimhighlight_dump': ['^\v\w+\s+xxx%((\s+(term|cterm%([bf]g)?|gui%(%([bf]g|sp))?'.
             \ ')\=[#0-9A-Za-z_,]+)+)?%(\_\s+links to \w+)?%( cleared)@!',
-            \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighlight_dump', 'empty(&ft)' ]
+            \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighlight_dump', 'empty(&ft)', [] ]
         \ }
 
     " term_conceal: patterns to hide, currently: [K$ and the color patterns [0m[01;32m
     let s:color_patterns_special = {
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
-            \ function("s:PreviewColorTerm"), 'colorizer_term'],
+            \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
         \ 'term_conceal': ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*m\)\|\%x1b\[K$\)', '',
-            \ 'colorizer_term_conceal' ] }
+            \ 'colorizer_term_conceal', []  ] }
 
     if exists("s:colornamepattern") && s:color_names
         let s:color_patterns["colornames"] = [ s:colornamepattern,
-            \ function("s:PreviewColorName"), 'colorizer_names', 1]
+            \ function("s:PreviewColorName"), 'colorizer_names', 1, [] ]
     endif
 endfu
 
@@ -2143,7 +2154,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
         for Pat in values(s:color_patterns)
+            let start = s:Reltime()
             if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
+                let Pat[4] = s:Reltime(start)
                 " Coloring disabled
                 continue
             endif
@@ -2151,6 +2164,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             " 4th element in pattern is condition, that must be fullfilled,
             " before we continue
             if !empty(Pat[3]) && !eval(Pat[3])
+                let Pat[4] = s:Reltime(start)
                 continue
             endif
 
@@ -2172,6 +2186,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                     endif
 
                     exe cmd
+                    let Pat[4] = s:Reltime(start)
 
                     if s:stop
                         break
@@ -2194,6 +2209,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     endif
 
     for Pat in [ s:color_patterns_special.term ]
+        let start = s:Reltime()
         if (s:CheckTimeout(Pat[0], a:force)) && !s:IsInComment()
 
             if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
@@ -2207,8 +2223,11 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 \ a:line1, a:line2,  s:color_unfolded, Pat[0])
             try
                 exe cmd
+                let Pat[3] = s:Reltime(start)
                 " Hide ESC Terminal Chars
+                let start = s:Reltime()
                 call s:TermConceal(s:color_patterns_special.term_conceal[0])
+                let s:color_patterns_special.term_conceal[3] = s:Reltime(start)
             catch
                 " some error occured, stop when finished (and don't setup auto
                 " comands
