@@ -2466,11 +2466,7 @@ if !s:debug
     finish
 endif
 
-fu! Test1() "{{{2
-    return map(range(0,254), 's:Xterm2rgb256(v:val)')
-endfu
-"
-fu! Test2() "{{{2
+fu! ColorizerXtermColors() "{{{2
     let list=[]
     for c in range(0, 254)
         let css_color = s:Xterm2rgb256(c)
