@@ -2317,7 +2317,7 @@ function! Colorizer#HSL2Term(arg) "{{{1
 endfu
 
 function! Colorizer#AutoCmds(enable) "{{{1
-    if a:enable
+    if a:enable && !get(g:, 'colorizer_debug', 0)
         aug Colorizer
             au!
             au CursorHold,CursorHoldI,InsertLeave * silent call
@@ -2344,7 +2344,8 @@ function! Colorizer#AutoCmds(enable) "{{{1
 endfu
 
 function! Colorizer#LocalFTAutoCmds(enable) "{{{1
-    if a:enable
+    " do not enable auto commands in debug mode
+    if a:enable && !get(g:, 'colorizer_debug', 0)
         aug FTColorizer
             au!
             au CursorHold,CursorHoldI,InsertLeave <buffer> silent call
