@@ -1073,6 +1073,9 @@ function! s:PreviewVimColors(submatch) "{{{1
     endif
     if  empty(gui)
         let gui   = matchlist(a:submatch, pat3)
+        if !empty(gui)
+            let gui[2] = s:x11_color_names[tolower(gui[2])]
+        endif
     endif
     try
         if !empty(cterm)
