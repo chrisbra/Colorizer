@@ -1193,7 +1193,8 @@ function! s:PrintColorStatistics() "{{{1
     if s:debug
         echohl Title
         echom printf("Colorstatistics at: %s", strftime("%H:%M"))
-        for [name, value] in items(extend(s:color_patterns, s:color_patterns_special))
+        for name in sort(keys(extend(s:color_patterns, s:color_patterns_special)))
+            let value = get(extend(s:color_patterns, s:color_patterns_special), name)
             echom printf("%15s: %ss", name, (value[-1] == [] ? '  0.000000' : reltimestr(value[-1])))
         endfor
         echom printf("Duration: %s", reltimestr(s:relstop))
