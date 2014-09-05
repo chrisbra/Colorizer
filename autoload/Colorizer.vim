@@ -2254,7 +2254,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     if !exists("#FTColorizer#BufWinEnter#<buffer>") && empty(error)
         " Initialise current window.
         call Colorizer#LocalFTAutoCmds(1)
-        call Colorizer#ColorWinEnter(1)
+        call Colorizer#ColorWinEnter(1, 1) " don't call DoColor recursively!
     endif
     if !empty(error)
         " Some error occured, stop trying to color the file
@@ -2389,7 +2389,10 @@ function! Colorizer#ColorWinEnter(...) "{{{1
     endif
     let g:colorizer_only_unfolded = 1
     let _c = getpos('.')
-    call Colorizer#DoColor('', 1, line('$'))
+    if !exists("a:2")
+        " don't call it recursively!
+        call Colorizer#DoColor('', 1, line('$'))
+    endif
     let b:Colorizer_changedtick = b:changedtick
     unlet! g:colorizer_only_unfolded
     call setpos('.', _c)
