@@ -1810,9 +1810,11 @@ function! s:TermConceal(pattern) "{{{1
     endif
 endfu
 function! s:GetColorPattern(list) "{{{1
-    let list = map(copy(a:list), ' ''\%(-\@<!\<'' . v:val . ''\>-\@!\)'' ')
+    "let list = map(copy(a:list), ' ''\%(-\@<!\<'' . v:val . ''\>-\@!\)'' ')
+    "let list = map(copy(a:list), ' ''\%(-\@<!\<'' . v:val . ''\>-\@!\)'' ')
+    let list = copy(a:list)
     " Force the old re engine. It should be faster without backtracking.
-    return '\%#=1'.join(list, '\|')
+    return '\%#=1\%(\<\('.join(copy(a:list), '\|').'\)\>\)'
 endfunction
 
 function! s:GetMatchList() "{{{1
@@ -2473,6 +2475,10 @@ fu! ColorizerXtermColors() "{{{2
         call add(list, css_color)
     endfor
    return list
+endfu
+
+fu! ColorizerGet(args) "{{{2
+    exe "return s:".a:args
 endfu
 
 " Plugin folklore and Vim Modeline " {{{1
