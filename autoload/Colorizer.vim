@@ -1051,6 +1051,7 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
         endif
     finally
         let s:default_match_priority -= 1
+        let s:stop = 1
     endtry
 endfunction
 
