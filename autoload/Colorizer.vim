@@ -924,6 +924,7 @@ function! s:IsInComment() "{{{1
 endfu
 
 function! s:PreviewColorName(color) "{{{1
+    let s:position = getpos('.')
     let name=tolower(a:color)
     let clr = s:colors[name]
     " Skip color-name, e.g. white-space property
@@ -935,6 +936,7 @@ function! s:PreviewColorHex(match) "{{{1
         " skip coloring comments
         return
     endif
+    let s:position = getpos('.')
     let color = (a:match[0] == '#' ? a:match[1:] : a:match)
     let pattern = color
     if len(color) == 3
@@ -958,6 +960,7 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
     " a:pre: Ansi-Sequences determining the highlighting
     " a:text: Text to color
     " a:post: Ansi-Sequences resetting the coloring (might be empty)
+    let s:position = getpos('.')
     let color = s:Ansi2Color(a:pre)
     let clr_Dict = {}
 
@@ -986,6 +989,7 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
     " a:submatch is something like 'black on rgb141'
 
     " this highlighting should overrule e.g. colorname highlighting
+    let s:position = getpos('.')
     let s:default_match_priority += 1
     let color = ['', 'NONE', 'NONE']
     let color_Dict = {}
@@ -1054,6 +1058,7 @@ function! s:PreviewVimColors(submatch) "{{{1
     " a:submatch is something like 'black on rgb141'
 
     " this highlighting should overrule e.g. colorname highlighting
+    let s:position = getpos('.')
     let s:default_match_priority += 1
     if !exists("s:x11_color_pattern")
         let s:x11_color_pattern =  s:GetColorPattern(keys(s:x11_color_names))
@@ -1098,6 +1103,7 @@ function! s:PreviewVimHighlightDump(match) "{{{1
     " highlights dumps of :hi
     " e.g
     "SpecialKey     xxx term=bold cterm=bold ctermfg=124 guifg=Cyan
+    let s:position = getpos('.')
     let s:default_match_priority += 1
     let dict = {}
     try
@@ -1129,6 +1135,7 @@ endfunction
 function! s:PreviewVimHighlight(match) "{{{1
     " like colorhighlight plugin,
     " colorizer highlight statements in .vim files
+    let s:position = getpos('.')
     let tmatch = a:match
     let def    = []
     let dict   = {}
@@ -1184,7 +1191,7 @@ endfu
 
 function! s:PrintColorStatistics() "{{{1
     if s:debug
-        echohl WarningMsg
+        echohl Title
         echom printf("Colorstatistics at: %s", strftime("%H:%M"))
         for [name, value] in items(extend(s:color_patterns, s:color_patterns_special))
             echom printf("%15s: %ss", name, (value[-1] == [] ? '  0.000000' : reltimestr(value[-1])))
@@ -1791,6 +1798,7 @@ function! s:Ansi2Color(chars) "{{{1
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
+    let s:position = getpos('.')
     if has("conceal")
         exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
         setl cocu=nv cole=2
@@ -1893,6 +1901,7 @@ function! s:ApplyAlphaValue(rgb) "{{{1
 endfunction
 
 function! s:ColorRGBValues(val) "{{{1
+    let s:position = getpos('.')
     if <sid>IsInComment()
         " skip coloring comments
         return
@@ -1926,6 +1935,7 @@ function! s:ColorRGBValues(val) "{{{1
 endfunction
 
 function! s:ColorHSLValues(val) "{{{1
+    let s:position = getpos('.')
     if <sid>IsInComment()
         " skip coloring comments
         return
@@ -2263,6 +2273,8 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         " Some error occured, stop trying to color the file
         call Colorizer#ColorOff()
         call s:Warn("Some error occured here: ". error)
+        call s:Warn("Position: ". string(s:position))
+        call matchadd('WarningMsg', '\%'.s:position[1].'l\%'.s:position[2].'c.*')
     endif
     call s:PrintColorStatistics()
     call s:SaveRestoreOptions(0, save, [])
