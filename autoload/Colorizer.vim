@@ -1189,6 +1189,7 @@ function! s:PrintColorStatistics() "{{{1
         for [name, value] in items(extend(s:color_patterns, s:color_patterns_special))
             echom printf("%15s: %ss", name, (value[-1] == [] ? '  0.000000' : reltimestr(value[-1])))
         endfor
+        echom printf("Duration: %s", reltimestr(s:relstop))
         echohl Normal
     endif
 endfu
@@ -2164,6 +2165,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
+        let s:relstart = s:Reltime()
         for Pat in values(s:color_patterns)
             let start = s:Reltime()
             if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
@@ -2256,6 +2258,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         call Colorizer#LocalFTAutoCmds(1)
         call Colorizer#ColorWinEnter(1, 1) " don't call DoColor recursively!
     endif
+    let s:relstop = s:Reltime(s:relstart)
     if !empty(error)
         " Some error occured, stop trying to color the file
         call Colorizer#ColorOff()
