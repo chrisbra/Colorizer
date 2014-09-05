@@ -2365,13 +2365,14 @@ endfu
 
 function! Colorizer#LocalFTAutoCmds(enable) "{{{1
     " do not enable auto commands in debug mode
-    if a:enable && !get(g:, 'colorizer_debug', 0)
+    if a:enable
         aug FTColorizer
             au!
             au CursorHold,CursorHoldI,InsertLeave <buffer> silent call
                         \ Colorizer#DoColor('', line('w0'), line('w$'))
             au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine()
             au WinEnter,BufWinEnter <buffer> silent call Colorizer#ColorWinEnter()
+            au BufLeave <buffer> call Colorizer#ColorOff()
             au GUIEnter,ColorScheme <buffer> silent
                         \ call Colorizer#DoColor('!', 1, line('$'))
         aug END
