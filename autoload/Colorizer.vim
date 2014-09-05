@@ -1359,7 +1359,7 @@ function! s:ColorInit(...) "{{{1
         \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\))',
             \ function("s:ColorRGBValues"), 'colorizer_rgba', 1, [] ],
         \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
-            \ function("s:ColorRGBValues"), 'colorizer_hsla', 1, [] ],
+            \ function("s:ColorHSLValues"), 'colorizer_hsla', 1, [] ],
         \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
             \ function("s:PreviewVimColors"), 'colorizer_vimcolors', '&ft ==# "vim"', [] ],
         \ 'vimhighlight': ['^\s*\%(\%[Html]HiLink\s\+\w\+\s\+\w\+\)\|'.
