@@ -1287,6 +1287,10 @@ function! s:ColorInit(...) "{{{1
         let s:color_unfolded = ''
     endif
 
+    if hlID('Color_Error') == 0
+        hi default link Color_Error Error
+    endif
+
     if !s:force_hl && s:old_fgcontrast != g:colorizer_fgcontrast
                 \ && s:swap_fg_bg == 0
         " Doesn't work with swapping fg bg colors
@@ -2274,7 +2278,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         call Colorizer#ColorOff()
         call s:Warn("Some error occured here: ". error)
         call s:Warn("Position: ". string(s:position))
-        call matchadd('WarningMsg', '\%'.s:position[1].'l\%'.s:position[2].'c.*')
+        call matchadd('Color_Error', '\%'.s:position[1].'l\%'.s:position[2].'c.*\>')
     endif
     call s:PrintColorStatistics()
     call s:SaveRestoreOptions(0, save, [])
