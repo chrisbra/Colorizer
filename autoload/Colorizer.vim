@@ -918,12 +918,60 @@ let s:x11_color_names = {
 \ 'lightgreen': '#90EE90'
 \ }
 
-function! s:IsInComment() "{{{1
-    return s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+" Functions, to highlight certain types {{{1
+function! s:ColorRGBValues(val) "{{{2
+    let s:position = getpos('.')
+    if <sid>IsInComment()
+        " skip coloring comments
+        return
+    endif
+    " strip parantheses and split on comma
+    let rgb = s:StripParentheses(a:val)
+    if empty(rgb)
+        call s:Warn("Error in expression". a:val. "! Please report as bug.")
+        return
+    endif
+    for i in range(3)
+        if rgb[i][-1:-1] == '%'
+            let val = matchstr(rgb[i], '\d\+')
+            if (val + 0 > 100)
+                let rgb[1] = 100
+            endif
+            let rgb[i] = float2nr((val + 0.0)*255/100)
+        else
+            if rgb[i] + 0 > 255
+                let rgb[i] = 255
+            endif
+        endif
+    endfor
+    if len(rgb) == 4
+        " drop alpha channel
+        " call remove(rgb, 3)
+        let rgb = s:ApplyAlphaValue(rgb)
+    endif
+    let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
+    call s:SetMatcher(a:val, {'bg': clr})
+endfunction
+
+function! s:ColorHSLValues(val) "{{{2
+    let s:position = getpos('.')
+    if <sid>IsInComment()
+        " skip coloring comments
+        return
+    endif
+    " strip parantheses and split on comma
+    let hsl = s:StripParentheses(a:val)
+    if empty(hsl)
+        call s:Warn("Error in expression". a:val. "! Please report as bug.")
+        return
+    endif
+    let str = s:PrepareHSLArgs(hsl)
+
+    call s:SetMatcher(a:val, {'bg': str})
+    return
 endfu
 
-function! s:PreviewColorName(color) "{{{1
+function! s:PreviewColorName(color) "{{{2
     let s:position = getpos('.')
     let name=tolower(a:color)
     let clr = s:colors[name]
@@ -931,7 +979,7 @@ function! s:PreviewColorName(color) "{{{1
     call s:SetMatcher('-\@<!\<'.name.'\>\c-\@!', {'bg': clr[1:]})
 endfu
 
-function! s:PreviewColorHex(match) "{{{1
+function! s:PreviewColorHex(match) "{{{2
     if <sid>IsInComment()
         " skip coloring comments
         return
@@ -956,7 +1004,7 @@ function! s:PreviewColorHex(match) "{{{1
     call s:SetMatcher(s:hex_pattern[0]. pattern. s:hex_pattern[2], {'bg': color})
 endfunction
 
-function! s:PreviewColorTerm(pre, text, post) "{{{1
+function! s:PreviewColorTerm(pre, text, post) "{{{2
     " a:pre: Ansi-Sequences determining the highlighting
     " a:text: Text to color
     " a:post: Ansi-Sequences resetting the coloring (might be empty)
@@ -985,7 +1033,7 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
     call s:SetMatcher(pattern, clr_Dict)
 endfunction
 
-function! s:PreviewTaskWarriorColors(submatch) "{{{1
+function! s:PreviewTaskWarriorColors(submatch) "{{{2
     " a:submatch is something like 'black on rgb141'
 
     " this highlighting should overrule e.g. colorname highlighting
@@ -1055,7 +1103,7 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
     endtry
 endfunction
 
-function! s:PreviewVimColors(submatch) "{{{1
+function! s:PreviewVimColors(submatch) "{{{2
     " a:submatch is something like 'black on rgb141'
 
     " this highlighting should overrule e.g. colorname highlighting
@@ -1100,7 +1148,7 @@ function! s:PreviewVimColors(submatch) "{{{1
     endtry
 endfunction
 
-function! s:PreviewVimHighlightDump(match) "{{{1
+function! s:PreviewVimHighlightDump(match) "{{{2
     " highlights dumps of :hi
     " e.g
     "SpecialKey     xxx term=bold cterm=bold ctermfg=124 guifg=Cyan
@@ -1133,7 +1181,7 @@ function! s:PreviewVimHighlightDump(match) "{{{1
     endtry
 endfunction
 
-function! s:PreviewVimHighlight(match) "{{{1
+function! s:PreviewVimHighlight(match) "{{{2
     " like colorhighlight plugin,
     " colorizer highlight statements in .vim files
     let s:position = getpos('.')
@@ -1163,6 +1211,11 @@ function! s:PreviewVimHighlight(match) "{{{1
         endif
     endtry
 endfunction
+
+function! s:IsInComment() "{{{1
+    return s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+endfu
 
 function! s:DictFromList(dict, list) "{{{1
     let dict = copy(a:dict)
@@ -1907,58 +1960,6 @@ function! s:ApplyAlphaValue(rgb) "{{{1
         return rgb
     endif
 endfunction
-
-function! s:ColorRGBValues(val) "{{{1
-    let s:position = getpos('.')
-    if <sid>IsInComment()
-        " skip coloring comments
-        return
-    endif
-    " strip parantheses and split on comma
-    let rgb = s:StripParentheses(a:val)
-    if empty(rgb)
-        call s:Warn("Error in expression". a:val. "! Please report as bug.")
-        return
-    endif
-    for i in range(3)
-        if rgb[i][-1:-1] == '%'
-            let val = matchstr(rgb[i], '\d\+')
-            if (val + 0 > 100)
-                let rgb[1] = 100
-            endif
-            let rgb[i] = float2nr((val + 0.0)*255/100)
-        else
-            if rgb[i] + 0 > 255
-                let rgb[i] = 255
-            endif
-        endif
-    endfor
-    if len(rgb) == 4
-        " drop alpha channel
-        " call remove(rgb, 3)
-        let rgb = s:ApplyAlphaValue(rgb)
-    endif
-    let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
-    call s:SetMatcher(a:val, {'bg': clr})
-endfunction
-
-function! s:ColorHSLValues(val) "{{{1
-    let s:position = getpos('.')
-    if <sid>IsInComment()
-        " skip coloring comments
-        return
-    endif
-    " strip parantheses and split on comma
-    let hsl = s:StripParentheses(a:val)
-    if empty(hsl)
-        call s:Warn("Error in expression". a:val. "! Please report as bug.")
-        return
-    endif
-    let str = s:PrepareHSLArgs(hsl)
-
-    call s:SetMatcher(a:val, {'bg': str})
-    return
-endfu
 
 function! s:HSL2RGB(h, s, l) "{{{1
     let s = a:s + 0.0
