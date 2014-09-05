@@ -1182,6 +1182,17 @@ function! s:Reltime(...) "{{{1
     endif
 endfu
 
+function! s:PrintColorStatistics() "{{{1
+    if s:debug
+        echohl WarningMsg
+        echom printf("Colorstatistics at: %s", strftime("%H:%M"))
+        for [name, value] in items(extend(s:color_patterns, s:color_patterns_special))
+            echom printf("%15s: %ss", name, (value[-1] == [] ? '  0.000000' : reltimestr(value[-1])))
+        endfor
+        echohl Normal
+    endif
+endfu
+
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
 
@@ -1356,7 +1367,7 @@ function! s:ColorInit(...) "{{{1
         \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
             \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior', 'expand("%:e") ==# "theme"', [] ],
         \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex', 1, [] ],
-        \ 'vimhighlight_dump': ['^\v\w+\s+xxx%((\s+(term|cterm%([bf]g)?|gui%(%([bf]g|sp))?'.
+        \ 'vimhighl_dump': ['^\v\w+\s+xxx%((\s+(term|cterm%([bf]g)?|gui%(%([bf]g|sp))?'.
             \ ')\=[#0-9A-Za-z_,]+)+)?%(\_\s+links to \w+)?%( cleared)@!',
             \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighlight_dump', 'empty(&ft)', [] ]
         \ }
@@ -2250,6 +2261,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         call Colorizer#ColorOff()
         call s:Warn("Some error occured here: ". error)
     endif
+    call s:PrintColorStatistics()
     call s:SaveRestoreOptions(0, save, [])
     call winrestview(_a)
 endfu
