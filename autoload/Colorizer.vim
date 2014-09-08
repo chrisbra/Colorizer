@@ -1436,7 +1436,7 @@ function! s:ColorInit(...) "{{{1
         \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex', 1, [] ],
         \ 'vimhighl_dump': ['^\v\w+\s+xxx%((\s+(term|cterm%([bf]g)?|gui%(%([bf]g|sp))?'.
             \ ')\=[#0-9A-Za-z_,]+)+)?%(\_\s+links to \w+)?%( cleared)@!',
-            \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighlight_dump', 'empty(&ft)', [] ]
+            \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighl_dump', 'empty(&ft)', [] ]
         \ }
 
     " term_conceal: patterns to hide, currently: [K$ and the color patterns [0m[01;32m
@@ -1448,7 +1448,7 @@ function! s:ColorInit(...) "{{{1
 
     if exists("s:colornamepattern") && s:color_names
         let s:color_patterns["colornames"] = [ s:colornamepattern,
-            \ function("s:PreviewColorName"), 'colorizer_names', 1, [] ]
+            \ function("s:PreviewColorName"), 'colorizer_colornames', 1, [] ]
     endif
 endfu
 
@@ -2187,7 +2187,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         let s:relstart = s:Reltime()
         for Pat in values(s:color_patterns)
             let start = s:Reltime()
-            if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
+            if !get(g:, Pat[2], 1) || (get(g:, Pat[2]. '_disable', 0) > 0)
                 let Pat[4] = s:Reltime(start)
                 " Coloring disabled
                 continue
