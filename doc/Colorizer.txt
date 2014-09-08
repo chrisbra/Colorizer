@@ -302,7 +302,6 @@ following autocommand in your |.vimrc| >
 
     :au BufNewFile,BufRead *.css,*.html,*.htm  :ColorHighlight!
 <
-
 This will automatically highlight all existing color codes and names if you
 edit either a HTML file or a CSS file. Note that this does not update the
 highlighting, after you have been changing the file.
@@ -310,6 +309,52 @@ highlighting, after you have been changing the file.
 The recommended way to do this is to use the g:colorizer_auto_filetype
 variable and set this to the desired filetypes. |Colorizer-hl-ft|
 
+                                                    *Colorizer-slowdown*
+----------------
+Slow performance
+----------------
+Depending on your file, any of the highlighting functions might cause an
+performance decrease. This can be analyed, by setting the variable
+g:colorizer_debug to 1 in e.g. your |.vimrc| like this: >
+
+    :let g:colorizer_debug = 1
+<
+The next time, you call |:ColorHighlight|, the plugin will output runtime
+statistics, from which you can see, which function caused the slowdowns.
+Consider this output:
+
+	Colorstatistics at: 12:20 `
+	Duration:   0.034110 `
+	     colornames:   0.030865s `
+	            hex:   0.000968s `
+	           hsla:   0.000350s `
+	            rgb:   0.000354s `
+	           rgba:   0.000491s `
+	    taskwarrior:   0.000020s `
+	           term:   0.000219s `
+	   term_conceal:   0.000105s `
+	      vimcolors:   0.000036s `
+	  vimhighl_dump:   0.000025s `
+	   vimhighlight:   0.000025s `
+
+From this you can see, that the colorname highlighting caused the largest
+slowdown, it took 0.03 seconds to complete. This is expected, as the
+colornames pattern is long and contains many branches. 
+
+Functions with a value less then 100 have probably been skipped and were not
+being executed.
+
+If you want to skip certain functions, you can set the variable
+g:colorizer_<name>_disable and then those functions won't be called anymore
+(e.g. do disable the colorname highlighting, put in your |.vimrc| this: >
+
+    let g:colorizer_colornames_disable = 1
+<
+If the slowdown is still noticeable, you might want to create
+a new issue at the plugins repository (|Colorizer-feedback|). You should
+provide a sample file, so that I will be able to reproduce the issue.
+
+Note, this needs a Vim with the |+reltime| feature.
 ==============================================================================
 5. Colorizer Feedback                                     *Colorizer-feedback*
 ==============================================================================
@@ -342,6 +387,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   https://github.com/chrisbra/Colorizer/issues/36, thanks!)
 - Do not expand() to expand shellvars (fixed by Daniel Hahler in
   https://github.com/chrisbra/Colorizer/issues/37, thanks!)
+- Document, how to analyze slowdown |Colorizer-slowdown|
 
 0.10 Mar 27, 2014 {{{1
 - Also highlight Ansi Term sequences
