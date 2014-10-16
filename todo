@@ -1,3 +1,7 @@
 
+- Allow the user to define easy coloring of regions.
+ (e.g. [color1]This has a color1[/color1]
+ and have a definition of [color1] at the end of the buffer
+ [color1] style=fg:blue,bg:black,special:underline)
 - Performance problems? (do profiling to find out)
 - Write tests. Best would be to have screenshots available so one can easily compare
