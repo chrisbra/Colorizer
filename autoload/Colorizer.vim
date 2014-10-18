@@ -2439,6 +2439,10 @@ function! Colorizer#SwitchContrast() "{{{1
         call s:Warn('Contrast Adjustment does not work with swapped foreground colors!')
         return
     endif
+    if !exists("s:predefined_fgcolors")
+        " init variables
+        call s:ColorInit('')
+    endif
     " make sure, g:colorizer_fgcontrast is set up
     if !exists('g:colorizer_fgcontrast')
         " Default to black / white
