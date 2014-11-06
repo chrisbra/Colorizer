@@ -2162,6 +2162,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     let _a   = winsaveview()
     let save = s:SaveRestoreOptions(1, {},
             \ ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
+    let s:relstart = s:Reltime()
 
     " highlight Hex Codes:
     "
@@ -2184,7 +2185,6 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-        let s:relstart = s:Reltime()
         for Pat in values(s:color_patterns)
             let start = s:Reltime()
             if !get(g:, Pat[2], 1) || (get(g:, Pat[2]. '_disable', 0) > 0)
