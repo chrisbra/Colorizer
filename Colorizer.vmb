@@ -6,10 +6,10 @@ plugin/ColorizerPlugin.vim	[[[1
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
-" Last Change: Thu, 27 Mar 2014 23:12:43 +0100
+" Last Change: Thu, 15 Jan 2015 21:49:17 +0100
 " Licence:      Vim License (see :h License)
-" Version:      0.10
-" GetLatestVimScripts: 3963 10 :AutoInstall: Colorizer.vim
+" Version:      0.11
+" GetLatestVimScripts: 3963 11 :AutoInstall: Colorizer.vim
 "
 " This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
 " Changes made: - make terminal colors work more reliably and with all
@@ -99,11 +99,11 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-440
+491
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
-Version:    0.10 Thu, 27 Mar 2014 23:12:43 +0100
+Version:    0.11 Thu, 15 Jan 2015 21:49:17 +0100
 Copyright:  (c) 2009-2013 by Christian Brabandt
             The VIM LICENSE applies to Colorizer.txt
             (see |copyright|) except use ColorizerPlugin instead of "Vim".
@@ -404,7 +404,6 @@ following autocommand in your |.vimrc| >
 
     :au BufNewFile,BufRead *.css,*.html,*.htm  :ColorHighlight!
 <
-
 This will automatically highlight all existing color codes and names if you
 edit either a HTML file or a CSS file. Note that this does not update the
 highlighting, after you have been changing the file.
@@ -412,6 +411,52 @@ highlighting, after you have been changing the file.
 The recommended way to do this is to use the g:colorizer_auto_filetype
 variable and set this to the desired filetypes. |Colorizer-hl-ft|
 
+                                                    *Colorizer-slowdown*
+----------------
+Slow performance
+----------------
+Depending on your file, any of the highlighting functions might cause an
+performance decrease. This can be analyed, by setting the variable
+g:colorizer_debug to 1 in e.g. your |.vimrc| like this: >
+
+    :let g:colorizer_debug = 1
+<
+The next time, you call |:ColorHighlight|, the plugin will output runtime
+statistics, from which you can see, which function caused the slowdowns.
+Consider this output:
+
+	Colorstatistics at: 12:20 `
+	Duration:   0.034110 `
+	     colornames:   0.030865s `
+	            hex:   0.000968s `
+	           hsla:   0.000350s `
+	            rgb:   0.000354s `
+	           rgba:   0.000491s `
+	    taskwarrior:   0.000020s `
+	           term:   0.000219s `
+	   term_conceal:   0.000105s `
+	      vimcolors:   0.000036s `
+	  vimhighl_dump:   0.000025s `
+	   vimhighlight:   0.000025s `
+
+From this you can see, that the colorname highlighting caused the largest
+slowdown, it took 0.03 seconds to complete. This is expected, as the
+colornames pattern is long and contains many branches. 
+
+Functions with a value less then 100 have probably been skipped and were not
+being executed.
+
+If you want to skip certain functions, you can set the variable
+g:colorizer_<name>_disable and then those functions won't be called anymore
+(e.g. do disable the colorname highlighting, put in your |.vimrc| this: >
+
+    let g:colorizer_colornames_disable = 1
+<
+If the slowdown is still noticeable, you might want to create
+a new issue at the plugins repository (|Colorizer-feedback|). You should
+provide a sample file, so that I will be able to reproduce the issue.
+
+Note, this needs a Vim with the |+reltime| feature.
 ==============================================================================
 5. Colorizer Feedback                                     *Colorizer-feedback*
 ==============================================================================
@@ -437,13 +482,19 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
-0.11 (unreleased) {{{1
+0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
 - Support Ansi True Color support if possible
 - Hide ^[[K$ for terminal colors (reported by masukomi at
   https://github.com/chrisbra/Colorizer/issues/36, thanks!)
 - Do not expand() to expand shellvars (fixed by Daniel Hahler in
   https://github.com/chrisbra/Colorizer/issues/37, thanks!)
+- Document, how to analyze slowdown |Colorizer-slowdown|
+- |:ColorContrast| would error, if the plugin has not been initialized
+  (reported by Daniel Hahler in 
+  https://github.com/chrisbra/Colorizer/issues/38, thanks!)
+- always define reltime variable (reported by mantislin in 
+  https://github.com/chrisbra/Colorizer/issues/39, thanks!)
 
 0.10 Mar 27, 2014 {{{1
 - Also highlight Ansi Term sequences
@@ -541,14 +592,14 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2487
+2493
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
-" Last Change: Thu, 27 Mar 2014 23:12:43 +0100
+" Last Change: Thu, 15 Jan 2015 21:49:17 +0100
 " Licence:      Vim License (see :h License)
-" Version:      0.10
-" GetLatestVimScripts: 3963 10 :AutoInstall: Colorizer.vim
+" Version:      0.11
+" GetLatestVimScripts: 3963 11 :AutoInstall: Colorizer.vim
 "
 " This plugin was inspired by the css_color.vim plugin from Nikolaus Hofer.
 " Changes made: - make terminal colors work more reliably and with all
@@ -1462,12 +1513,60 @@ let s:x11_color_names = {
 \ 'lightgreen': '#90EE90'
 \ }
 
-function! s:IsInComment() "{{{1
-    return s:skip_comments &&
-        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+" Functions, to highlight certain types {{{1
+function! s:ColorRGBValues(val) "{{{2
+    let s:position = getpos('.')
+    if <sid>IsInComment()
+        " skip coloring comments
+        return
+    endif
+    " strip parantheses and split on comma
+    let rgb = s:StripParentheses(a:val)
+    if empty(rgb)
+        call s:Warn("Error in expression". a:val. "! Please report as bug.")
+        return
+    endif
+    for i in range(3)
+        if rgb[i][-1:-1] == '%'
+            let val = matchstr(rgb[i], '\d\+')
+            if (val + 0 > 100)
+                let rgb[1] = 100
+            endif
+            let rgb[i] = float2nr((val + 0.0)*255/100)
+        else
+            if rgb[i] + 0 > 255
+                let rgb[i] = 255
+            endif
+        endif
+    endfor
+    if len(rgb) == 4
+        " drop alpha channel
+        " call remove(rgb, 3)
+        let rgb = s:ApplyAlphaValue(rgb)
+    endif
+    let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
+    call s:SetMatcher(a:val, {'bg': clr})
+endfunction
+
+function! s:ColorHSLValues(val) "{{{2
+    let s:position = getpos('.')
+    if <sid>IsInComment()
+        " skip coloring comments
+        return
+    endif
+    " strip parantheses and split on comma
+    let hsl = s:StripParentheses(a:val)
+    if empty(hsl)
+        call s:Warn("Error in expression". a:val. "! Please report as bug.")
+        return
+    endif
+    let str = s:PrepareHSLArgs(hsl)
+
+    call s:SetMatcher(a:val, {'bg': str})
+    return
 endfu
 
-function! s:PreviewColorName(color) "{{{1
+function! s:PreviewColorName(color) "{{{2
     let s:position = getpos('.')
     let name=tolower(a:color)
     let clr = s:colors[name]
@@ -1475,7 +1574,7 @@ function! s:PreviewColorName(color) "{{{1
     call s:SetMatcher('-\@<!\<'.name.'\>\c-\@!', {'bg': clr[1:]})
 endfu
 
-function! s:PreviewColorHex(match) "{{{1
+function! s:PreviewColorHex(match) "{{{2
     if <sid>IsInComment()
         " skip coloring comments
         return
@@ -1500,7 +1599,7 @@ function! s:PreviewColorHex(match) "{{{1
     call s:SetMatcher(s:hex_pattern[0]. pattern. s:hex_pattern[2], {'bg': color})
 endfunction
 
-function! s:PreviewColorTerm(pre, text, post) "{{{1
+function! s:PreviewColorTerm(pre, text, post) "{{{2
     " a:pre: Ansi-Sequences determining the highlighting
     " a:text: Text to color
     " a:post: Ansi-Sequences resetting the coloring (might be empty)
@@ -1529,7 +1628,7 @@ function! s:PreviewColorTerm(pre, text, post) "{{{1
     call s:SetMatcher(pattern, clr_Dict)
 endfunction
 
-function! s:PreviewTaskWarriorColors(submatch) "{{{1
+function! s:PreviewTaskWarriorColors(submatch) "{{{2
     " a:submatch is something like 'black on rgb141'
 
     " this highlighting should overrule e.g. colorname highlighting
@@ -1595,10 +1694,11 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{1
         endif
     finally
         let s:default_match_priority -= 1
+        let s:stop = 1
     endtry
 endfunction
 
-function! s:PreviewVimColors(submatch) "{{{1
+function! s:PreviewVimColors(submatch) "{{{2
     " a:submatch is something like 'black on rgb141'
 
     " this highlighting should overrule e.g. colorname highlighting
@@ -1643,7 +1743,7 @@ function! s:PreviewVimColors(submatch) "{{{1
     endtry
 endfunction
 
-function! s:PreviewVimHighlightDump(match) "{{{1
+function! s:PreviewVimHighlightDump(match) "{{{2
     " highlights dumps of :hi
     " e.g
     "SpecialKey     xxx term=bold cterm=bold ctermfg=124 guifg=Cyan
@@ -1676,7 +1776,7 @@ function! s:PreviewVimHighlightDump(match) "{{{1
     endtry
 endfunction
 
-function! s:PreviewVimHighlight(match) "{{{1
+function! s:PreviewVimHighlight(match) "{{{2
     " like colorhighlight plugin,
     " colorizer highlight statements in .vim files
     let s:position = getpos('.')
@@ -1706,6 +1806,11 @@ function! s:PreviewVimHighlight(match) "{{{1
         endif
     endtry
 endfunction
+
+function! s:IsInComment() "{{{1
+    return s:skip_comments &&
+        \ synIDattr(synIDtrans(synID(line('.'), col('.'),1)), 'name') == "Comment"
+endfu
 
 function! s:DictFromList(dict, list) "{{{1
     let dict = copy(a:dict)
@@ -1926,7 +2031,7 @@ function! s:ColorInit(...) "{{{1
         \ 'hex': [join(s:hex_pattern, ''), function("s:PreviewColorHex"), 'colorizer_hex', 1, [] ],
         \ 'vimhighl_dump': ['^\v\w+\s+xxx%((\s+(term|cterm%([bf]g)?|gui%(%([bf]g|sp))?'.
             \ ')\=[#0-9A-Za-z_,]+)+)?%(\_\s+links to \w+)?%( cleared)@!',
-            \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighlight_dump', 'empty(&ft)', [] ]
+            \ function("s:PreviewVimHighlightDump"), 'colorizer_vimhighl_dump', 'empty(&ft)', [] ]
         \ }
 
     " term_conceal: patterns to hide, currently: [K$ and the color patterns [0m[01;32m
@@ -1938,7 +2043,7 @@ function! s:ColorInit(...) "{{{1
 
     if exists("s:colornamepattern") && s:color_names
         let s:color_patterns["colornames"] = [ s:colornamepattern,
-            \ function("s:PreviewColorName"), 'colorizer_names', 1, [] ]
+            \ function("s:PreviewColorName"), 'colorizer_colornames', 1, [] ]
     endif
 endfu
 
@@ -2451,58 +2556,6 @@ function! s:ApplyAlphaValue(rgb) "{{{1
     endif
 endfunction
 
-function! s:ColorRGBValues(val) "{{{1
-    let s:position = getpos('.')
-    if <sid>IsInComment()
-        " skip coloring comments
-        return
-    endif
-    " strip parantheses and split on comma
-    let rgb = s:StripParentheses(a:val)
-    if empty(rgb)
-        call s:Warn("Error in expression". a:val. "! Please report as bug.")
-        return
-    endif
-    for i in range(3)
-        if rgb[i][-1:-1] == '%'
-            let val = matchstr(rgb[i], '\d\+')
-            if (val + 0 > 100)
-                let rgb[1] = 100
-            endif
-            let rgb[i] = float2nr((val + 0.0)*255/100)
-        else
-            if rgb[i] + 0 > 255
-                let rgb[i] = 255
-            endif
-        endif
-    endfor
-    if len(rgb) == 4
-        " drop alpha channel
-        " call remove(rgb, 3)
-        let rgb = s:ApplyAlphaValue(rgb)
-    endif
-    let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
-    call s:SetMatcher(a:val, {'bg': clr})
-endfunction
-
-function! s:ColorHSLValues(val) "{{{1
-    let s:position = getpos('.')
-    if <sid>IsInComment()
-        " skip coloring comments
-        return
-    endif
-    " strip parantheses and split on comma
-    let hsl = s:StripParentheses(a:val)
-    if empty(hsl)
-        call s:Warn("Error in expression". a:val. "! Please report as bug.")
-        return
-    endif
-    let str = s:PrepareHSLArgs(hsl)
-
-    call s:SetMatcher(a:val, {'bg': str})
-    return
-endfu
-
 function! s:HSL2RGB(h, s, l) "{{{1
     let s = a:s + 0.0
     let l = a:l + 0.0
@@ -2704,6 +2757,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     let _a   = winsaveview()
     let save = s:SaveRestoreOptions(1, {},
             \ ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
+    let s:relstart = s:Reltime()
 
     " highlight Hex Codes:
     "
@@ -2726,10 +2780,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "     hsl(120, 100%, 75%) lightgreen
     "     hsl(120, 75%, 75%) pastelgreen
     " highlight rgb(X,X,X) values
-        let s:relstart = s:Reltime()
         for Pat in values(s:color_patterns)
             let start = s:Reltime()
-            if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
+            if !get(g:, Pat[2], 1) || (get(g:, Pat[2]. '_disable', 0) > 0)
                 let Pat[4] = s:Reltime(start)
                 " Coloring disabled
                 continue
@@ -2980,6 +3033,10 @@ function! Colorizer#SwitchContrast() "{{{1
     if exists("s:swap_fg_bg") && s:swap_fg_bg
         call s:Warn('Contrast Adjustment does not work with swapped foreground colors!')
         return
+    endif
+    if !exists("s:predefined_fgcolors")
+        " init variables
+        call s:ColorInit('')
     endif
     " make sure, g:colorizer_fgcontrast is set up
     if !exists('g:colorizer_fgcontrast')

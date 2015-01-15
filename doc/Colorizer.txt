@@ -1,7 +1,7 @@
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
-Version:    0.10 Thu, 27 Mar 2014 23:12:43 +0100
+Version:    0.11 Thu, 15 Jan 2015 21:49:17 +0100
 Copyright:  (c) 2009-2013 by Christian Brabandt
             The VIM LICENSE applies to Colorizer.txt
             (see |copyright|) except use ColorizerPlugin instead of "Vim".
@@ -380,7 +380,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
-0.11 (unreleased) {{{1
+0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
 - Support Ansi True Color support if possible
 - Hide ^[[K$ for terminal colors (reported by masukomi at
