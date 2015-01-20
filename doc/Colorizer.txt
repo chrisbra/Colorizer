@@ -393,6 +393,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   https://github.com/chrisbra/Colorizer/issues/38, thanks!)
 - always define reltime variable (reported by mantislin in 
   https://github.com/chrisbra/Colorizer/issues/39, thanks!)
+- Only call conceal function once for ansiterm colors
+- reduce calls to DoColor in autocommands (to only do, when something changed)
 
 0.10 Mar 27, 2014 {{{1
 - Also highlight Ansi Term sequences

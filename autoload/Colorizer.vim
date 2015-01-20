@@ -1443,7 +1443,7 @@ function! s:ColorInit(...) "{{{1
     let s:color_patterns_special = {
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
-        \ 'term_conceal': ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*m\)\|\%x1b\[K$\)', '',
+        \ 'term_conceal': ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)', '',
             \ 'colorizer_term_conceal', []  ] }
 
     if exists("s:colornamepattern") && s:color_names
@@ -1857,10 +1857,14 @@ function! s:Ansi2Color(chars) "{{{1
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
+    if exists("b:Colorizer_did_syntax")
+        return
+    endif
     let s:position = getpos('.')
     if has("conceal")
         exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
         setl cocu=nv cole=2
+        let b:Colorizer_did_syntax
     endif
 endfu
 function! s:GetColorPattern(list) "{{{1
@@ -2136,6 +2140,8 @@ function! Colorizer#ColorOff() "{{{1
     call Colorizer#LocalFTAutoCmds(0)
     if exists("s:conceal") && has("conceal")
         let [&l:cole, &l:cocu] = s:conceal
+        syn clear
+        unlet! b:Colorizer_did_syntax
     endif
     unlet! w:match_list s:conceal
 endfu
@@ -2344,18 +2350,19 @@ function! Colorizer#AutoCmds(enable) "{{{1
     if a:enable && !get(g:, 'colorizer_debug', 0)
         aug Colorizer
             au!
-            au CursorHold,CursorHoldI,InsertLeave * silent call
-                        \ Colorizer#DoColor('', line('w0'), line('w$'))
+            au InsertLeave * silent call
+                        \ Colorizer#ColorLine('!', line('w0'), line('w$'))
             "au GUIEnter,BufWinEnter * silent call
             "            \ Colorizer#DoColor('', 1, line('$'))
             au GUIEnter * silent call Colorizer#DoColor('!', 1, line('$'))
             au WinEnter,BufWinEnter * silent call Colorizer#ColorWinEnter()
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
             if exists("##TextChanged") && (v:version > 704 || v:version == 704 && has('patch143'))
-                au TextChangedI * call Colorizer#ColorLine()
+                au TextChangedI * call Colorizer#ColorLine('', line('.'),line('.'))
             else
                 if get(g:, 'colorizer_cursormoved', 0)
-                    au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
+                    au CursorMoved,CursorMovedI * call Colorizer#ColorLine('', line('.'),line('.'))
+                    au CusorHold, CursorHoldI * silent call Colorizer#ColorLine('!', line('w0'), line('w$'))
                 endif
             endif
         aug END
@@ -2372,13 +2379,17 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
     if a:enable
         aug FTColorizer
             au!
-            au CursorHold,CursorHoldI,InsertLeave <buffer> silent call
-                        \ Colorizer#DoColor('', line('w0'), line('w$'))
-            au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine()
+            au InsertLeave <buffer> silent call
+                        \ Colorizer#ColorLine('', line('w0'), line('w$'))
+            au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine(line('.'), line('.'))
             au WinEnter,BufWinEnter <buffer> silent call Colorizer#ColorWinEnter()
             au BufLeave <buffer> call Colorizer#ColorOff()
             au GUIEnter,ColorScheme <buffer> silent
                         \ call Colorizer#DoColor('!', 1, line('$'))
+            if get(g:, 'colorizer_cursormoved', 0)
+                au CursorMoved,CursorMovedI * call Colorizer#ColorLine('', line('.'),line('.'))
+                au CusorHold, CursorHoldI * silent call Colorizer#ColorLine('!', line('w0'), line('w$'))
+            endif
         aug END
         if !exists("b:undo_ftplugin")
             " simply unlet a dummy variable
@@ -2424,12 +2435,12 @@ function! Colorizer#ColorWinEnter(...) "{{{1
     call setpos('.', _c)
 endfu
 
-function! Colorizer#ColorLine() "{{{1
-    if get(b:, 'Colorizer_changedtick', 0) == b:changedtick
+function! Colorizer#ColorLine(force, start, end) "{{{1
+    if get(b:, 'Colorizer_changedtick', 0) == b:changedtick && empty(a:force)
         " nothing to do
         return
     else
-        call Colorizer#DoColor('', line('.'),line('.'))
+        call Colorizer#DoColor(a:force, a:start, a:end)
         let b:Colorizer_changedtick = b:changedtick
     endif
 endfu
