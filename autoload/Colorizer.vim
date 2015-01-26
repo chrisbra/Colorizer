@@ -2352,8 +2352,6 @@ function! Colorizer#AutoCmds(enable) "{{{1
             au!
             au InsertLeave * silent call
                         \ Colorizer#ColorLine('!', line('w0'), line('w$'))
-            "au GUIEnter,BufWinEnter * silent call
-            "            \ Colorizer#DoColor('', 1, line('$'))
             au GUIEnter * silent call Colorizer#DoColor('!', 1, line('$'))
             au WinEnter,BufWinEnter * silent call Colorizer#ColorWinEnter()
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
@@ -2375,13 +2373,12 @@ function! Colorizer#AutoCmds(enable) "{{{1
 endfu
 
 function! Colorizer#LocalFTAutoCmds(enable) "{{{1
-    " do not enable auto commands in debug mode
     if a:enable
         aug FTColorizer
             au!
             au InsertLeave <buffer> silent call
                         \ Colorizer#ColorLine('', line('w0'), line('w$'))
-            au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine(line('.'), line('.'))
+            au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine('',line('.'), line('.'))
             au WinEnter,BufWinEnter <buffer> silent call Colorizer#ColorWinEnter()
             au BufLeave <buffer> call Colorizer#ColorOff()
             au GUIEnter,ColorScheme <buffer> silent
