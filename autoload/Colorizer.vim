@@ -1443,7 +1443,7 @@ function! s:ColorInit(...) "{{{1
     let s:color_patterns_special = {
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
-        \ 'term_conceal': ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)', '',
+        \ 'term_conceal': ['\%(\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)\)\|\%(\%x1b\[K\)', '',
             \ 'colorizer_term_conceal', []  ] }
 
     if exists("s:colornamepattern") && s:color_names
@@ -1863,8 +1863,9 @@ function! s:TermConceal(pattern) "{{{1
     let s:position = getpos('.')
     if has("conceal")
         exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
+        syn match Color /\%d13/ conceal containedin=ALL
         setl cocu=nv cole=2
-        let b:Colorizer_did_syntax
+        let b:Colorizer_did_syntax=1
     endif
 endfu
 function! s:GetColorPattern(list) "{{{1
