@@ -380,6 +380,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
+0.12 (unreleased) {{{1
+- TermConceal should also conceal [K
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
 - Support Ansi True Color support if possible
