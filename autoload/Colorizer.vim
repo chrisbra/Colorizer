@@ -1029,7 +1029,10 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     endif
     let clr_Dict.fg = color[0]
     let clr_Dict.bg = color[1]
-    let pattern = '\%('. a:pre. '\)\@<='.escape(a:text, '\^$.*~[]'). '\('.a:post.'\)\@='
+    let pre  = escape(a:pre,  '[]')
+    let post = escape(a:post, '[]')
+    let txt  = escape(a:text, '\^$.*~[]')
+    let pattern = '\%('. pre. '\)\@<='.txt. '\('.post.'\)\@='
     call s:SetMatcher(pattern, clr_Dict)
 endfunction
 
@@ -2121,7 +2124,7 @@ function! s:SyntaxMatcher(enable) "{{{1
             exe "sil! syn clear" hi.group
         endif
         if a:enable
-            exe "syn match" hi.group "excludenl /". hi.pattern. "/ display containedin=ALL"
+            exe "syn match" hi.group "excludenl /". escape(hi.pattern, '/'). "/ display containedin=ALL"
             " We have syntax highlighting, can clear the matching
             " ignore errors (just in case)
             sil! call matchdelete(hi.id)
