@@ -1032,7 +1032,9 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     let pre  = escape(a:pre,  '[]')
     let post = escape(a:post, '[]')
     let txt  = escape(a:text, '\^$.*~[]')
-    let pattern = '\%('. pre. '\)\@<='.txt. '\('.post.'\)\@='
+    " limit the pattern to the belonging line (should make syntax matching
+    " faster!)
+    let pattern = '\%(\%'.line('.').'l\)\%('. pre. '\)\@<='.txt. '\('.post.'\)\@='
     call s:SetMatcher(pattern, clr_Dict)
 endfunction
 
@@ -2118,6 +2120,11 @@ function! s:SyntaxMatcher(enable) "{{{1
         return
     endif
     let did_clean = {}
+    "
+    "let line=''
+    "let list=s:GetMatchList()
+    "if len(list) > 1000
+        " try to limit each match to the belonging lineVkkV
     for hi in s:GetMatchList()
         if !get(did_clean, hi.group, 0)
             let did_clean[hi.group] = 1
