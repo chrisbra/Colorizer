@@ -1443,8 +1443,9 @@ function! s:ColorInit(...) "{{{1
     let s:color_patterns_special = {
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
-        \ 'term_conceal': ['\%(\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)\)\|\%(\%x1b\[K\)', '',
-            \ 'colorizer_term_conceal', []  ] }
+        \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
+        \ '\%d13', '\%(\%x1b\[K\)',
+        \ ], '', 'colorizer_term_conceal', []  ] }
 
     if exists("s:colornamepattern") && s:color_names
         let s:color_patterns["colornames"] = [ s:colornamepattern,
@@ -1857,13 +1858,15 @@ function! s:Ansi2Color(chars) "{{{1
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
+    " Conceals a list of patterns
     if exists("b:Colorizer_did_syntax")
         return
     endif
     let s:position = getpos('.')
     if has("conceal")
-        exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
-        syn match Color /\%d13/ conceal containedin=ALL
+        for pat in a:pattern
+            exe "syn match ColorTermESC /". pat. "/ conceal containedin=ALL"
+        endfor
         setl cocu=nv cole=2
         let b:Colorizer_did_syntax=1
     endif
