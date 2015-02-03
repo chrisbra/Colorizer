@@ -99,7 +99,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-491
+498
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -482,6 +482,11 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 6. Colorizer History                                       *Colorizer-history*
 ==============================================================================
 
+0.12 (unreleased) {{{1
+- TermConceal should also conceal [K
+- properly escape terminal colors, so that |Colorizer-syntax| works correctly
+- use matchaddpos() for highlighting ansi term colors (should speed up vim
+  highlighting considerably)
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
 - Support Ansi True Color support if possible
@@ -495,6 +500,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   https://github.com/chrisbra/Colorizer/issues/38, thanks!)
 - always define reltime variable (reported by mantislin in 
   https://github.com/chrisbra/Colorizer/issues/39, thanks!)
+- Only call conceal function once for ansiterm colors
+- reduce calls to DoColor in autocommands (to only do, when something changed)
 
 0.10 Mar 27, 2014 {{{1
 - Also highlight Ansi Term sequences
@@ -592,7 +599,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2493
+2533
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -1624,7 +1631,15 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     endif
     let clr_Dict.fg = color[0]
     let clr_Dict.bg = color[1]
-    let pattern = '\%('. a:pre. '\)\@<='.escape(a:text, '\^$.*~[]'). '\('.a:post.'\)\@='
+    let pre  = escape(a:pre,  '[]')
+    let post = escape(a:post, '[]')
+    let txt  = escape(a:text, '\^$.*~[]')
+    " limit the pattern to the belonging line (should make syntax matching
+    " faster!)
+    let pattern = '\%(\%'.line('.').'l\)\%('. pre. '\)\@<='.txt. '\('.post.'\)\@='
+    if exists('*matchaddpos')
+        let clr_Dict.pos = [[ line('.'), col('.'), strlen(a:pre. a:text. a:post)]]
+    endif
     call s:SetMatcher(pattern, clr_Dict)
 endfunction
 
@@ -2001,7 +2016,7 @@ function! s:ColorInit(...) "{{{1
             call extend(s:colors, g:colorizer_custom_colors, 'force')
         endif
         let s:colornamepattern =  s:GetColorPattern(keys(s:colors))
-        call map(w:match_list, 'v:val.pattern')
+        "call map(w:match_list, 'v:val.pattern')
     else
         throw "nocolor"
     endif
@@ -2038,8 +2053,9 @@ function! s:ColorInit(...) "{{{1
     let s:color_patterns_special = {
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
-        \ 'term_conceal': ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*m\)\|\%x1b\[K$\)', '',
-            \ 'colorizer_term_conceal', []  ] }
+        \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
+        \ '\%d13', '\%(\%x1b\[K\)',
+        \ ], '', 'colorizer_term_conceal', []  ] }
 
     if exists("s:colornamepattern") && s:color_names
         let s:color_patterns["colornames"] = [ s:colornamepattern,
@@ -2217,6 +2233,12 @@ endfunction
 
 function! s:SetMatch(group, pattern, param_dict) "{{{1
     call s:DoHlGroup(a:group, a:param_dict)
+    if has_key(a:param_dict, 'pos')
+        call matchaddpos(a:group, a:param_dict.pos, s:default_match_priority)
+        " do not add the pattern to the matchlist
+        "call add(w:match_list, a:pattern)
+        return
+    endif
     if s:DidColor(a:group, a:pattern)
         return
     endif
@@ -2452,10 +2474,17 @@ function! s:Ansi2Color(chars) "{{{1
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
+    " Conceals a list of patterns
+    if exists("b:Colorizer_did_syntax")
+        return
+    endif
     let s:position = getpos('.')
     if has("conceal")
-        exe "syn match ColorTermESC /". a:pattern. "/ conceal containedin=ALL"
+        for pat in a:pattern
+            exe "syn match ColorTermESC /". pat. "/ conceal containedin=ALL"
+        endfor
         setl cocu=nv cole=2
+        let b:Colorizer_did_syntax=1
     endif
 endfu
 function! s:GetColorPattern(list) "{{{1
@@ -2702,13 +2731,27 @@ function! s:SyntaxMatcher(enable) "{{{1
         return
     endif
     let did_clean = {}
-    for hi in s:GetMatchList()
+    "
+    let list=s:GetMatchList()
+    if len(list) > 1000
+        " This will probably slow
+        call s:Warn("Colorizer many colors detected, syntax highlighting will probably slow down Vim considerably!")
+    endif
+    for hi in list
         if !get(did_clean, hi.group, 0)
             let did_clean[hi.group] = 1
             exe "sil! syn clear" hi.group
         endif
         if a:enable
-            exe "syn match" hi.group "excludenl /". hi.pattern. "/ display containedin=ALL"
+            if has_key(hi, 'pattern')
+                exe "syn match" hi.group "excludenl /". escape(hi.pattern, '/'). "/ display containedin=ALL"
+            else
+                " matchaddpos()
+                let line=hi.pos1[0]
+                let pos =hi.pos1[1]-1
+                let len =hi.pos1[1]+hi.pos1[2]-2
+                exe printf('syn match %s excludenl /\%%%dl\%%>%dc\&.*\%%<%dc/ display containedin=ALL', hi.group, line, pos, len)
+            endif
             " We have syntax highlighting, can clear the matching
             " ignore errors (just in case)
             sil! call matchdelete(hi.id)
@@ -2731,6 +2774,8 @@ function! Colorizer#ColorOff() "{{{1
     call Colorizer#LocalFTAutoCmds(0)
     if exists("s:conceal") && has("conceal")
         let [&l:cole, &l:cocu] = s:conceal
+        syn clear
+        unlet! b:Colorizer_did_syntax
     endif
     unlet! w:match_list s:conceal
 endfu
@@ -2939,18 +2984,17 @@ function! Colorizer#AutoCmds(enable) "{{{1
     if a:enable && !get(g:, 'colorizer_debug', 0)
         aug Colorizer
             au!
-            au CursorHold,CursorHoldI,InsertLeave * silent call
-                        \ Colorizer#DoColor('', line('w0'), line('w$'))
-            "au GUIEnter,BufWinEnter * silent call
-            "            \ Colorizer#DoColor('', 1, line('$'))
+            au InsertLeave * silent call
+                        \ Colorizer#ColorLine('!', line('w0'), line('w$'))
             au GUIEnter * silent call Colorizer#DoColor('!', 1, line('$'))
             au WinEnter,BufWinEnter * silent call Colorizer#ColorWinEnter()
             au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
             if exists("##TextChanged") && (v:version > 704 || v:version == 704 && has('patch143'))
-                au TextChangedI * call Colorizer#ColorLine()
+                au TextChangedI * call Colorizer#ColorLine('', line('.'),line('.'))
             else
                 if get(g:, 'colorizer_cursormoved', 0)
-                    au CursorMoved,CursorMovedI * call Colorizer#ColorLine()
+                    au CursorMoved,CursorMovedI * call Colorizer#ColorLine('', line('.'),line('.'))
+                    au CusorHold, CursorHoldI * silent call Colorizer#ColorLine('!', line('w0'), line('w$'))
                 endif
             endif
         aug END
@@ -2963,17 +3007,20 @@ function! Colorizer#AutoCmds(enable) "{{{1
 endfu
 
 function! Colorizer#LocalFTAutoCmds(enable) "{{{1
-    " do not enable auto commands in debug mode
     if a:enable
         aug FTColorizer
             au!
-            au CursorHold,CursorHoldI,InsertLeave <buffer> silent call
-                        \ Colorizer#DoColor('', line('w0'), line('w$'))
-            au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine()
+            au InsertLeave <buffer> silent call
+                        \ Colorizer#ColorLine('', line('w0'), line('w$'))
+            au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine('',line('.'), line('.'))
             au WinEnter,BufWinEnter <buffer> silent call Colorizer#ColorWinEnter()
             au BufLeave <buffer> call Colorizer#ColorOff()
             au GUIEnter,ColorScheme <buffer> silent
                         \ call Colorizer#DoColor('!', 1, line('$'))
+            if get(g:, 'colorizer_cursormoved', 0)
+                au CursorMoved,CursorMovedI * call Colorizer#ColorLine('', line('.'),line('.'))
+                au CusorHold, CursorHoldI * silent call Colorizer#ColorLine('!', line('w0'), line('w$'))
+            endif
         aug END
         if !exists("b:undo_ftplugin")
             " simply unlet a dummy variable
@@ -3019,12 +3066,12 @@ function! Colorizer#ColorWinEnter(...) "{{{1
     call setpos('.', _c)
 endfu
 
-function! Colorizer#ColorLine() "{{{1
-    if get(b:, 'Colorizer_changedtick', 0) == b:changedtick
+function! Colorizer#ColorLine(force, start, end) "{{{1
+    if get(b:, 'Colorizer_changedtick', 0) == b:changedtick && empty(a:force)
         " nothing to do
         return
     else
-        call Colorizer#DoColor('', line('.'),line('.'))
+        call Colorizer#DoColor(a:force, a:start, a:end)
         let b:Colorizer_changedtick = b:changedtick
     endif
 endfu

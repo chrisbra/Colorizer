@@ -1035,6 +1035,9 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     " limit the pattern to the belonging line (should make syntax matching
     " faster!)
     let pattern = '\%(\%'.line('.').'l\)\%('. pre. '\)\@<='.txt. '\('.post.'\)\@='
+    if exists('*matchaddpos')
+        let clr_Dict.pos = [[ line('.'), col('.'), strlen(a:pre. a:text. a:post)]]
+    endif
     call s:SetMatcher(pattern, clr_Dict)
 endfunction
 
@@ -1411,7 +1414,7 @@ function! s:ColorInit(...) "{{{1
             call extend(s:colors, g:colorizer_custom_colors, 'force')
         endif
         let s:colornamepattern =  s:GetColorPattern(keys(s:colors))
-        call map(w:match_list, 'v:val.pattern')
+        "call map(w:match_list, 'v:val.pattern')
     else
         throw "nocolor"
     endif
@@ -1628,6 +1631,12 @@ endfunction
 
 function! s:SetMatch(group, pattern, param_dict) "{{{1
     call s:DoHlGroup(a:group, a:param_dict)
+    if has_key(a:param_dict, 'pos')
+        call matchaddpos(a:group, a:param_dict.pos, s:default_match_priority)
+        " do not add the pattern to the matchlist
+        "call add(w:match_list, a:pattern)
+        return
+    endif
     if s:DidColor(a:group, a:pattern)
         return
     endif
@@ -2121,17 +2130,26 @@ function! s:SyntaxMatcher(enable) "{{{1
     endif
     let did_clean = {}
     "
-    "let line=''
-    "let list=s:GetMatchList()
-    "if len(list) > 1000
-        " try to limit each match to the belonging lineVkkV
-    for hi in s:GetMatchList()
+    let list=s:GetMatchList()
+    if len(list) > 1000
+        " This will probably slow
+        call s:Warn("Colorizer many colors detected, syntax highlighting will probably slow down Vim considerably!")
+    endif
+    for hi in list
         if !get(did_clean, hi.group, 0)
             let did_clean[hi.group] = 1
             exe "sil! syn clear" hi.group
         endif
         if a:enable
-            exe "syn match" hi.group "excludenl /". escape(hi.pattern, '/'). "/ display containedin=ALL"
+            if has_key(hi, 'pattern')
+                exe "syn match" hi.group "excludenl /". escape(hi.pattern, '/'). "/ display containedin=ALL"
+            else
+                " matchaddpos()
+                let line=hi.pos1[0]
+                let pos =hi.pos1[1]-1
+                let len =hi.pos1[1]+hi.pos1[2]-2
+                exe printf('syn match %s excludenl /\%%%dl\%%>%dc\&.*\%%<%dc/ display containedin=ALL', hi.group, line, pos, len)
+            endif
             " We have syntax highlighting, can clear the matching
             " ignore errors (just in case)
             sil! call matchdelete(hi.id)
