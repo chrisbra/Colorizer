@@ -1386,7 +1386,7 @@ function! s:ColorInit(...) "{{{1
     elseif s:force_hl
         call Colorizer#ColorOff()
     endif
-    if !exists("s:conceal") && has("conceal")
+    if has("conceal") && !exists("s:conceal")
         let s:conceal = [&l:cole, &l:cocu]
     endif
 
@@ -2170,9 +2170,9 @@ function! Colorizer#ColorOff() "{{{1
         sil! call matchdelete(_match.id)
     endfor
     call Colorizer#LocalFTAutoCmds(0)
-    if exists("s:conceal") && has("conceal")
+    if has("conceal") && exists("s:conceal")
         let [&l:cole, &l:cocu] = s:conceal
-        syn clear
+        syn clear ColorTermESC
         unlet! b:Colorizer_did_syntax
     endif
     unlet! w:match_list s:conceal

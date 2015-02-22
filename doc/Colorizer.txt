@@ -385,6 +385,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - properly escape terminal colors, so that |Colorizer-syntax| works correctly
 - use matchaddpos() for highlighting ansi term colors (should speed up vim
   highlighting considerably)
+- only reset TermConceal syntax group (reported by audriusk in
+  https://github.com/chrisbra/Colorizer/issues/41, thanks!)
+
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
 - Support Ansi True Color support if possible
