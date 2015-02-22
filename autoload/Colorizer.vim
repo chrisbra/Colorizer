@@ -2172,7 +2172,9 @@ function! Colorizer#ColorOff() "{{{1
     call Colorizer#LocalFTAutoCmds(0)
     if has("conceal") && exists("s:conceal")
         let [&l:cole, &l:cocu] = s:conceal
-        syn clear ColorTermESC
+        if !empty(hlID('ColorTermESC'))
+            syn clear ColorTermESC
+        endif
         unlet! b:Colorizer_did_syntax
     endif
     unlet! w:match_list s:conceal
