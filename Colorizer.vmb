@@ -99,7 +99,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-501
+503
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -489,6 +489,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   highlighting considerably)
 - only reset TermConceal syntax group (reported by audriusk in
   https://github.com/chrisbra/Colorizer/issues/41, thanks!)
+- correctly check for patch 7.4.083 (:keeppatterns modifier, reported by
+  gbell12 in https://github.com/chrisbra/Colorizer/issues/42, thanks!)
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
@@ -1900,7 +1902,7 @@ function! s:ColorInit(...) "{{{1
         let s:round = 0
     endif
 
-    let s:keeppatterns = v:version > 704 || v:version == 704 && has("patch38")
+    let s:keeppatterns = v:version > 704 || v:version == 704 && has("patch83")
 
     " Enable Autocommands
     if exists("g:colorizer_auto_color")

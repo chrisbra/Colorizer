@@ -1295,7 +1295,7 @@ function! s:ColorInit(...) "{{{1
         let s:round = 0
     endif
 
-    let s:keeppatterns = v:version > 704 || v:version == 704 && has("patch38")
+    let s:keeppatterns = v:version > 704 || v:version == 704 && has("patch83")
 
     " Enable Autocommands
     if exists("g:colorizer_auto_color")
