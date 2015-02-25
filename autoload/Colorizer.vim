@@ -980,11 +980,11 @@ function! s:PreviewColorName(color) "{{{2
 endfu
 
 function! s:PreviewColorHex(match) "{{{2
+    let s:position = getpos('.')
     if <sid>IsInComment()
         " skip coloring comments
         return
     endif
-    let s:position = getpos('.')
     let color = (a:match[0] == '#' ? a:match[1:] : a:match)
     let pattern = color
     if len(color) == 3
@@ -2322,8 +2322,10 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         " Some error occured, stop trying to color the file
         call Colorizer#ColorOff()
         call s:Warn("Some error occured here: ". error)
-        call s:Warn("Position: ". string(s:position))
-        call matchadd('Color_Error', '\%'.s:position[1].'l\%'.s:position[2].'c.*\>')
+        if exists("s:position")
+            call s:Warn("Position: ". string(s:position))
+            call matchadd('Color_Error', '\%'.s:position[1].'l\%'.s:position[2].'c.*\>')
+        endif
     endif
     call s:PrintColorStatistics()
     call s:SaveRestoreOptions(0, save, [])
