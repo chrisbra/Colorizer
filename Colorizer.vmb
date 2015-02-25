@@ -99,7 +99,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-498
+501
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -487,6 +487,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - properly escape terminal colors, so that |Colorizer-syntax| works correctly
 - use matchaddpos() for highlighting ansi term colors (should speed up vim
   highlighting considerably)
+- only reset TermConceal syntax group (reported by audriusk in
+  https://github.com/chrisbra/Colorizer/issues/41, thanks!)
+
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
 - Support Ansi True Color support if possible
@@ -599,7 +602,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2533
+2537
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -1582,11 +1585,11 @@ function! s:PreviewColorName(color) "{{{2
 endfu
 
 function! s:PreviewColorHex(match) "{{{2
+    let s:position = getpos('.')
     if <sid>IsInComment()
         " skip coloring comments
         return
     endif
-    let s:position = getpos('.')
     let color = (a:match[0] == '#' ? a:match[1:] : a:match)
     let pattern = color
     if len(color) == 3
@@ -2774,7 +2777,9 @@ function! Colorizer#ColorOff() "{{{1
     call Colorizer#LocalFTAutoCmds(0)
     if has("conceal") && exists("s:conceal")
         let [&l:cole, &l:cocu] = s:conceal
-        syn clear ColorTermESC
+        if !empty(hlID('ColorTermESC'))
+            syn clear ColorTermESC
+        endif
         unlet! b:Colorizer_did_syntax
     endif
     unlet! w:match_list s:conceal
@@ -2922,8 +2927,10 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         " Some error occured, stop trying to color the file
         call Colorizer#ColorOff()
         call s:Warn("Some error occured here: ". error)
-        call s:Warn("Position: ". string(s:position))
-        call matchadd('Color_Error', '\%'.s:position[1].'l\%'.s:position[2].'c.*\>')
+        if exists("s:position")
+            call s:Warn("Position: ". string(s:position))
+            call matchadd('Color_Error', '\%'.s:position[1].'l\%'.s:position[2].'c.*\>')
+        endif
     endif
     call s:PrintColorStatistics()
     call s:SaveRestoreOptions(0, save, [])
