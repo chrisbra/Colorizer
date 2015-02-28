@@ -1040,7 +1040,6 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     endif
     call s:SetMatcher(pattern, clr_Dict)
 endfunction
-
 function! s:PreviewTaskWarriorColors(submatch) "{{{2
     " a:submatch is something like 'black on rgb141'
 
@@ -1452,7 +1451,7 @@ function! s:ColorInit(...) "{{{1
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
         \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
-        \ '\%d13', '\%(\%x1b\[K\)',
+        \ '\%d13', '\%(\%x1b\[K\)', '\%(\%x1b\]\d\+;\d\+;\)', '\%(\%x1b\\\)'
         \ ], '', 'colorizer_term_conceal', []  ] }
 
     if exists("s:colornamepattern") && s:color_names
@@ -1827,6 +1826,8 @@ function! s:Ansi2Color(chars) "{{{1
         let check[1] = 1
     elseif a:chars =~ '.*48\([:;]\)2\1'
         let check[1] = 2
+    elseif a:chars =~ '48;5;\d\+'
+        let check[1] = 3
     else
         let bground = "NONE"
     endif
@@ -1844,6 +1845,9 @@ function! s:Ansi2Color(chars) "{{{1
         elseif a:pat[1] == 48 " foreground color
             let bground = printf("%.2X%.2X%.2X", pat[2], pat[3], pat[4])
         endif
+    elseif check[1] == 3
+        let nr = matchstr(a:chars, '\%x1b\[48;5;\zs\d\+\zem')
+        let bground = s:Term2RGB(nr)
     else
         for val in ["std", "bold"]
             for key in keys(s:term2ansi[val])
