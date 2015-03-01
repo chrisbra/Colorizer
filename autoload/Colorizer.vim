@@ -1815,21 +1815,19 @@ function! s:Ansi2Color(chars) "{{{1
     let bground = ""
     let check = [0,0] " check fground and bground color
 
-    if a:chars=~ '.*3[0-7]\(;1\)\?[m;]'
+    if a:chars =~ '48;5;\d\+'
+        let check[0] = 0
+    elseif a:chars=~ '.*3[0-7]\(;1\)\?[m;]'
         let check[0] = 1
     elseif a:chars =~ '.*38\([:;]\)2\1'
         let check[0] = 2 " Uses True Color Support
-    else
-        let fground = "NONE"
     endif
-    if a:chars=~ '.*4[0-7]\(;1\)\?[m;]'
-        let check[1] = 1
+    if a:chars =~ '48;5;\d\+'
+        let check[1] = 3
     elseif a:chars =~ '.*48\([:;]\)2\1'
         let check[1] = 2
-    elseif a:chars =~ '48;5;\d\+'
-        let check[1] = 3
-    else
-        let bground = "NONE"
+    elseif a:chars=~ '.*4[0-7]\(;1\)\?[m;]'
+        let check[1] = 1
     endif
 
     if check[0] == 2
@@ -1872,7 +1870,7 @@ function! s:Ansi2Color(chars) "{{{1
             endif
         endfor
     endif
-    return [fground, bground]
+    return [(empty(fground) ? 'NONE' : fground), (empty(bground) ? "NONE" : bground)]
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
