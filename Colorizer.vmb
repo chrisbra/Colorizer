@@ -99,7 +99,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-503
+504
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -491,6 +491,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   https://github.com/chrisbra/Colorizer/issues/41, thanks!)
 - correctly check for patch 7.4.083 (:keeppatterns modifier, reported by
   gbell12 in https://github.com/chrisbra/Colorizer/issues/42, thanks!)
+- disable BufLeave autocommand to disable colors
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
@@ -604,7 +605,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2537
+2539
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -1647,7 +1648,6 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     endif
     call s:SetMatcher(pattern, clr_Dict)
 endfunction
-
 function! s:PreviewTaskWarriorColors(submatch) "{{{2
     " a:submatch is something like 'black on rgb141'
 
@@ -2059,7 +2059,7 @@ function! s:ColorInit(...) "{{{1
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
         \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
-        \ '\%d13', '\%(\%x1b\[K\)',
+        \ '\%d13', '\%(\%x1b\[K\)', '\%(\%x1b\]\d\+;\d\+;\)', '\%(\%x1b\\\)'
         \ ], '', 'colorizer_term_conceal', []  ] }
 
     if exists("s:colornamepattern") && s:color_names
@@ -2423,19 +2423,19 @@ function! s:Ansi2Color(chars) "{{{1
     let bground = ""
     let check = [0,0] " check fground and bground color
 
-    if a:chars=~ '.*3[0-7]\(;1\)\?[m;]'
+    if a:chars =~ '48;5;\d\+'
+        let check[0] = 0
+    elseif a:chars=~ '.*3[0-7]\(;1\)\?[m;]'
         let check[0] = 1
     elseif a:chars =~ '.*38\([:;]\)2\1'
         let check[0] = 2 " Uses True Color Support
-    else
-        let fground = "NONE"
     endif
-    if a:chars=~ '.*4[0-7]\(;1\)\?[m;]'
-        let check[1] = 1
+    if a:chars =~ '48;5;\d\+'
+        let check[1] = 3
     elseif a:chars =~ '.*48\([:;]\)2\1'
         let check[1] = 2
-    else
-        let bground = "NONE"
+    elseif a:chars=~ '.*4[0-7]\(;1\)\?[m;]'
+        let check[1] = 1
     endif
 
     if check[0] == 2
@@ -2451,6 +2451,9 @@ function! s:Ansi2Color(chars) "{{{1
         elseif a:pat[1] == 48 " foreground color
             let bground = printf("%.2X%.2X%.2X", pat[2], pat[3], pat[4])
         endif
+    elseif check[1] == 3
+        let nr = matchstr(a:chars, '\%x1b\[48;5;\zs\d\+\zem')
+        let bground = s:Term2RGB(nr)
     else
         for val in ["std", "bold"]
             for key in keys(s:term2ansi[val])
@@ -2475,7 +2478,7 @@ function! s:Ansi2Color(chars) "{{{1
             endif
         endfor
     endif
-    return [fground, bground]
+    return [(empty(fground) ? 'NONE' : fground), (empty(bground) ? "NONE" : bground)]
 endfunction
 
 function! s:TermConceal(pattern) "{{{1
@@ -3023,7 +3026,7 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
                         \ Colorizer#ColorLine('', line('w0'), line('w$'))
             au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine('',line('.'), line('.'))
             au WinEnter,BufWinEnter <buffer> silent call Colorizer#ColorWinEnter()
-            au BufLeave <buffer> call Colorizer#ColorOff()
+            "au BufLeave <buffer> call Colorizer#ColorOff()
             au GUIEnter,ColorScheme <buffer> silent
                         \ call Colorizer#DoColor('!', 1, line('$'))
             if get(g:, 'colorizer_cursormoved', 0)
