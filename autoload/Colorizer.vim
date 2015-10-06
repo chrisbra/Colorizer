@@ -48,7 +48,7 @@ let s:basic16 = [
 
 " Cygwin / Window console / ConEmu has different color codes
 if ($ComSpec =~# '^\%(command\.com\|cmd\.exe\)$' &&
-    \ !has("gui_running")) ||
+    \ !s:HasGui()) ||
     \ (exists("$ConEmuPID") &&
     \ $ConEmuANSI ==# "OFF") ||
     \ ($TERM ==# 'cygwin' && &t_Co == 16)  " Cygwin terminal
@@ -990,7 +990,7 @@ function! s:PreviewColorHex(match) "{{{2
     if len(color) == 3
         let color = substitute(color, '.', '&&', 'g')
     endif
-    if &t_Co == 8 && !has("gui_running")
+    if &t_Co == 8 && !s:HasGui()
         " The first 12 color names, can be displayed by 8 color terminals
         let list = values(s:xterm_8colors)
         let idx = match(list, a:match)
@@ -1012,7 +1012,7 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     let color = s:Ansi2Color(a:pre)
     let clr_Dict = {}
 
-    if &t_Co == 8 && !has("gui_running")
+    if &t_Co == 8 && !s:HasGui()
         " The first 12 color names, can be displayed by 8 color terminals
         let i = 0
         for clr in color
@@ -1392,7 +1392,7 @@ function! s:ColorInit(...) "{{{1
     let s:hex_pattern = get(g:, 'colorizer_hex_pattern',
                 \ ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@='])
 
-    if has("gui_running") || &t_Co >= 8 || s:HasColorPattern()
+    if s:HasGui() || &t_Co >= 8 || s:HasColorPattern() || has("nvim")
 	" The list of available match() patterns
 	let w:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
@@ -1400,7 +1400,7 @@ function! s:ColorInit(...) "{{{1
 	    \ (empty(<sid>SynID(w:match_list[0].group)) && !s:force_hl)))
 	    let s:force_hl = 1
 	endif
-        if &t_Co > 16 || has("gui_running")
+        if &t_Co > 16 || s:HasGui()
             let s:colors = (exists("g:colorizer_x11_names") ?
                 \ s:x11_color_names : s:w3c_color_names)
         elseif &t_Co == 16
@@ -1542,7 +1542,7 @@ function! s:DoHlGroup(group, Dict) "{{{1
     endif
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
-    if !has("gui_running")
+    if !s:HasGui()
         let fg = get(a:Dict, 'ctermfg', '')
         let bg = get(a:Dict, 'ctermbg', '')
         let [fg, bg] = s:SwapColors([fg, bg])
@@ -1598,7 +1598,7 @@ function! s:GenerateColors(dict) "{{{1
       \ has_key(result, 'bg')
         let result.fg = toupper(s:FGforBG(result.bg))
     endif
-    if !has("gui_running")
+    if !s:HasGui()
         " need to make sure, we have ctermfg/ctermbg values
         if !has_key(result, 'ctermfg') &&
             \ has_key(result, 'fg')
@@ -2095,6 +2095,9 @@ function! s:LoadSyntax(file) "{{{1
     unlet! b:current_syntax
     exe "sil! ru! syntax/".a:file. ".vim"
 endfu
+function! s:HasGui() "{{{1
+    return has("gui_running") || has("nvim")
+endfu
 function! s:HasColorPattern() "{{{1
     let _pos    = winsaveview()
     try
@@ -2214,7 +2217,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "              #F0F
     "              #FFF
     "
-    if &t_Co > 16 || has("gui_running")
+    if &t_Co > 16 || s:HasGui()
     " Also support something like
     " CSS rgb(255,0,0)
     "     rgba(255,0,0,1)
