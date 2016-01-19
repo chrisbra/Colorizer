@@ -1265,7 +1265,7 @@ endfu
 
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
-
+    let s:nvim_true_color = (has("nvim") && expand("$NVIM_TUI_ENABLE_TRUE_COLOR") == 1)
     let s:stop = 0
     
     let s:reltime = has('reltime')
@@ -1392,7 +1392,7 @@ function! s:ColorInit(...) "{{{1
     let s:hex_pattern = get(g:, 'colorizer_hex_pattern',
                 \ ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@='])
 
-    if s:HasGui() || &t_Co >= 8 || s:HasColorPattern() || has("nvim")
+    if s:HasGui() || &t_Co >= 8 || s:HasColorPattern()
 	" The list of available match() patterns
 	let w:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
@@ -1598,15 +1598,15 @@ function! s:GenerateColors(dict) "{{{1
       \ has_key(result, 'bg')
         let result.fg = toupper(s:FGforBG(result.bg))
     endif
-    if !s:HasGui()
+    if !has("gui_running")
         " need to make sure, we have ctermfg/ctermbg values
         if !has_key(result, 'ctermfg') &&
             \ has_key(result, 'fg')
-            let result.ctermfg  = s:Rgb2xterm(result.fg)
+            let result.ctermfg  = (s:nvim_true_color ? result.fg : s:Rgb2xterm(result.fg))
         endif
         if !has_key(result, 'ctermbg') &&
             \ has_key(result, 'bg')
-            let result.ctermbg  = s:Rgb2xterm(result.bg)
+            let result.ctermbg  = (s:nvim_true_color ? result.bg : s:Rgb2xterm(result.bg))
         endif
     endif
     for key in keys(result)
