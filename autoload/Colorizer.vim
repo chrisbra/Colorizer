@@ -2345,6 +2345,7 @@ function! Colorizer#RGB2Term(arg) "{{{1
         let color  = a:arg[0] == '#' ? a:arg : '#'.a:arg
     endif
 
+    call s:ColorInit(1)
     let tcolor = s:Rgb2xterm(color)
     call s:DoHlGroup("Color_". color[1:], s:GenerateColors({'bg': color[1:]}))
     exe "echohl" "Color_".color[1:]

@@ -391,6 +391,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   gbell12 in https://github.com/chrisbra/Colorizer/issues/42, thanks!)
 - disable BufLeave autocommand to disable colors
 - basic Neovim support (also should work with TrueColor in Terminal)
+- Make |:RGB2term| always init colortable, so that when resetting 't_Co'
+  it will work correctly
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
