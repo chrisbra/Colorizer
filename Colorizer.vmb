@@ -38,7 +38,7 @@ endfu
 command! -bang -range=%  -nargs=? -complete=custom,ColorHiArgs ColorHighlight
         \ :call Colorizer#DoColor(<q-bang>, <q-line1>, <q-line2>, <q-args>)
 command! -bang -nargs=1  RGB2Term  
-        \ :call Colorizer#RGB2Term(<q-args>)
+        \ :call Colorizer#RGB2Term(<q-args>, <q-bang>)
 command! -nargs=1  Term2RGB     :call Colorizer#Term2RGB(<q-args>)
 
 command! -bang    ColorClear    :call Colorizer#ColorOff()
@@ -99,7 +99,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-504
+507
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -492,6 +492,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - correctly check for patch 7.4.083 (:keeppatterns modifier, reported by
   gbell12 in https://github.com/chrisbra/Colorizer/issues/42, thanks!)
 - disable BufLeave autocommand to disable colors
+- basic Neovim support (also should work with TrueColor in Terminal)
+- Make |:RGB2term| always init colortable, so that when resetting 't_Co'
+  it will work correctly
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
@@ -605,7 +608,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2539
+2546
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -656,7 +659,7 @@ let s:basic16 = [
 
 " Cygwin / Window console / ConEmu has different color codes
 if ($ComSpec =~# '^\%(command\.com\|cmd\.exe\)$' &&
-    \ !has("gui_running")) ||
+    \ !s:HasGui()) ||
     \ (exists("$ConEmuPID") &&
     \ $ConEmuANSI ==# "OFF") ||
     \ ($TERM ==# 'cygwin' && &t_Co == 16)  " Cygwin terminal
@@ -1598,7 +1601,7 @@ function! s:PreviewColorHex(match) "{{{2
     if len(color) == 3
         let color = substitute(color, '.', '&&', 'g')
     endif
-    if &t_Co == 8 && !has("gui_running")
+    if &t_Co == 8 && !s:HasGui()
         " The first 12 color names, can be displayed by 8 color terminals
         let list = values(s:xterm_8colors)
         let idx = match(list, a:match)
@@ -1620,7 +1623,7 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     let color = s:Ansi2Color(a:pre)
     let clr_Dict = {}
 
-    if &t_Co == 8 && !has("gui_running")
+    if &t_Co == 8 && !s:HasGui()
         " The first 12 color names, can be displayed by 8 color terminals
         let i = 0
         for clr in color
@@ -1873,7 +1876,7 @@ endfu
 
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
-
+    let s:nvim_true_color = (has("nvim") && expand("$NVIM_TUI_ENABLE_TRUE_COLOR") == 1)
     let s:stop = 0
     
     let s:reltime = has('reltime')
@@ -2000,7 +2003,7 @@ function! s:ColorInit(...) "{{{1
     let s:hex_pattern = get(g:, 'colorizer_hex_pattern',
                 \ ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@='])
 
-    if has("gui_running") || &t_Co >= 8 || s:HasColorPattern()
+    if s:HasGui() || &t_Co >= 8 || s:HasColorPattern()
 	" The list of available match() patterns
 	let w:match_list = s:GetMatchList()
 	" If the syntax highlighting got reset, force recreating it
@@ -2008,7 +2011,7 @@ function! s:ColorInit(...) "{{{1
 	    \ (empty(<sid>SynID(w:match_list[0].group)) && !s:force_hl)))
 	    let s:force_hl = 1
 	endif
-        if &t_Co > 16 || has("gui_running")
+        if &t_Co > 16 || s:HasGui()
             let s:colors = (exists("g:colorizer_x11_names") ?
                 \ s:x11_color_names : s:w3c_color_names)
         elseif &t_Co == 16
@@ -2150,7 +2153,7 @@ function! s:DoHlGroup(group, Dict) "{{{1
     endif
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
-    if !has("gui_running")
+    if !s:HasGui()
         let fg = get(a:Dict, 'ctermfg', '')
         let bg = get(a:Dict, 'ctermbg', '')
         let [fg, bg] = s:SwapColors([fg, bg])
@@ -2210,11 +2213,11 @@ function! s:GenerateColors(dict) "{{{1
         " need to make sure, we have ctermfg/ctermbg values
         if !has_key(result, 'ctermfg') &&
             \ has_key(result, 'fg')
-            let result.ctermfg  = s:Rgb2xterm(result.fg)
+            let result.ctermfg  = (s:nvim_true_color ? result.fg : s:Rgb2xterm(result.fg))
         endif
         if !has_key(result, 'ctermbg') &&
             \ has_key(result, 'bg')
-            let result.ctermbg  = s:Rgb2xterm(result.bg)
+            let result.ctermbg  = (s:nvim_true_color ? result.bg : s:Rgb2xterm(result.bg))
         endif
     endif
     for key in keys(result)
@@ -2703,6 +2706,9 @@ function! s:LoadSyntax(file) "{{{1
     unlet! b:current_syntax
     exe "sil! ru! syntax/".a:file. ".vim"
 endfu
+function! s:HasGui() "{{{1
+    return has("gui_running") || has("nvim")
+endfu
 function! s:HasColorPattern() "{{{1
     let _pos    = winsaveview()
     try
@@ -2822,7 +2828,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     "              #F0F
     "              #FFF
     "
-    if &t_Co > 16 || has("gui_running")
+    if &t_Co > 16 || s:HasGui()
     " Also support something like
     " CSS rgb(255,0,0)
     "     rgba(255,0,0,1)
@@ -2942,7 +2948,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     call winrestview(_a)
 endfu
 
-function! Colorizer#RGB2Term(arg) "{{{1
+function! Colorizer#RGB2Term(arg,bang) "{{{1
     if a:arg =~ '^rgb'
         let clr    = s:StripParentheses(a:arg)
         let color  = printf("#%02X%02X%02X", clr[0], clr[1], clr[2])
@@ -2950,11 +2956,15 @@ function! Colorizer#RGB2Term(arg) "{{{1
         let color  = a:arg[0] == '#' ? a:arg : '#'.a:arg
     endif
 
+    call s:ColorInit(1)
     let tcolor = s:Rgb2xterm(color)
-    call s:DoHlGroup("Color_". color[1:], s:GenerateColors({'bg': color[1:]}))
-    exe "echohl" "Color_".color[1:]
-    echo a:arg. " => ". tcolor
-    echohl None
+    if empty(a:bang)
+        call s:DoHlGroup("Color_". color[1:], s:GenerateColors({'bg': color[1:]}))
+        exe "echohl" "Color_".color[1:]
+        echo a:arg. " => ". tcolor
+        echohl None
+    endif
+    return tcolor
 endfu
 
 function! Colorizer#Term2RGB(arg) "{{{1

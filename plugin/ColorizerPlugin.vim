@@ -33,7 +33,7 @@ endfu
 command! -bang -range=%  -nargs=? -complete=custom,ColorHiArgs ColorHighlight
         \ :call Colorizer#DoColor(<q-bang>, <q-line1>, <q-line2>, <q-args>)
 command! -bang -nargs=1  RGB2Term  
-        \ :call Colorizer#RGB2Term(<q-args>)
+        \ :call Colorizer#RGB2Term(<q-args>, <q-bang>)
 command! -nargs=1  Term2RGB     :call Colorizer#Term2RGB(<q-args>)
 
 command! -bang    ColorClear    :call Colorizer#ColorOff()

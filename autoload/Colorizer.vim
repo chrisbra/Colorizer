@@ -2337,7 +2337,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     call winrestview(_a)
 endfu
 
-function! Colorizer#RGB2Term(arg) "{{{1
+function! Colorizer#RGB2Term(arg,bang) "{{{1
     if a:arg =~ '^rgb'
         let clr    = s:StripParentheses(a:arg)
         let color  = printf("#%02X%02X%02X", clr[0], clr[1], clr[2])
@@ -2347,10 +2347,13 @@ function! Colorizer#RGB2Term(arg) "{{{1
 
     call s:ColorInit(1)
     let tcolor = s:Rgb2xterm(color)
-    call s:DoHlGroup("Color_". color[1:], s:GenerateColors({'bg': color[1:]}))
-    exe "echohl" "Color_".color[1:]
-    echo a:arg. " => ". tcolor
-    echohl None
+    if empty(a:bang)
+        call s:DoHlGroup("Color_". color[1:], s:GenerateColors({'bg': color[1:]}))
+        exe "echohl" "Color_".color[1:]
+        echo a:arg. " => ". tcolor
+        echohl None
+    endif
+    return tcolor
 endfu
 
 function! Colorizer#Term2RGB(arg) "{{{1
