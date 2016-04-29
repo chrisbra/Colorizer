@@ -1265,7 +1265,8 @@ endfu
 
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
-    let s:nvim_true_color = (has("nvim") && expand("$NVIM_TUI_ENABLE_TRUE_COLOR") == 1)
+    let s:term_true_color = ((has("nvim") && expand("$NVIM_TUI_ENABLE_TRUE_COLOR") == 1) ||
+                \ (exists('+gcol') && &gcol))
     let s:stop = 0
     
     let s:reltime = has('reltime')
@@ -1602,11 +1603,11 @@ function! s:GenerateColors(dict) "{{{1
         " need to make sure, we have ctermfg/ctermbg values
         if !has_key(result, 'ctermfg') &&
             \ has_key(result, 'fg')
-            let result.ctermfg  = (s:nvim_true_color ? result.fg : s:Rgb2xterm(result.fg))
+            let result.ctermfg  = (s:term_true_color ? result.fg : s:Rgb2xterm(result.fg))
         endif
         if !has_key(result, 'ctermbg') &&
             \ has_key(result, 'bg')
-            let result.ctermbg  = (s:nvim_true_color ? result.bg : s:Rgb2xterm(result.bg))
+            let result.ctermbg  = (s:term_true_color ? result.bg : s:Rgb2xterm(result.bg))
         endif
     endif
     for key in keys(result)
@@ -2096,7 +2097,7 @@ function! s:LoadSyntax(file) "{{{1
     exe "sil! ru! syntax/".a:file. ".vim"
 endfu
 function! s:HasGui() "{{{1
-    return has("gui_running") || has("nvim")
+    return has("gui_running") || has("nvim") || (exists("+gcol") && &gcol)
 endfu
 function! s:HasColorPattern() "{{{1
     let _pos    = winsaveview()
