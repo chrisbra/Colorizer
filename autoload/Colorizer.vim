@@ -1266,7 +1266,7 @@ endfu
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
     let s:term_true_color = ((has("nvim") && expand("$NVIM_TUI_ENABLE_TRUE_COLOR") == 1) ||
-                \ (exists('+gcol') && &gcol))
+                \ (exists('+tgc') && &tgc))
     let s:stop = 0
     
     let s:reltime = has('reltime')
@@ -2097,7 +2097,7 @@ function! s:LoadSyntax(file) "{{{1
     exe "sil! ru! syntax/".a:file. ".vim"
 endfu
 function! s:HasGui() "{{{1
-    return has("gui_running") || has("nvim") || (exists("+gcol") && &gcol)
+    return has("gui_running") || has("nvim") || (exists("+tgc") && &tgc)
 endfu
 function! s:HasColorPattern() "{{{1
     let _pos    = winsaveview()
