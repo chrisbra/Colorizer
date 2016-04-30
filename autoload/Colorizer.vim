@@ -1268,7 +1268,7 @@ function! s:ColorInit(...) "{{{1
     let s:term_true_color = ((has("nvim") && expand("$NVIM_TUI_ENABLE_TRUE_COLOR") == 1) ||
                 \ (exists('+tgc') && &tgc))
     let s:stop = 0
-    
+
     let s:reltime = has('reltime')
 
     " default matchadd priority
@@ -1368,17 +1368,17 @@ function! s:ColorInit(...) "{{{1
 
     if !exists("s:init_css") || !exists("s:colortable") ||
         \ empty(s:colortable)
-	" Only calculate the colortable when running
+        " Only calculate the colortable when running
         if &t_Co == 8
-	    let s:colortable = map(range(0,7), 's:Xterm2rgb16(v:val)')
+            let s:colortable = map(range(0,7), 's:Xterm2rgb16(v:val)')
         elseif &t_Co == 16
-	    let s:colortable = map(range(0,15), 's:Xterm2rgb16(v:val)')
+            let s:colortable = map(range(0,15), 's:Xterm2rgb16(v:val)')
         elseif &t_Co == 88
-	    let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
-	" terminal with 256 colors or gVim
+            let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
+        " terminal with 256 colors or gVim
         elseif &t_Co == 256 || empty(&t_Co)
-	    let s:colortable = map(range(0,255), 's:Xterm2rgb256(v:val)')
-	endif
+            let s:colortable = map(range(0,255), 's:Xterm2rgb256(v:val)')
+        endif
         if s:debug && exists("s:colortable")
             let g:colortable = s:colortable
         endif
@@ -1394,13 +1394,13 @@ function! s:ColorInit(...) "{{{1
                 \ ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@='])
 
     if s:HasGui() || &t_Co >= 8 || s:HasColorPattern()
-	" The list of available match() patterns
-	let w:match_list = s:GetMatchList()
-	" If the syntax highlighting got reset, force recreating it
-	if ((empty(w:match_list) || !hlexists(w:match_list[0].group) ||
-	    \ (empty(<sid>SynID(w:match_list[0].group)) && !s:force_hl)))
-	    let s:force_hl = 1
-	endif
+        " The list of available match() patterns
+        let w:match_list = s:GetMatchList()
+        " If the syntax highlighting got reset, force recreating it
+        if ((empty(w:match_list) || !hlexists(w:match_list[0].group) ||
+            \ (empty(<sid>SynID(w:match_list[0].group)) && !s:force_hl)))
+            let s:force_hl = 1
+        endif
         if &t_Co > 16 || s:HasGui()
             let s:colors = (exists("g:colorizer_x11_names") ?
                 \ s:x11_color_names : s:w3c_color_names)
@@ -1911,14 +1911,14 @@ function! s:SaveRestoreOptions(save, dict, list) "{{{1
     if a:save
         return s:SaveOptions(a:list)
     else
-	for [key, value] in items(a:dict)
+        for [key, value] in items(a:dict)
             if key !~ '@'
                 call setbufvar('', '&'. key, value)
             else
                 call call('setreg', [key[1]] + value)
             endif
             unlet value
-	endfor
+        endfor
     endif
 endfun
 
@@ -1932,17 +1932,17 @@ function! s:SaveOptions(list) "{{{1
             call add(save[item], getreg(item[1]))
             call add(save[item], getregtype(item))
         endif
-	if item == 'ma' && !&l:ma
-	    setl ma
-	elseif item == 'ro' && &l:ro
-	    setl noro
-	elseif item == 'lz' && &l:lz
-	    setl lz
+        if item == 'ma' && !&l:ma
+            setl ma
+        elseif item == 'ro' && &l:ro
+            setl noro
+        elseif item == 'lz' && &l:lz
+            setl lz
         elseif item == 'ed' && &g:ed
             setl noed
         elseif item == 'gd' && &g:gd
             setl nogd
-	endif
+        endif
     endfor
     return save
 endfunction
@@ -2036,13 +2036,13 @@ function! s:Rgb2xterm(color) "{{{1
     endif
     let color = (a:color[0] == '#' ? a:color[1:] : a:color)
     if ( color == '000000')
-	return 0
+        return 0
     elseif (color == 'FFFFFF')
-	return 15
+        return 15
     else
-	let r = '0x'.color[0:1]+0
-	let g = '0x'.color[2:3]+0
-	let b = '0x'.color[4:5]+0
+        let r = '0x'.color[0:1]+0
+        let g = '0x'.color[2:3]+0
+        let b = '0x'.color[4:5]+0
 
         " Try exact match first
         let i = index(s:colortable, [r, g, b])
