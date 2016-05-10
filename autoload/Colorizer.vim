@@ -1519,19 +1519,19 @@ function! s:DoHlGroup(group, Dict) "{{{1
     endif
 
     let hi = printf('hi %s ', a:group)
-        let fg = get(a:Dict, 'fg', '')
-        let bg = get(a:Dict, 'bg', '')
-        let [fg, bg] = s:SwapColors([fg, bg])
+    let fg = get(a:Dict, 'fg', '')
+    let bg = get(a:Dict, 'bg', '')
+    let [fg, bg] = s:SwapColors([fg, bg])
 
-        if !empty(fg) && fg[0] !=# '#' && fg !=# 'NONE'
-            let fg='#'.fg
-        endif
-        if !empty(bg) && bg[0] !=# '#' && bg !=# 'NONE'
-            let bg='#'.bg
-        endif
-        if !empty(fg)
-            let hi .= printf('guifg=%s', fg)
-        endif
+    if !empty(fg) && fg[0] !=# '#' && fg !=# 'NONE'
+        let fg='#'.fg
+    endif
+    if !empty(bg) && bg[0] !=# '#' && bg !=# 'NONE'
+        let bg='#'.bg
+    endif
+    if !empty(fg)
+        let hi .= printf('guifg=%s', fg)
+    endif
     if has_key(a:Dict, "gui")
         let hi.=printf(" gui=%s ", a:Dict['gui'])
     endif
