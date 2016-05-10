@@ -1547,8 +1547,11 @@ function! s:DoHlGroup(group, Dict) "{{{1
         let fg = get(a:Dict, 'ctermfg', '')
         let bg = get(a:Dict, 'ctermbg', '')
         let [fg, bg] = s:SwapColors([fg, bg])
-        if !empty(string(bg)) && !empty(string(fg))
-            let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
+        if !empty(bg) || bg == 0
+            let hi.= printf(' ctermbg=%s', bg)
+        endif
+        if !empty(fg) || fg == 0
+            let hi.= printf(' ctermfg=%s', fg)
         endif
         let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
           \ (' cterm='. a:Dict.special) : '')
@@ -1574,7 +1577,7 @@ function! s:Exe(stmt) "{{{1
     endtry
 endfu
 
-function! s:SynID(group, ...)
+function! s:SynID(group, ...) "{{{1
     let property = exists("a:1") ? a:1 : 'fg'
     let c1 = synIDattr(synIDtrans(hlID(a:group)), property)
     " since when can c1 be negative? Is this a vim bug?
@@ -1590,9 +1593,13 @@ function! s:GenerateColors(dict) "{{{1
 
     if !has_key(result, 'bg') && has_key(result, 'ctermbg')
         let result.bg = s:Term2RGB(result.ctermbg)
+    elseif !has_key(result, 'bg') && has_key(result, 'guibg')
+        let result.bg = result.guibg
     endif
     if !has_key(result, 'fg') && has_key(result, 'ctermfg')
         let result.fg = s:Term2RGB(result.ctermfg)
+    elseif !has_key(result, 'fg') && has_key(result, 'guifg')
+        let result.fg = result.guifg
     endif
 
     if !has_key(result, 'fg') &&
@@ -2097,7 +2104,9 @@ function! s:LoadSyntax(file) "{{{1
     exe "sil! ru! syntax/".a:file. ".vim"
 endfu
 function! s:HasGui() "{{{1
-    return has("gui_running") || has("nvim") || (exists("+tgc") && &tgc)
+    return has("gui_running") ||
+         \ (has("nvim") && $NVIM_TUI_ENABLE_TRUE_COLOR == 1) ||
+         \ (exists("+tgc") && &tgc)
 endfu
 function! s:HasColorPattern() "{{{1
     let _pos    = winsaveview()

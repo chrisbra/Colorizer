@@ -394,6 +394,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - Make |:RGB2term| always init colortable, so that when resetting 't_Co'
   it will work correctly
 - Make it work with Vims Term Truecolor feature (patch 7.4.1770)
+- Make it work with neovim fixes https://github.com/chrisbra/Colorizer/issues/45
+  and https://github.com/chrisbra/Colorizer/issues/46
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
