@@ -2104,9 +2104,7 @@ function! s:LoadSyntax(file) "{{{1
     exe "sil! ru! syntax/".a:file. ".vim"
 endfu
 function! s:HasGui() "{{{1
-    return has("gui_running") ||
-         \ (has("nvim") && $NVIM_TUI_ENABLE_TRUE_COLOR == 1) ||
-         \ (exists("+tgc") && &tgc)
+    return has("gui_running") || (exists("+tgc") && &tgc)
 endfu
 function! s:HasColorPattern() "{{{1
     let _pos    = winsaveview()
