@@ -2291,6 +2291,8 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 endtry
             endif
         endfor
+    else
+        call s:Warn('Color configuration seems wrong, skipping colorization! Check t_Co setting!')
     endif
 
     for Pat in [ s:color_patterns_special.term ]
