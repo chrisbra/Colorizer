@@ -1,4 +1,4 @@
-" Vimball Archiver by Charles E. Campbell, Jr., Ph.D.
+" Vimball Archiver by Charles E. Campbell
 UseVimball
 finish
 plugin/ColorizerPlugin.vim	[[[1
@@ -99,7 +99,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-507
+511
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -495,6 +495,10 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - basic Neovim support (also should work with TrueColor in Terminal)
 - Make |:RGB2term| always init colortable, so that when resetting 't_Co'
   it will work correctly
+- Make it work with Vims Term Truecolor feature (patch 7.4.1770)
+- Make it work with neovim fixes https://github.com/chrisbra/Colorizer/issues/45
+  and https://github.com/chrisbra/Colorizer/issues/46
+- Support css colors: #rrggbbaa format
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
@@ -608,7 +612,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2546
+2565
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -1556,8 +1560,6 @@ function! s:ColorRGBValues(val) "{{{2
         endif
     endfor
     if len(rgb) == 4
-        " drop alpha channel
-        " call remove(rgb, 3)
         let rgb = s:ApplyAlphaValue(rgb)
     endif
     let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
@@ -1611,6 +1613,14 @@ function! s:PreviewColorHex(match) "{{{2
         else
             let color = list[idx]
         endif
+    endif
+    if len(split(pattern, '\zs')) == 8
+        " apply alpha value
+        let l = split(pattern, '..\zs')
+        call map(l, 'printf("%2d", "0x".v:val)')
+        let l[3] = string(str2float(l[3])/255)  " normalize to 0-1
+        let l = s:ApplyAlphaValue(l)
+        let color = printf("%02X%02X%02X", l[0], l[1], l[2])
     endif
     call s:SetMatcher(s:hex_pattern[0]. pattern. s:hex_pattern[2], {'bg': color})
 endfunction
@@ -1876,9 +1886,10 @@ endfu
 
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
-    let s:nvim_true_color = (has("nvim") && expand("$NVIM_TUI_ENABLE_TRUE_COLOR") == 1)
+    let s:term_true_color = ((has("nvim") && expand("$NVIM_TUI_ENABLE_TRUE_COLOR") == 1) ||
+                \ (exists('+tgc') && &tgc))
     let s:stop = 0
-    
+
     let s:reltime = has('reltime')
 
     " default matchadd priority
@@ -1978,17 +1989,17 @@ function! s:ColorInit(...) "{{{1
 
     if !exists("s:init_css") || !exists("s:colortable") ||
         \ empty(s:colortable)
-	" Only calculate the colortable when running
+        " Only calculate the colortable when running
         if &t_Co == 8
-	    let s:colortable = map(range(0,7), 's:Xterm2rgb16(v:val)')
+            let s:colortable = map(range(0,7), 's:Xterm2rgb16(v:val)')
         elseif &t_Co == 16
-	    let s:colortable = map(range(0,15), 's:Xterm2rgb16(v:val)')
+            let s:colortable = map(range(0,15), 's:Xterm2rgb16(v:val)')
         elseif &t_Co == 88
-	    let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
-	" terminal with 256 colors or gVim
+            let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
+        " terminal with 256 colors or gVim
         elseif &t_Co == 256 || empty(&t_Co)
-	    let s:colortable = map(range(0,255), 's:Xterm2rgb256(v:val)')
-	endif
+            let s:colortable = map(range(0,255), 's:Xterm2rgb256(v:val)')
+        endif
         if s:debug && exists("s:colortable")
             let g:colortable = s:colortable
         endif
@@ -2001,16 +2012,16 @@ function! s:ColorInit(...) "{{{1
     endif
 
     let s:hex_pattern = get(g:, 'colorizer_hex_pattern',
-                \ ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@='])
+                \ ['#', '\%(\x\{3}\|\x\{6}\|\x\{8\}\)', '\%(\>\|[-_]\)\@='])
 
     if s:HasGui() || &t_Co >= 8 || s:HasColorPattern()
-	" The list of available match() patterns
-	let w:match_list = s:GetMatchList()
-	" If the syntax highlighting got reset, force recreating it
-	if ((empty(w:match_list) || !hlexists(w:match_list[0].group) ||
-	    \ (empty(<sid>SynID(w:match_list[0].group)) && !s:force_hl)))
-	    let s:force_hl = 1
-	endif
+        " The list of available match() patterns
+        let w:match_list = s:GetMatchList()
+        " If the syntax highlighting got reset, force recreating it
+        if ((empty(w:match_list) || !hlexists(w:match_list[0].group) ||
+            \ (empty(<sid>SynID(w:match_list[0].group)) && !s:force_hl)))
+            let s:force_hl = 1
+        endif
         if &t_Co > 16 || s:HasGui()
             let s:colors = (exists("g:colorizer_x11_names") ?
                 \ s:x11_color_names : s:w3c_color_names)
@@ -2129,19 +2140,19 @@ function! s:DoHlGroup(group, Dict) "{{{1
     endif
 
     let hi = printf('hi %s ', a:group)
-        let fg = get(a:Dict, 'fg', '')
-        let bg = get(a:Dict, 'bg', '')
-        let [fg, bg] = s:SwapColors([fg, bg])
+    let fg = get(a:Dict, 'fg', '')
+    let bg = get(a:Dict, 'bg', '')
+    let [fg, bg] = s:SwapColors([fg, bg])
 
-        if !empty(fg) && fg[0] !=# '#' && fg !=# 'NONE'
-            let fg='#'.fg
-        endif
-        if !empty(bg) && bg[0] !=# '#' && bg !=# 'NONE'
-            let bg='#'.bg
-        endif
-        if !empty(fg)
-            let hi .= printf('guifg=%s', fg)
-        endif
+    if !empty(fg) && fg[0] !=# '#' && fg !=# 'NONE'
+        let fg='#'.fg
+    endif
+    if !empty(bg) && bg[0] !=# '#' && bg !=# 'NONE'
+        let bg='#'.bg
+    endif
+    if !empty(fg)
+        let hi .= printf('guifg=%s', fg)
+    endif
     if has_key(a:Dict, "gui")
         let hi.=printf(" gui=%s ", a:Dict['gui'])
     endif
@@ -2157,8 +2168,11 @@ function! s:DoHlGroup(group, Dict) "{{{1
         let fg = get(a:Dict, 'ctermfg', '')
         let bg = get(a:Dict, 'ctermbg', '')
         let [fg, bg] = s:SwapColors([fg, bg])
-        if !empty(string(bg)) && !empty(string(fg))
-            let hi.= printf(' ctermfg=%s ctermbg=%s', fg, bg)
+        if !empty(bg) || bg == 0
+            let hi.= printf(' ctermbg=%s', bg)
+        endif
+        if !empty(fg) || fg == 0
+            let hi.= printf(' ctermfg=%s', fg)
         endif
         let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
           \ (' cterm='. a:Dict.special) : '')
@@ -2184,7 +2198,7 @@ function! s:Exe(stmt) "{{{1
     endtry
 endfu
 
-function! s:SynID(group, ...)
+function! s:SynID(group, ...) "{{{1
     let property = exists("a:1") ? a:1 : 'fg'
     let c1 = synIDattr(synIDtrans(hlID(a:group)), property)
     " since when can c1 be negative? Is this a vim bug?
@@ -2200,9 +2214,13 @@ function! s:GenerateColors(dict) "{{{1
 
     if !has_key(result, 'bg') && has_key(result, 'ctermbg')
         let result.bg = s:Term2RGB(result.ctermbg)
+    elseif !has_key(result, 'bg') && has_key(result, 'guibg')
+        let result.bg = result.guibg
     endif
     if !has_key(result, 'fg') && has_key(result, 'ctermfg')
         let result.fg = s:Term2RGB(result.ctermfg)
+    elseif !has_key(result, 'fg') && has_key(result, 'guifg')
+        let result.fg = result.guifg
     endif
 
     if !has_key(result, 'fg') &&
@@ -2213,11 +2231,11 @@ function! s:GenerateColors(dict) "{{{1
         " need to make sure, we have ctermfg/ctermbg values
         if !has_key(result, 'ctermfg') &&
             \ has_key(result, 'fg')
-            let result.ctermfg  = (s:nvim_true_color ? result.fg : s:Rgb2xterm(result.fg))
+            let result.ctermfg  = (s:term_true_color ? result.fg : s:Rgb2xterm(result.fg))
         endif
         if !has_key(result, 'ctermbg') &&
             \ has_key(result, 'bg')
-            let result.ctermbg  = (s:nvim_true_color ? result.bg : s:Rgb2xterm(result.bg))
+            let result.ctermbg  = (s:term_true_color ? result.bg : s:Rgb2xterm(result.bg))
         endif
     endif
     for key in keys(result)
@@ -2521,14 +2539,14 @@ function! s:SaveRestoreOptions(save, dict, list) "{{{1
     if a:save
         return s:SaveOptions(a:list)
     else
-	for [key, value] in items(a:dict)
+        for [key, value] in items(a:dict)
             if key !~ '@'
                 call setbufvar('', '&'. key, value)
             else
                 call call('setreg', [key[1]] + value)
             endif
             unlet value
-	endfor
+        endfor
     endif
 endfun
 
@@ -2542,17 +2560,17 @@ function! s:SaveOptions(list) "{{{1
             call add(save[item], getreg(item[1]))
             call add(save[item], getregtype(item))
         endif
-	if item == 'ma' && !&l:ma
-	    setl ma
-	elseif item == 'ro' && &l:ro
-	    setl noro
-	elseif item == 'lz' && &l:lz
-	    setl lz
+        if item == 'ma' && !&l:ma
+            setl ma
+        elseif item == 'ro' && &l:ro
+            setl noro
+        elseif item == 'lz' && &l:lz
+            setl lz
         elseif item == 'ed' && &g:ed
             setl noed
         elseif item == 'gd' && &g:gd
             setl nogd
-	endif
+        endif
     endfor
     return save
 endfunction
@@ -2563,13 +2581,16 @@ endfunction
 
 function! s:ApplyAlphaValue(rgb) "{{{1
     " Add Alpha Value to RGB values
+    " takes a list of [ rr, gg, bb, aa] values
+    " alpha can be 0-1
     let bg = <sid>SynID('Normal', 'bg')
     if empty(bg) || !has('float')
         return a:rgb[0:3]
     else
         if (bg =~? '\d\{1,3}') && bg < 256
             " Xterm color code
-            let bg = '.'.join(s:colortable[bg])
+            " (add dummy in front of it, will be split later)
+            let bg = '#'.join(s:colortable[bg])
         endif
         let rgb = []
         let bg_ = split(bg[1:], '..\zs')
@@ -2646,13 +2667,13 @@ function! s:Rgb2xterm(color) "{{{1
     endif
     let color = (a:color[0] == '#' ? a:color[1:] : a:color)
     if ( color == '000000')
-	return 0
+        return 0
     elseif (color == 'FFFFFF')
-	return 15
+        return 15
     else
-	let r = '0x'.color[0:1]+0
-	let g = '0x'.color[2:3]+0
-	let b = '0x'.color[4:5]+0
+        let r = '0x'.color[0:1]+0
+        let g = '0x'.color[2:3]+0
+        let b = '0x'.color[4:5]+0
 
         " Try exact match first
         let i = index(s:colortable, [r, g, b])
@@ -2707,7 +2728,7 @@ function! s:LoadSyntax(file) "{{{1
     exe "sil! ru! syntax/".a:file. ".vim"
 endfu
 function! s:HasGui() "{{{1
-    return has("gui_running") || has("nvim")
+    return has("gui_running") || (exists("+tgc") && &tgc)
 endfu
 function! s:HasColorPattern() "{{{1
     let _pos    = winsaveview()
@@ -2894,6 +2915,8 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 endtry
             endif
         endfor
+    else
+        call s:Warn('Color configuration seems wrong, skipping colorization! Check t_Co setting!')
     endif
 
     for Pat in [ s:color_patterns_special.term ]
