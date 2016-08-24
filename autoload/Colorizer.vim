@@ -945,8 +945,6 @@ function! s:ColorRGBValues(val) "{{{2
         endif
     endfor
     if len(rgb) == 4
-        " drop alpha channel
-        " call remove(rgb, 3)
         let rgb = s:ApplyAlphaValue(rgb)
     endif
     let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
@@ -1000,6 +998,14 @@ function! s:PreviewColorHex(match) "{{{2
         else
             let color = list[idx]
         endif
+    endif
+    if len(split(pattern, '\zs')) == 8
+        " apply alpha value
+        let l = split(pattern, '..\zs')
+        call map(l, 'printf("%2d", "0x".v:val)')
+        let l[3] = string(str2float(l[3])/255)  " normalize to 0-1
+        let l = s:ApplyAlphaValue(l)
+        let color = printf("%02X%02X%02X", l[0], l[1], l[2])
     endif
     call s:SetMatcher(s:hex_pattern[0]. pattern. s:hex_pattern[2], {'bg': color})
 endfunction
@@ -1391,7 +1397,7 @@ function! s:ColorInit(...) "{{{1
     endif
 
     let s:hex_pattern = get(g:, 'colorizer_hex_pattern',
-                \ ['#', '\%(\x\{3}\|\x\{6}\)', '\%(\>\|[-_]\)\@='])
+                \ ['#', '\%(\x\{3}\|\x\{6}\|\x\{8\}\)', '\%(\>\|[-_]\)\@='])
 
     if s:HasGui() || &t_Co >= 8 || s:HasColorPattern()
         " The list of available match() patterns
@@ -1960,6 +1966,8 @@ endfunction
 
 function! s:ApplyAlphaValue(rgb) "{{{1
     " Add Alpha Value to RGB values
+    " takes a list of [ rr, gg, bb, aa] values
+    " alpha can be 0-1
     let bg = <sid>SynID('Normal', 'bg')
     if empty(bg) || !has('float')
         return a:rgb[0:3]
