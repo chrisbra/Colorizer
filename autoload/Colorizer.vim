@@ -1974,7 +1974,8 @@ function! s:ApplyAlphaValue(rgb) "{{{1
     else
         if (bg =~? '\d\{1,3}') && bg < 256
             " Xterm color code
-            let bg = '.'.join(s:colortable[bg])
+            " (add dummy in front of it, will be split later)
+            let bg = '#'.join(s:colortable[bg])
         endif
         let rgb = []
         let bg_ = split(bg[1:], '..\zs')
