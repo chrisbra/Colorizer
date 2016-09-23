@@ -1206,14 +1206,16 @@ function! s:PreviewVimHighlight(match) "{{{2
             " highlight clear lines, don't colorize!
             return
         endif
-        " HtmlHiLink / HiLink line?
-        let match = matchlist(tmatch, '\C\%[Html\]HiLink\s\+\(\w\+\)\s\+\(\w\+\)')
+        " Special case:
+        " HtmlHiLink foo bar -> links foo to bar
+        " hi! def link foo bar -> links foo to bar
+        let match = matchlist(tmatch, '\C\%(\%[Html\]HiLink\|hi\%[ghlight]!\?\s*\%(def\%[ault]\s*\)\?link\)\s\+\(\w\+\)\s\+\(\w\+\)')
         " Hopefully tmatch[1] has already been defined ;(
         if len(match)
             call s:SetMatch('Color_'.match[1], '^\V'.escape(a:match, '\\'), {})
             return
         endif
-        let tmatch = substitute(tmatch, '^\c\s*hi\%[ghlight]\(\s*def\%[ault]\)\?', '', '')
+        let tmatch = substitute(tmatch, '^\c\s*hi\%[ghlight]!\?\(\s*def\%[ault]\)\?', '', '')
         let match = map(split(tmatch), 'substitute(v:val, ''^\s\+\|\s\+$'', "", "g")')
         if len(match) < 2
             return
