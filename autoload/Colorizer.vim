@@ -2161,6 +2161,11 @@ function! s:SyntaxMatcher(enable) "{{{1
         " This will probably slow
         call s:Warn("Colorizer many colors detected, syntax highlighting will probably slow down Vim considerably!")
     endif
+    if &ft =~? 'css'
+        " cssColor defines some color names like yellow or red and overrules
+        " our colors
+        sil! syn clear cssColor
+    endif
     for hi in list
         if !get(did_clean, hi.group, 0)
             let did_clean[hi.group] = 1
