@@ -1440,7 +1440,7 @@ function! s:ColorInit(...) "{{{1
             \ function("s:ColorRGBValues"), 'colorizer_rgb', 1, [] ],
         \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\))',
             \ function("s:ColorRGBValues"), 'colorizer_rgba', 1, [] ],
-        \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
+        \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\)\=)',
             \ function("s:ColorHSLValues"), 'colorizer_hsla', 1, [] ],
         \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
             \ function("s:PreviewVimColors"), 'colorizer_vimcolors', '&ft ==# "vim"', [] ],
@@ -2004,7 +2004,7 @@ function! s:ApplyAlphaValue(rgb) "{{{1
     endif
 endfunction
 
-function! s:HSL2RGB(h, s, l) "{{{1
+function! s:HSL2RGB(h, s, l, ...) "{{{1
     let s = a:s + 0.0
     let l = a:l + 0.0
     if  l <= 0.5
@@ -2016,6 +2016,9 @@ function! s:HSL2RGB(h, s, l) "{{{1
     let r = float2nr(s:Hue2RGB(m1, m2, a:h + 120))
     let g = float2nr(s:Hue2RGB(m1, m2, a:h))
     let b = float2nr(s:Hue2RGB(m1, m2, a:h - 120))
+    if a:0
+        let rgb = s:ApplyAlphaValue([r, g, b, a:1])
+    endif
     return printf("%02X%02X%02X", r, g, b)
 endfunction
 
@@ -2139,13 +2142,12 @@ endfunction
 
 function! s:PrepareHSLArgs(list) "{{{1
     let hsl=a:list
-    if len(hsl) == 4
-        " drop alpha channel
-        call remove(hsl, 3)
-    endif
     let hsl[0] = (matchstr(hsl[0], '\d\+') + 360)%360
     let hsl[1] = (matchstr(hsl[1], '\d\+') + 0.0)/100
     let hsl[2] = (matchstr(hsl[2], '\d\+') + 0.0)/100
+    if len(hsl) == 4
+        return s:HSL2RGB(hsl[0], hsl[1], hsl[2], hsl[3])
+    endif
     return s:HSL2RGB(hsl[0], hsl[1], hsl[2])
 endfu
 function! s:SyntaxMatcher(enable) "{{{1
