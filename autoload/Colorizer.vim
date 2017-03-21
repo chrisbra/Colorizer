@@ -1594,6 +1594,7 @@ function! s:SynID(group, ...) "{{{1
         return ''
     else
         return c1
+    endif
 endfu
 
 function! s:GenerateColors(dict) "{{{1
