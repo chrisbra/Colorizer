@@ -19,7 +19,7 @@
 let s:cpo_save = &cpo
 set cpo&vim
 
-let s:debug = 1
+let s:debug = 0
 " the 6 value iterations in the xterm color cube "{{{2
 let s:valuerange6 = [ 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF ]
 
