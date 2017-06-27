@@ -99,7 +99,7 @@ let &cpo = s:cpo_save
 unlet s:cpo_save
 " vim: set foldmethod=marker et fdl=0:
 doc/Colorizer.txt	[[[1
-511
+515
 *Colorizer.txt*   A plugin to color colornames and codes
 
 Author:     Christian Brabandt <cb@256bit.org>
@@ -499,6 +499,10 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - Make it work with neovim fixes https://github.com/chrisbra/Colorizer/issues/45
   and https://github.com/chrisbra/Colorizer/issues/46
 - Support css colors: #rrggbbaa format
+- handle hsla values correctly
+- clear css cssColor syntax rule when ":ColorHighlight syntax" in css files is
+  used. fixes https://github.com/chrisbra/Colorizer/issues/50 reported by
+  msva, thanks!
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
@@ -612,7 +616,7 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 Modeline:
 vim:tw=78:ts=8:ft=help:et:fdm=marker:fdl=0:norl
 autoload/Colorizer.vim	[[[1
-2565
+2590
 " Plugin:       Highlight Colornames and Values
 " Maintainer:   Christian Brabandt <cb@256bit.org>
 " URL:          http://www.github.com/chrisbra/color_highlight
@@ -634,7 +638,7 @@ autoload/Colorizer.vim	[[[1
 let s:cpo_save = &cpo
 set cpo&vim
 
-let s:debug = 0
+let s:debug = 1
 " the 6 value iterations in the xterm color cube "{{{2
 let s:valuerange6 = [ 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF ]
 
@@ -1821,14 +1825,16 @@ function! s:PreviewVimHighlight(match) "{{{2
             " highlight clear lines, don't colorize!
             return
         endif
-        " HtmlHiLink / HiLink line?
-        let match = matchlist(tmatch, '\C\%[Html\]HiLink\s\+\(\w\+\)\s\+\(\w\+\)')
+        " Special case:
+        " HtmlHiLink foo bar -> links foo to bar
+        " hi! def link foo bar -> links foo to bar
+        let match = matchlist(tmatch, '\C\%(\%[Html\]HiLink\|hi\%[ghlight]!\?\s*\%(def\%[ault]\s*\)\?link\)\s\+\(\w\+\)\s\+\(\w\+\)')
         " Hopefully tmatch[1] has already been defined ;(
         if len(match)
             call s:SetMatch('Color_'.match[1], '^\V'.escape(a:match, '\\'), {})
             return
         endif
-        let tmatch = substitute(tmatch, '^\c\s*hi\%[ghlight]\(\s*def\%[ault]\)\?', '', '')
+        let tmatch = substitute(tmatch, '^\c\s*hi\%[ghlight]!\?\(\s*def\%[ault]\)\?', '', '')
         let match = map(split(tmatch), 'substitute(v:val, ''^\s\+\|\s\+$'', "", "g")')
         if len(match) < 2
             return
@@ -2053,7 +2059,7 @@ function! s:ColorInit(...) "{{{1
             \ function("s:ColorRGBValues"), 'colorizer_rgb', 1, [] ],
         \ 'rgba': ['rgba(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\))',
             \ function("s:ColorRGBValues"), 'colorizer_rgba', 1, [] ],
-        \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3,4})',
+        \ 'hsla': ['hsla\=(\s*\%(\d\+%\?\D*\)\{3}\%(\%(0\?\%(.\d\+\)\?\)\|1\)\=)',
             \ function("s:ColorHSLValues"), 'colorizer_hsla', 1, [] ],
         \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
             \ function("s:PreviewVimColors"), 'colorizer_vimcolors', '&ft ==# "vim"', [] ],
@@ -2073,8 +2079,10 @@ function! s:ColorInit(...) "{{{1
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
         \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
-        \ '\%d13', '\%(\%x1b\[K\)', '\%(\%x1b\]\d\+;\d\+;\)', '\%(\%x1b\\\)'
-        \ ], '', 'colorizer_term_conceal', []  ] }
+        \ '\%d13', '\%(\%x1b\[K\)', '\%(\%x1b\]\d\+;\d\+;\)', '\%(\%x1b\\\)',
+        \ '\%x1b(B\%x1b\[m', '\%x1b\[m\%x0f'], 
+        \ '',
+        \ 'colorizer_term_conceal', []  ] }
 
     if exists("s:colornamepattern") && s:color_names
         let s:color_patterns["colornames"] = [ s:colornamepattern,
@@ -2082,6 +2090,18 @@ function! s:ColorInit(...) "{{{1
     endif
 endfu
 
+function! s:AddOffset(list) "{{{1
+    return a:list
+    let result=[]
+    for val in a:list
+        let val = ('0X'.val) + 0
+        if val < get(g:, 'colorizer_min_offset', 0)
+            let val = get(g:, 'colorizer_add_offset', 0)
+        endif
+        call add(result, val)
+    endfor
+    return result
+endfu
 function! s:SwapColors(list) "{{{1
     if empty(a:list[0]) && empty(a:list[1])
         return a:list
@@ -2143,6 +2163,7 @@ function! s:DoHlGroup(group, Dict) "{{{1
     let fg = get(a:Dict, 'fg', '')
     let bg = get(a:Dict, 'bg', '')
     let [fg, bg] = s:SwapColors([fg, bg])
+    let [fg, bg] = s:AddOffset([fg, bg])
 
     if !empty(fg) && fg[0] !=# '#' && fg !=# 'NONE'
         let fg='#'.fg
@@ -2207,6 +2228,7 @@ function! s:SynID(group, ...) "{{{1
         return ''
     else
         return c1
+    endif
 endfu
 
 function! s:GenerateColors(dict) "{{{1
@@ -2617,7 +2639,7 @@ function! s:ApplyAlphaValue(rgb) "{{{1
     endif
 endfunction
 
-function! s:HSL2RGB(h, s, l) "{{{1
+function! s:HSL2RGB(h, s, l, ...) "{{{1
     let s = a:s + 0.0
     let l = a:l + 0.0
     if  l <= 0.5
@@ -2629,6 +2651,9 @@ function! s:HSL2RGB(h, s, l) "{{{1
     let r = float2nr(s:Hue2RGB(m1, m2, a:h + 120))
     let g = float2nr(s:Hue2RGB(m1, m2, a:h))
     let b = float2nr(s:Hue2RGB(m1, m2, a:h - 120))
+    if a:0
+        let rgb = s:ApplyAlphaValue([r, g, b, a:1])
+    endif
     return printf("%02X%02X%02X", r, g, b)
 endfunction
 
@@ -2752,13 +2777,12 @@ endfunction
 
 function! s:PrepareHSLArgs(list) "{{{1
     let hsl=a:list
-    if len(hsl) == 4
-        " drop alpha channel
-        call remove(hsl, 3)
-    endif
     let hsl[0] = (matchstr(hsl[0], '\d\+') + 360)%360
     let hsl[1] = (matchstr(hsl[1], '\d\+') + 0.0)/100
     let hsl[2] = (matchstr(hsl[2], '\d\+') + 0.0)/100
+    if len(hsl) == 4
+        return s:HSL2RGB(hsl[0], hsl[1], hsl[2], hsl[3])
+    endif
     return s:HSL2RGB(hsl[0], hsl[1], hsl[2])
 endfu
 function! s:SyntaxMatcher(enable) "{{{1
@@ -2771,6 +2795,11 @@ function! s:SyntaxMatcher(enable) "{{{1
     if len(list) > 1000
         " This will probably slow
         call s:Warn("Colorizer many colors detected, syntax highlighting will probably slow down Vim considerably!")
+    endif
+    if &ft =~? 'css'
+        " cssColor defines some color names like yellow or red and overrules
+        " our colors
+        sil! syn clear cssColor
     endif
     for hi in list
         if !get(did_clean, hi.group, 0)

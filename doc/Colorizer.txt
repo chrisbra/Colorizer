@@ -401,6 +401,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - clear css cssColor syntax rule when ":ColorHighlight syntax" in css files is
   used. fixes https://github.com/chrisbra/Colorizer/issues/50 reported by
   msva, thanks!
+- make TermConceal also hide the sgr0 attributes (to reset the terminal)
+  fixes https://github.com/chrisbra/Colorizer/issues/53 reported by
+  LucHermitte, thanks!
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
