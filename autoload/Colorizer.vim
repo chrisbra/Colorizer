@@ -19,7 +19,7 @@
 let s:cpo_save = &cpo
 set cpo&vim
 
-let s:debug = 0
+let s:debug = 1
 " the 6 value iterations in the xterm color cube "{{{2
 let s:valuerange6 = [ 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF ]
 
@@ -1460,8 +1460,10 @@ function! s:ColorInit(...) "{{{1
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
         \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
-        \ '\%d13', '\%(\%x1b\[K\)', '\%(\%x1b\]\d\+;\d\+;\)', '\%(\%x1b\\\)'
-        \ ], '', 'colorizer_term_conceal', []  ] }
+        \ '\%d13', '\%(\%x1b\[K\)', '\%(\%x1b\]\d\+;\d\+;\)', '\%(\%x1b\\\)',
+        \ '\%x1b(B\%x1b\[m', '\%x1b\[m\%x0f'], 
+        \ '',
+        \ 'colorizer_term_conceal', []  ] }
 
     if exists("s:colornamepattern") && s:color_names
         let s:color_patterns["colornames"] = [ s:colornamepattern,
@@ -1469,6 +1471,18 @@ function! s:ColorInit(...) "{{{1
     endif
 endfu
 
+function! s:AddOffset(list) "{{{1
+    return a:list
+    let result=[]
+    for val in a:list
+        let val = ('0X'.val) + 0
+        if val < get(g:, 'colorizer_min_offset', 0)
+            let val = get(g:, 'colorizer_add_offset', 0)
+        endif
+        call add(result, val)
+    endfor
+    return result
+endfu
 function! s:SwapColors(list) "{{{1
     if empty(a:list[0]) && empty(a:list[1])
         return a:list
@@ -1530,6 +1544,7 @@ function! s:DoHlGroup(group, Dict) "{{{1
     let fg = get(a:Dict, 'fg', '')
     let bg = get(a:Dict, 'bg', '')
     let [fg, bg] = s:SwapColors([fg, bg])
+    let [fg, bg] = s:AddOffset([fg, bg])
 
     if !empty(fg) && fg[0] !=# '#' && fg !=# 'NONE'
         let fg='#'.fg
