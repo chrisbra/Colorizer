@@ -2208,15 +2208,14 @@ function! Colorizer#ColorOff() "{{{1
     if !empty(hlID('ColorTermESC'))
         syn clear ColorTermESC
     endif
-    unlet! b:Colorizer_did_syntax
-    unlet! w:match_list s:conceal
+    unlet! b:Colorizer_did_syntax w:match_list s:conceal
 endfu
 
 function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " initialize plugin
     try
-        if v:version < 704
-            call s:Warn("Colorizer needs Vim 7.4")
+        if v:version < 800
+            call s:Warn("Colorizer needs Vim 8.0")
             return
         endif
         call s:ColorInit(a:force)
