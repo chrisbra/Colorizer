@@ -1272,8 +1272,7 @@ endfu
 
 function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
-    let s:term_true_color = ((has("nvim") && expand("$NVIM_TUI_ENABLE_TRUE_COLOR") == 1) ||
-                \ (exists('+tgc') && &tgc))
+    let s:term_true_color = (exists('+tgc') && &tgc)
     let s:stop = 0
 
     let s:reltime = has('reltime')
