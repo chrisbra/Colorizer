@@ -1974,7 +1974,7 @@ function! s:ApplyAlphaValue(rgb) "{{{1
     " takes a list of [ rr, gg, bb, aa] values
     " alpha can be 0-1
     let bg = <sid>SynID('Normal', 'bg')
-    if empty(bg) || !has('float')
+    if empty(bg)
         return a:rgb[0:3]
     else
         if (bg =~? '\d\{1,3}') && bg < 256
@@ -2277,8 +2277,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 let cmd = printf(':sil keeppatterns %d,%d%ss/%s/\=call(Pat[1], [submatch(0)])/egin',
                     \ a:line1, a:line2, s:color_unfolded, Pat[0])
                 try
-                    if Pat[2] ==# 'colorizer_vimhighlight' && has('windows')
-                        \ && has('syntax') && !empty(bufname(''))
+                    if Pat[2] ==# 'colorizer_vimhighlight' && !empty(bufname(''))
                         " try to load the corresponding syntax file so the syntax
                         " groups will be defined
                         let s:extension = fnamemodify(expand('%'), ':t:r')
