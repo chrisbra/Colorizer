@@ -1,6 +1,4 @@
 
-- Support for groff like formatting: e.g. S^HSY^HYN^HNO^HOP^HPS^HSY^HYS^HS should print in bold SYNOPSIS, and make _^Htext_^H underlined
- (see https://github.com/powerman/vim-plugin-AnsiEsc/issues/8)
 - Allow the user to define easy coloring of regions.
  (e.g. [color1]This has a color1[/color1]
  and have a definition of [color1] at the end of the buffer
