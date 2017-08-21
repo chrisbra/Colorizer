@@ -2430,12 +2430,10 @@ function! Colorizer#AutoCmds(enable) "{{{1
     if a:enable && !get(g:, 'colorizer_debug', 0)
         aug Colorizer
             au!
-            au InsertLeave * silent call
-                        \ Colorizer#ColorLine('!', line('w0'), line('w$'))
-            au GUIEnter * silent call Colorizer#DoColor('!', 1, line('$'))
-            au WinEnter,BufWinEnter * silent call Colorizer#ColorWinEnter()
-            au ColorScheme * silent call Colorizer#DoColor('!', 1, line('$'))
-            au TextChangedI * call Colorizer#ColorLine('', line('.'),line('.'))
+            au InsertLeave *  sil call Colorizer#ColorLine('!', line('w0'), line('w$'))
+            au TextChangedI * sil call Colorizer#ColorLine('', line('.'),line('.'))
+            au GUIEnter,ColorScheme * sil call Colorizer#DoColor('!', 1, line('$'))
+            au WinEnter,BufWinEnter * sil call Colorizer#ColorWinEnter()
         aug END
     else
         aug Colorizer
