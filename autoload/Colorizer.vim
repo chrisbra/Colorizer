@@ -1384,9 +1384,7 @@ function! s:ColorInit(...) "{{{1
     elseif s:force_hl
         call Colorizer#ColorOff()
     endif
-    if has("conceal") && !exists("s:conceal")
-        let s:conceal = [&l:cole, &l:cocu]
-    endif
+    let s:conceal = [&l:cole, &l:cocu]
 
     let s:hex_pattern = get(g:, 'colorizer_hex_pattern',
                 \ ['#', '\%(\x\{3}\|\x\{6}\|\x\{8\}\)', '\%(\>\|[-_]\)\@='])
@@ -1901,13 +1899,12 @@ function! s:TermConceal(pattern) "{{{1
         return
     endif
     let s:position = getpos('.')
-    if has("conceal")
-        for pat in a:pattern
-            exe "syn match ColorTermESC /". pat. "/ conceal containedin=ALL"
-        endfor
-        setl cocu=nv cole=2
-        let b:Colorizer_did_syntax=1
-    endif
+    " concealing
+    for pat in a:pattern
+        exe "syn match ColorTermESC /". pat. "/ conceal containedin=ALL"
+    endfor
+    setl cocu=nv cole=2
+    let b:Colorizer_did_syntax=1
 endfu
 function! s:GetColorPattern(list) "{{{1
     "let list = map(copy(a:list), ' ''\%(-\@<!\<'' . v:val . ''\>-\@!\)'' ')
@@ -2207,13 +2204,11 @@ function! Colorizer#ColorOff() "{{{1
         sil! call matchdelete(_match.id)
     endfor
     call Colorizer#LocalFTAutoCmds(0)
-    if has("conceal") && exists("s:conceal")
-        let [&l:cole, &l:cocu] = s:conceal
-        if !empty(hlID('ColorTermESC'))
-            syn clear ColorTermESC
-        endif
-        unlet! b:Colorizer_did_syntax
+    let [&l:cole, &l:cocu] = s:conceal
+    if !empty(hlID('ColorTermESC'))
+        syn clear ColorTermESC
     endif
+    unlet! b:Colorizer_did_syntax
     unlet! w:match_list s:conceal
 endfu
 
