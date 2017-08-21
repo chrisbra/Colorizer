@@ -1250,11 +1250,7 @@ function! s:Term2RGB(index) "{{{1
 endfu
 
 function! s:Reltime(...) "{{{1
-    if s:reltime
-        return exists("a:1") ? reltime(a:1) : reltime()
-    else
-        return []
-    endif
+    return exists("a:1") ? reltime(a:1) : reltime()
 endfu
 
 function! s:PrintColorStatistics() "{{{1
@@ -1274,8 +1270,6 @@ function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
     let s:term_true_color = (exists('+tgc') && &tgc)
     let s:stop = 0
-
-    let s:reltime = has('reltime')
 
     " default matchadd priority
     let s:default_match_priority = -2
