@@ -19,7 +19,6 @@
 let s:cpo_save = &cpo
 set cpo&vim
 
-let s:debug = 0
 " the 6 value iterations in the xterm color cube "{{{2
 let s:valuerange6 = [ 0x00, 0x5F, 0x87, 0xAF, 0xD7, 0xFF ]
 
@@ -1045,6 +1044,34 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     let clr_Dict.pos = [[ line('.'), col('.'), strlen(a:pre. a:text. a:post)]]
     call s:SetMatcher(pattern, clr_Dict)
 endfunction
+function! s:PreviewColorNroff(match) "{{{2
+    let s:position = getpos('.')
+    let clr_Dict = {}
+    let color = []
+    if a:match[0] == '_'
+      let special = 'underline'
+    else
+      let special = 'bold'
+    endif
+    let synid=synIDtrans(synID(line('.'), col('.'), 1))
+    if synid == 0
+      let synid = hlID('Normal')
+    endif
+    let color=[synIDattr(synid, 'fg'), synIDattr(synid, 'bg')]
+    if color == [0, 0] || color == ['', '']
+      let color = [synIDattr(hlID('Normal'), 'fg'), synIDattr(hlID('Normal'), 'bg')]
+    endif
+
+    let clr_Dict.fg = color[0]
+    let clr_Dict.bg = color[1]
+    let clr_Dict.special=special
+    " limit the pattern to the belonging line (should make syntax matching
+    " faster!)
+    let pattern = '\%(\%'.line('.').'l\)'.a:match
+    " needs matchaddpos
+    let clr_Dict.pos = [[ line('.'), col('.'), 3]]
+    call s:SetMatcher(pattern, clr_Dict)
+endfunction
 function! s:PreviewTaskWarriorColors(submatch) "{{{2
     " a:submatch is something like 'black on rgb141'
 
@@ -1254,7 +1281,7 @@ function! s:Reltime(...) "{{{1
 endfu
 
 function! s:PrintColorStatistics() "{{{1
-    if s:debug
+    if get(g:, 'colorizer_debug', 0)
         echohl Title
         echom printf("Colorstatistics at: %s", strftime("%H:%M"))
         echom printf("Duration: %s", reltimestr(s:relstop))
@@ -1433,7 +1460,7 @@ function! s:ColorInit(...) "{{{1
         \ 'vimcolors':  ['\%(gui[fb]g\|cterm[fb]g\)\s*=\s*\<\%(\d\+\|#\x\{6}\|\w\+\)\>',
             \ function("s:PreviewVimColors"), 'colorizer_vimcolors', '&ft ==# "vim"', [] ],
         \ 'vimhighlight': ['^\s*\%(\%[Html]HiLink\s\+\w\+\s\+\w\+\)\|'.
-        \ '\(^\s*hi\%[ghlight]!\?\s\+\(clear\)\@!\S\+.*\)',
+            \ '\(^\s*hi\%[ghlight]!\?\s\+\(clear\)\@!\S\+.*\)',
             \ function("s:PreviewVimHighlight"), 'colorizer_vimhighlight', '&ft ==# "vim"', [] ],
         \ 'taskwarrior':  ['^color[^=]*=\zs.\+$',
             \ function("s:PreviewTaskWarriorColors"), 'colorizer_taskwarrior', 'expand("%:e") ==# "theme"', [] ],
@@ -1447,11 +1474,13 @@ function! s:ColorInit(...) "{{{1
     let s:color_patterns_special = {
         \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
+        \ 'term_nroff': ['\%(\(.\)\%u8\1\)\|\%(_\%u8.\)', function("s:PreviewColorNroff"), 'colorizer_nroff', [] ],
         \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
-        \ '\%d13', '\%(\%x1b\[K\)', '\%(\%x1b\]\d\+;\d\+;\)', '\%(\%x1b\\\)',
-        \ '\%x1b(B\%x1b\[m', '\%x1b\[m\%x0f'], 
-        \ '',
-        \ 'colorizer_term_conceal', []  ] }
+          \ '\%d13', '\%(\%x1b\[K\)', '\%(\%x1b\]\d\+;\d\+;\)', '\%(\%x1b\\\)',
+          \ '\%x1b(B\%x1b\[m', '\%x1b\[m\%x0f', '_\%u8.\@=', '\(.\)\%u8\%(\1\)\@='], 
+          \ '',
+          \ 'colorizer_term_conceal', [] ]
+        \ }
 
     if exists("s:colornamepattern") && s:color_names
         let s:color_patterns["colornames"] = [ s:colornamepattern,
@@ -2204,9 +2233,11 @@ function! Colorizer#ColorOff() "{{{1
         sil! call matchdelete(_match.id)
     endfor
     call Colorizer#LocalFTAutoCmds(0)
-    let [&l:cole, &l:cocu] = s:conceal
-    if !empty(hlID('ColorTermESC'))
-        syn clear ColorTermESC
+    if exists("s:conceal")
+      let [&l:cole, &l:cocu] = s:conceal
+      if !empty(hlID('ColorTermESC'))
+          syn clear ColorTermESC
+      endif
     endif
     unlet! b:Colorizer_did_syntax w:match_list s:conceal
 endfu
@@ -2309,7 +2340,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         call s:Warn('Color configuration seems wrong, skipping colorization! Check t_Co setting!')
     endif
 
-    for Pat in [ s:color_patterns_special.term ]
+    for Pat in [ s:color_patterns_special.term, s:color_patterns_special.term_nroff ]
         let start = s:Reltime()
         if (s:CheckTimeout(Pat[0], a:force)) && !s:IsInComment()
 
@@ -2318,8 +2349,13 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 continue
             endif
 
-            let cmd = printf(':sil keeppatterns %d,%d%ss/%s/\=call(Pat[1],[submatch(1),submatch(2),submatch(3)])/egin',
-                \ a:line1, a:line2,  s:color_unfolded, Pat[0])
+            if Pat[2] is# 'colorizer_nroff'
+              let arg = '[submatch(0)]'
+            else
+              let arg = '[submatch(1), submatch(2), submatch(3)]'
+            endif
+            let cmd = printf(':sil keeppatterns %d,%d%ss/%s/\=call(Pat[1],%s)/egin',
+                \ a:line1, a:line2,  s:color_unfolded, Pat[0], arg)
             try
                 exe cmd
                 let Pat[3] = s:Reltime(start)
@@ -2534,7 +2570,7 @@ function! Colorizer#SwitchFGBG() "{{{1
 endfu
 
 " DEBUG TEST "{{{1
-if !s:debug
+if !get(g:, 'colorizer_debug', 0)
     let &cpo = s:cpo_save
     unlet s:cpo_save
     finish
