@@ -1041,9 +1041,8 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     " limit the pattern to the belonging line (should make syntax matching
     " faster!)
     let pattern = '\%(\%'.line('.').'l\)\%('. pre. '\)\@<='.txt. '\('.post.'\)\@='
-    if exists('*matchaddpos')
-        let clr_Dict.pos = [[ line('.'), col('.'), strlen(a:pre. a:text. a:post)]]
-    endif
+    " needs matchaddpos
+    let clr_Dict.pos = [[ line('.'), col('.'), strlen(a:pre. a:text. a:post)]]
     call s:SetMatcher(pattern, clr_Dict)
 endfunction
 function! s:PreviewTaskWarriorColors(submatch) "{{{2
