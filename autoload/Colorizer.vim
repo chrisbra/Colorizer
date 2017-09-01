@@ -2245,7 +2245,7 @@ endfu
 function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " initialize plugin
     try
-        if v:version < 800
+        if v:version < 800 && !has('nvim')
             call s:Warn("Colorizer needs Vim 8.0")
             return
         endif
