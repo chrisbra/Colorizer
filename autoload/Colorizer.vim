@@ -1682,7 +1682,7 @@ function! s:SetMatch(group, pattern, param_dict) "{{{1
     if has_key(a:param_dict, 'pos')
         call matchaddpos(a:group, a:param_dict.pos, s:default_match_priority)
         " do not add the pattern to the matchlist
-        "call add(w:match_list, a:pattern)
+        call add(w:match_list, a:pattern)
         return
     endif
     if s:DidColor(a:group, a:pattern)
