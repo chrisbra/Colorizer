@@ -2490,7 +2490,7 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
         " has been changed.
         let b:undo_ftplugin .= '| exe "sil! au! FTColorizer"'
         let b:undo_ftplugin .= '| exe "sil! aug! FTColorizer"'
-        let b:undo_ftplugin .= '| exe ":ColorClear"'
+        let b:undo_ftplugin .= '| exe ":call Colorizer#ColorOff()"'
     else
         aug FTColorizer
             au!
