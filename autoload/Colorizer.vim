@@ -1472,7 +1472,7 @@ function! s:ColorInit(...) "{{{1
 
     " term_conceal: patterns to hide, currently: [K$ and the color patterns [0m[01;32m
     let s:color_patterns_special = {
-        \ 'term': ['\%(\%x1b\[0m\)\?\(\%(\%x1b\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%x1b\%(\[0m\|\[K\)\)\=',
+        \ 'term': ['\%(\%(\%x1b\|\\033\)\[0m\)\?\(\%(\%(\%x1b\|\\033\)\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%(\%x1b\|\\033\)\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
         \ 'term_nroff': ['\%(\(.\)\%u8\1\)\|\%(_\%u8.\)', function("s:PreviewColorNroff"), 'colorizer_nroff', [] ],
         \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
@@ -1847,7 +1847,15 @@ function! s:Ansi2Color(chars) "{{{1
                         \       34: printf("%.2X%.2X%.2X", 0,     0, 238),
                         \       35: printf("%.2X%.2X%.2X", 205,   0, 205),
                         \       36: printf("%.2X%.2X%.2X", 0,   205, 205),
-                        \       37: printf("%.2X%.2X%.2X", 229, 229, 229)
+                        \       37: printf("%.2X%.2X%.2X", 229, 229, 229),
+                        \       90: printf("%.2X%.2X%.2X", 127, 127, 127),
+                        \       91: printf("%.2X%.2X%.2X", 255,   0,   0),
+                        \       92: printf("%.2X%.2X%.2X",   0, 255,   0),
+                        \       93: printf("%.2X%.2X%.2X", 255, 255,   0),
+                        \       94: printf("%.2X%.2X%.2X",  92,  92, 255),
+                        \       95: printf("%.2X%.2X%.2X", 255,   0, 255),
+                        \       96: printf("%.2X%.2X%.2X",   0, 255, 255),
+                        \       97: printf("%.2X%.2X%.2X", 255, 255, 255)
                         \ }
         let s:term2ansi.bold = { 30: printf("%.2X%.2X%.2X", 127, 127, 127),
                         \        31: printf("%.2X%.2X%.2X", 255,   0,   0),
@@ -1856,7 +1864,15 @@ function! s:Ansi2Color(chars) "{{{1
                         \        34: printf("%.2X%.2X%.2X",  92,  92, 255),
                         \        35: printf("%.2X%.2X%.2X", 255,   0, 255),
                         \        36: printf("%.2X%.2X%.2X", 0,   255, 255),
-                        \        37: printf("%.2X%.2X%.2X", 255, 255, 255)
+                        \        37: printf("%.2X%.2X%.2X", 255, 255, 255),
+                        \        90: printf("%.2X%.2X%.2X", 127, 127, 127),
+                        \        91: printf("%.2X%.2X%.2X", 255,   0,   0),
+                        \        92: printf("%.2X%.2X%.2X",   0, 255,   0),
+                        \        93: printf("%.2X%.2X%.2X", 255, 255,   0),
+                        \        94: printf("%.2X%.2X%.2X",  92,  92, 255),
+                        \        95: printf("%.2X%.2X%.2X", 255,   0, 255),
+                        \        96: printf("%.2X%.2X%.2X",   0, 255, 255),
+                        \        97: printf("%.2X%.2X%.2X", 255, 255, 255)
                         \ }
     endif
 
@@ -1866,7 +1882,7 @@ function! s:Ansi2Color(chars) "{{{1
 
     if a:chars =~ '48;5;\d\+'
         let check[0] = 0
-    elseif a:chars=~ '.*3[0-7]\(;1\)\?[m;]'
+    elseif a:chars=~ '.*[39][0-7]\(;1\)\?[m;]'  " Check 30-37 and 90-97 colors
         let check[0] = 1
     elseif a:chars =~ '.*38\([:;]\)2\1'
         let check[0] = 2 " Uses True Color Support
@@ -1876,6 +1892,8 @@ function! s:Ansi2Color(chars) "{{{1
     elseif a:chars =~ '.*48\([:;]\)2\1'
         let check[1] = 2
     elseif a:chars=~ '.*4[0-7]\(;1\)\?[m;]'
+        let check[1] = 1
+    elseif a:chars=~ '.*10[0-7]\(;1\)\?[m;]'  " Same as 40-47
         let check[1] = 1
     endif
 
