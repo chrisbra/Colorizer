@@ -409,6 +409,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - Correctly store the matches in w:match_list variable even when
   `matchaddpos()` was used (fixes https://github.com/chrisbra/Colorizer/issues/59
   reported by Carpetsmoker, thanks!)
+- Correctly use g:colorizer_hex_pattern (fixes
+  https://github.com/chrisbra/Colorizer/issues/63 reported by mklein994,
+  thanks!)
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
