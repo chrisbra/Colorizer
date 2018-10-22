@@ -982,7 +982,7 @@ function! s:PreviewColorHex(match) "{{{2
         " skip coloring comments
         return
     endif
-    let color = (a:match[0] == '#' ? a:match[1:] : a:match)
+    let color = matchstr(a:match, s:hex_pattern[1])
     let pattern = color
     if len(color) == 3
         let color = substitute(color, '.', '&&', 'g')
