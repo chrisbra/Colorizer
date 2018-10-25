@@ -982,7 +982,9 @@ function! s:PreviewColorHex(match) "{{{2
         " skip coloring comments
         return
     endif
-    let color = matchstr(a:match, s:hex_pattern[1])
+    " Make sure the pattern matches the complete string, so anchor it
+    " explicitly at the end (see #64)
+    let color = matchstr(a:match, s:hex_pattern[1]."$")
     let pattern = color
     if len(color) == 3
         let color = substitute(color, '.', '&&', 'g')

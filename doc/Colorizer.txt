@@ -412,6 +412,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - Correctly use g:colorizer_hex_pattern (fixes
   https://github.com/chrisbra/Colorizer/issues/63 reported by mklein994,
   thanks!)
+- Correctly highlight 6 hex digits (fixes https://github.com/chrisbra/Colorizer/issues/64
+  reported by kirjavascript, thanks!)
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
