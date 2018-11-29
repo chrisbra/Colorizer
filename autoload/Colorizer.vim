@@ -2494,7 +2494,8 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
                         \ Colorizer#ColorLine('', line('w0'), line('w$'))
             au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine('',line('.'), line('.'))
             au WinEnter,BufWinEnter <buffer> silent call Colorizer#ColorWinEnter()
-            "au BufLeave <buffer> call Colorizer#ColorOff()
+            " disables colorizing on switching buffers inside a single window
+            au BufLeave <buffer> call Colorizer#ColorOff()
             au GUIEnter,ColorScheme <buffer> silent
                         \ call Colorizer#DoColor('!', 1, line('$'))
             if get(g:, 'colorizer_cursormoved', 0)
