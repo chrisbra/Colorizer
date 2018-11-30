@@ -33,6 +33,7 @@ Contents                                                        *Colorizer*
             2.10 Colorizing vim syntax files.........|Colorizer-vim-files|
             2.11 Use custom colornames...............|Colorizer-custom-colornames|
             2.12 Colorizing :hi statements...........|Colorizer-vim-hi|
+            2.13 Disable BufLeave autocomannd........|Colorizer-BufLeave|
     3.  Colorizer Mappings...........................|Colorizer-maps|
     4.  Colorizer Tips...............................|Colorizer-tips|
     5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -264,6 +265,16 @@ colorschemes and syntax files as well as a dump of the |:hi| command
 To colorizer :hi statements, the 'filetype' must be set to vim, while for :hi
 dumps, the 'filetype' must be empty.
 
+2.13 Disable BufLeave autocommand                          *Colorizer-BufLeave*
+---------------------------------
+
+By default, the colorings will be deleted if you switch to a different buffer
+in the same window by using a *BufLeave* autocommand. However that might
+unintentionally uncolor the current window, so if you experience a problem
+with that, try setting the variable g:colorizer_disable_bufleave like this: >
+
+    let g:colorizer_disable_bufleave = 1
+
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
 ==============================================================================
@@ -414,6 +425,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   thanks!)
 - Correctly highlight 6 hex digits (fixes https://github.com/chrisbra/Colorizer/issues/64
   reported by kirjavascript, thanks!)
+- Colorizer did not clear colors on BufLeave, however make this configurable
+  per user request. https://github.com/chrisbra/Colorizer/issues/65
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
