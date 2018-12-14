@@ -1479,7 +1479,7 @@ function! s:ColorInit(...) "{{{1
         \ 'term_nroff': ['\%(\(.\)\%u8\1\)\|\%(_\%u8.\)', function("s:PreviewColorNroff"), 'colorizer_nroff', [] ],
         \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
           \ '\%d13', '\%(\%x1b\[K\)', '\%(\%x1b\]\d\+;\d\+;\)', '\%(\%x1b\\\)',
-          \ '\%x1b(B\%x1b\[m', '\%x1b\[m\%x0f', '_\%u8.\@=', '\(.\)\%u8\%(\1\)\@='], 
+          \ '\%x1b(B\%x1b\[m', '\%x1b\[m\%(\%x0f\)\?', '_\%u8.\@=', '\(.\)\%u8\%(\1\)\@='], 
           \ '',
           \ 'colorizer_term_conceal', [] ]
         \ }
