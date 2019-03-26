@@ -2473,10 +2473,24 @@ function! Colorizer#AutoCmds(enable) "{{{1
     if a:enable && !get(g:, 'colorizer_debug', 0)
         aug Colorizer
             au!
-            au InsertLeave *  sil call Colorizer#ColorLine('!', line('w0'), line('w$'))
-            au TextChangedI * sil call Colorizer#ColorLine('', line('.'),line('.'))
-            au GUIEnter,ColorScheme * sil call Colorizer#DoColor('!', 1, line('$'))
-            au WinEnter,BufWinEnter * sil call Colorizer#ColorWinEnter()
+            if get(g:, 'colorizer_insertleave', 1)
+              au InsertLeave *  sil call Colorizer#ColorLine('!', line('w0'), line('w$'))
+            endif
+            if get(g:, 'colorizer_textchangedi', 1)
+              au TextChangedI * sil call Colorizer#ColorLine('', line('.'),line('.'))
+            endif
+            if get(g:, 'colorizer_guienter', 1)
+              au GUIEnter * sil call Colorizer#DoColor('!', 1, line('$'))
+            endif
+            if get(g:, 'colorizer_colorscheme', 1)
+              au ColorScheme * sil call Colorizer#DoColor('!', 1, line('$'))
+            endif
+            if get(g:, 'colorizer_bufwinenter', 1)
+              au BufWinEnter * sil call Colorizer#ColorWinEnter()
+            endif
+            if get(g:, 'colorizer_winenter', 1)
+              au WinEnter * sil call Colorizer#ColorWinEnter()
+            endif
         aug END
     else
         aug Colorizer
@@ -2490,17 +2504,32 @@ function! Colorizer#LocalFTAutoCmds(enable) "{{{1
     if a:enable
         aug FTColorizer
             au!
-            au InsertLeave <buffer> silent call
+            if !exists("#Colorizer#InsertLeave") && get(g:, 'colorizer_insertleave', 1)
+              " InsertLeave autocommand already exists
+              au InsertLeave <buffer> silent call
                         \ Colorizer#ColorLine('', line('w0'), line('w$'))
-            au CursorMoved,CursorMovedI <buffer> call Colorizer#ColorLine('',line('.'), line('.'))
-            au WinEnter,BufWinEnter <buffer> silent call Colorizer#ColorWinEnter()
+            endif
+            if get(g:, 'colorizer_cursormovedi', 1)
+              au CursorMovedI <buffer> call Colorizer#ColorLine('',line('.'), line('.'))
+            endif
+            if get(g:, 'colorizer_cursormoved', 1)
+              au CursorMoved <buffer> call Colorizer#ColorLine('',line('.'), line('.'))
+            endif
+            if !exists("#Colorizer#BufWinEnter") && get(g:, 'colorizer_bufwinenter', 1)
+              au BufWinEnter <buffer> silent call Colorizer#ColorWinEnter()
+            endif
+            if !exists("#Colorizer#WinEnter") && get(g:, 'colorizer_winenter', 1)
+              au WinEnter <buffer> silent call Colorizer#ColorWinEnter()
+            endif
             " disables colorizing on switching buffers inside a single window
-            au BufLeave <buffer> if !get(g:, 'colorizer_disable_bufleave', 0) | call Colorizer#ColorOff() |endif
-            au GUIEnter,ColorScheme <buffer> silent
-                        \ call Colorizer#DoColor('!', 1, line('$'))
-            if get(g:, 'colorizer_cursormoved', 0)
-                au CursorMoved,CursorMovedI * call Colorizer#ColorLine('', line('.'),line('.'))
-                au CusorHold, CursorHoldI * silent call Colorizer#ColorLine('!', line('w0'), line('w$'))
+            if get(g:, 'colorizer_bufleave', 1)
+              au BufLeave <buffer> if !get(g:, 'colorizer_disable_bufleave', 0) | call Colorizer#ColorOff() |endif
+            endif
+            if !exists("#Colorizer#GUIEnter") && get(g:, 'colorizer_guienter', 1)
+              au GUIEnter <buffer> silent call Colorizer#DoColor('!', 1, line('$'))
+            endif
+            if !exists("#Colorizer#ColorScheme") && get(g:, 'colorizer_colorscheme', 1)
+              au ColorScheme <buffer> silent call Colorizer#DoColor('!', 1, line('$'))
             endif
         aug END
         if !exists("b:undo_ftplugin")

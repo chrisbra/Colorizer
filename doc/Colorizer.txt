@@ -34,6 +34,7 @@ Contents                                                        *Colorizer*
             2.11 Use custom colornames...............|Colorizer-custom-colornames|
             2.12 Colorizing :hi statements...........|Colorizer-vim-hi|
             2.13 Disable BufLeave autocomannd........|Colorizer-BufLeave|
+            2.14 Control which autocommands trigger  |Colorizer-autocommands| 
     3.  Colorizer Mappings...........................|Colorizer-maps|
     4.  Colorizer Tips...............................|Colorizer-tips|
     5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -275,6 +276,17 @@ with that, try setting the variable g:colorizer_disable_bufleave like this: >
 
     let g:colorizer_disable_bufleave = 1
 
+2.14 Control which autocommands trigger                 *Colorizer-autocommands*
+--------------------------------------
+By default, the auto commands can be cause a performance penalty and make Vim
+appear unresponsive. To disable certain autocommands, you can set the
+variable: >
+
+    let g:colorizer_<autocomand> = 0
+
+Where <autocommand> is the event to be disabled. So to disable the TextChanged
+autocommand, set `:let g:colorizer_textchangedi = 0`
+
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
 ==============================================================================
@@ -427,6 +439,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   reported by kirjavascript, thanks!)
 - Colorizer did not clear colors on BufLeave, however make this configurable
   per user request. https://github.com/chrisbra/Colorizer/issues/65
+- Allow customization of allowed autocommands
+  https://github.com/chrisbra/Colorizer/issues/68
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible
