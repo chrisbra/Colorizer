@@ -2474,7 +2474,7 @@ function! Colorizer#AutoCmds(enable) "{{{1
         aug Colorizer
             au!
             if get(g:, 'colorizer_insertleave', 1)
-              au InsertLeave *  sil call Colorizer#ColorLine('!', line('w0'), line('w$'))
+              au InsertLeave *  sil call Colorizer#ColorLine('', line('w0'), line('w$'))
             endif
             if get(g:, 'colorizer_textchangedi', 1)
               au TextChangedI * sil call Colorizer#ColorLine('', line('.'),line('.'))
