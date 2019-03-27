@@ -1329,6 +1329,12 @@ function! s:ColorInit(...) "{{{1
         call Colorizer#AutoCmds(g:colorizer_auto_color)
     endif
 
+    " disable terminal coloring for all filetypes except text files
+    " it's too expensive and probably does not make sense to enable it for
+    " other filetypes
+    let s:colorizer_term_disable = !empty(&filetype) || &filetype != 'text'
+    let s:colorizer_nroff_disable = !empty(&filetype) || &filetype != 'text'
+
     " Debugging
     let s:debug = get(g:, 'colorizer_debug', 0)
 
@@ -2361,13 +2367,13 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     endif
 
     for Pat in [ s:color_patterns_special.term, s:color_patterns_special.term_nroff ]
+        if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
+            " Coloring disabled, skip
+            continue
+        endif
         let start = s:Reltime()
         if (s:CheckTimeout(Pat[0], a:force)) && !s:IsInComment()
 
-            if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
-                " Coloring disabled
-                continue
-            endif
 
             if Pat[2] is# 'colorizer_nroff'
               let arg = '[submatch(0)]'
