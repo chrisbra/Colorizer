@@ -35,6 +35,7 @@ Contents                                                        *Colorizer*
             2.12 Colorizing :hi statements...........|Colorizer-vim-hi|
             2.13 Disable BufLeave autocomannd........|Colorizer-BufLeave|
             2.14 Control which autocommands trigger  |Colorizer-autocommands| 
+            2.15 Rendering colors as virtual text....*Colorizer-virtual-text*
     3.  Colorizer Mappings...........................|Colorizer-maps|
     4.  Colorizer Tips...............................|Colorizer-tips|
     5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -286,6 +287,17 @@ variable: >
 
 Where <autocommand> is the event to be disabled. So to disable the TextChanged
 autocommand, set `:let g:colorizer_textchangedi = 0`
+
+2.15 Rendering colors as virtual text                  *Colorizer-virtual-text*
+-------------------------------------
+
+(Neovim only)
+
+Rather than matching the colors add adding the corresponding syntax rules to
+them, it is possible to render the colors as swatches at the end of each line,
+leveraging Neovim's virtual text. To do this, you can set:
+
+    `let g:colorizer_use_virtual_text = 1`
 
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
