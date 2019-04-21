@@ -1697,7 +1697,16 @@ function! s:SetMatch(group, pattern, param_dict) "{{{1
         return
     endif
     " let 'hls' overrule our syntax highlighting
-    call matchadd(a:group, a:pattern, s:default_match_priority)
+
+    if has('nvim') &&
+      \ exists('g:colorizer_use_virtual_text')
+        let line_no = line('.')
+        let line_no -= 1
+        call nvim_buf_set_virtual_text(0, 0, line_no, [['  ', a:group]], {})
+    else
+        call matchadd(a:group, a:pattern, s:default_match_priority)
+    endif
+
     call add(w:match_list, a:pattern)
 endfunction
 
