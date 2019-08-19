@@ -35,7 +35,7 @@ Contents                                                        *Colorizer*
             2.12 Colorizing :hi statements...........|Colorizer-vim-hi|
             2.13 Disable BufLeave autocomannd........|Colorizer-BufLeave|
             2.14 Control which autocommands trigger  |Colorizer-autocommands| 
-            2.15 Rendering colors as virtual text....*Colorizer-virtual-text*
+            2.15 Rendering colors as virtual text....|Colorizer-virtual-text|
     3.  Colorizer Mappings...........................|Colorizer-maps|
     4.  Colorizer Tips...............................|Colorizer-tips|
     5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -453,6 +453,9 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
   per user request. https://github.com/chrisbra/Colorizer/issues/65
 - Allow customization of allowed autocommands
   https://github.com/chrisbra/Colorizer/issues/68
+- Make use of Neovims virtual text
+  https://github.com/chrisbra/Colorizer/issues/70 and 
+  https://github.com/chrisbra/Colorizer/issues/71 and 
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible

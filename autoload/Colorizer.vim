@@ -948,6 +948,9 @@ function! s:ColorRGBValues(val) "{{{2
     endif
     let clr = printf("%02X%02X%02X", rgb[0],rgb[1],rgb[2])
     call s:SetMatcher(a:val, {'bg': clr})
+    if s:use_virtual_text
+      return a:val
+    endif
 endfunction
 
 function! s:ColorHSLValues(val) "{{{2
@@ -965,7 +968,9 @@ function! s:ColorHSLValues(val) "{{{2
     let str = s:PrepareHSLArgs(hsl)
 
     call s:SetMatcher(a:val, {'bg': str})
-    return
+    if s:use_virtual_text
+      return a:val
+    endif
 endfu
 
 function! s:PreviewColorName(color) "{{{2
@@ -974,6 +979,9 @@ function! s:PreviewColorName(color) "{{{2
     let clr = s:colors[name]
     " Skip color-name, e.g. white-space property
     call s:SetMatcher('-\@<!\<'.name.'\>\c-\@!', {'bg': clr[1:]})
+    if s:use_virtual_text
+      return a:color
+    endif
 endfu
 
 function! s:PreviewColorHex(match) "{{{2
@@ -1009,6 +1017,9 @@ function! s:PreviewColorHex(match) "{{{2
         let color = printf("%02X%02X%02X", l[0], l[1], l[2])
     endif
     call s:SetMatcher(s:hex_pattern[0]. pattern. s:hex_pattern[2], {'bg': color})
+    if s:use_virtual_text
+      return a:match
+    endif
 endfunction
 
 function! s:PreviewColorTerm(pre, text, post) "{{{2
@@ -1045,6 +1056,9 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     " needs matchaddpos
     let clr_Dict.pos = [[ line('.'), col('.'), strlen(a:pre. a:text. a:post)]]
     call s:SetMatcher(pattern, clr_Dict)
+    if s:use_virtual_text
+      return a:pre . a:text. a:post
+    endif
 endfunction
 function! s:PreviewColorNroff(match) "{{{2
     let s:position = getpos('.')
@@ -1073,6 +1087,9 @@ function! s:PreviewColorNroff(match) "{{{2
     " needs matchaddpos
     let clr_Dict.pos = [[ line('.'), col('.'), 3]]
     call s:SetMatcher(pattern, clr_Dict)
+    if s:use_virtual_text
+      return a:match
+    endif
 endfunction
 function! s:PreviewTaskWarriorColors(submatch) "{{{2
     " a:submatch is something like 'black on rgb141'
@@ -1137,6 +1154,9 @@ function! s:PreviewTaskWarriorColors(submatch) "{{{2
                 let cname = s:Term2RGB(color_Dict.ctermfg)
             endif
             call s:SetMatcher('=\s*\zs\<'.a:submatch.'\>$', color_Dict)
+            if s:use_virtual_text
+              return a:submatch
+            endif
         endif
     finally
         let s:default_match_priority -= 1
@@ -1184,6 +1204,9 @@ function! s:PreviewVimColors(submatch) "{{{2
         endif
 
         call s:SetMatcher('\<'.a:submatch.'\>', color_Dict)
+        if s:use_virtual_text
+          return a:submatch
+        endif
     finally
         let s:default_match_priority -= 1
     endtry
@@ -1214,6 +1237,9 @@ function! s:PreviewVimHighlightDump(match) "{{{2
             call remove(match, 0, 1)
             let dict = s:DictFromList(dict, match)
             call s:SetMatcher(s:GetPatternLiteral(a:match), dict)
+            if s:use_virtual_text
+              return a:match
+            endif
         endif
     finally
         let s:default_match_priority -= 1
@@ -1251,6 +1277,9 @@ function! s:PreviewVimHighlight(match) "{{{2
             let dict.name = 'Color_'.get(match, 0)
             let dict = s:DictFromList(dict, match)
             call s:SetMatcher(s:GetPatternLiteral(a:match), dict)
+            if s:use_virtual_text
+              return a:match
+            endif
         endif
     endtry
 endfunction
@@ -1299,6 +1328,7 @@ function! s:ColorInit(...) "{{{1
     let s:force_hl = !empty(a:1)
     let s:term_true_color = (exists('+tgc') && &tgc)
     let s:stop = 0
+    let s:use_virtual_text = has("nvim") && get(g:, 'colorizer_use_virtual_text', 0)
 
     " default matchadd priority
     let s:default_match_priority = -2
@@ -1698,19 +1728,13 @@ function! s:SetMatch(group, pattern, param_dict) "{{{1
     endif
     " let 'hls' overrule our syntax highlighting
 
-    if has('nvim') &&
-      \ exists('g:colorizer_use_virtual_text')
-        let line_no = line('.')
-        let line_no -= 1
-        call nvim_buf_set_virtual_text(0, 0, line_no, [['  ', a:group]], {})
+    if s:use_virtual_text
+        call nvim_buf_set_virtual_text(0, 0, line('.')-1, [['  ', a:group]], {})
     else
         call matchadd(a:group, a:pattern, s:default_match_priority)
+        call add(w:match_list, a:pattern)
     endif
-
-    call add(w:match_list, a:pattern)
 endfunction
-
-
 function! s:Xterm2rgb16(color) "{{{1
         " 16 basic colors
     let r=0
@@ -2300,6 +2324,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     let save = s:SaveRestoreOptions(1, {},
             \ ['mod', 'ro', 'ma', 'lz', 'ed', 'gd', '@/'])
     let s:relstart = s:Reltime()
+    let s_flags = s:use_virtual_text ? 'egi' : 'egin'
 
     " highlight Hex Codes:
     "
@@ -2339,7 +2364,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
 
             " Check, the pattern isn't too costly...
             if s:CheckTimeout(Pat[0], a:force) && !s:IsInComment()
-                let cmd = printf(':sil keeppatterns %d,%d%ss/%s/\=call(Pat[1], [submatch(0)])/egin',
+                let cmd = printf(':sil keeppatterns %d,%d%ss/%s/\=call(Pat[1], [submatch(0)])/'. s_flags,
                     \ a:line1, a:line2, s:color_unfolded, Pat[0])
                 try
                     if Pat[2] ==# 'colorizer_vimhighlight' && !empty(bufname(''))
@@ -2389,7 +2414,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
             else
               let arg = '[submatch(1), submatch(2), submatch(3)]'
             endif
-            let cmd = printf(':sil keeppatterns %d,%d%ss/%s/\=call(Pat[1],%s)/egin',
+            let cmd = printf(':sil keeppatterns %d,%d%ss/%s/\=call(Pat[1],%s)/'. s_flags,
                 \ a:line1, a:line2,  s:color_unfolded, Pat[0], arg)
             try
                 exe cmd
