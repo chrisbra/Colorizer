@@ -1621,7 +1621,25 @@ function! s:DoHlGroup(group, Dict) "{{{1
     endif
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
-    if !s:HasGui()
+    if s:HasGui()
+        let fg = get(a:Dict, 'guifg', '')
+        let bg = get(a:Dict, 'guibg', '')
+        let [fg, bg] = s:SwapColors([fg, bg])
+        if !empty(bg) || bg == 0
+            let hi.= printf(' guibg=%s', bg)
+        endif
+        if !empty(fg) || fg == 0
+            let hi.= printf(' guifg=%s', fg)
+        endif
+        let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
+          \ (' gui='. a:Dict.special) : '')
+        if has_key(a:Dict, "term")
+            let hi.=printf(" term=%s ", a:Dict['term'])
+        endif
+        if has_key(a:Dict, "gui")
+            let hi.=printf(" gui=%s ", a:Dict['gui'])
+        endif
+    else
         let fg = get(a:Dict, 'ctermfg', '')
         let bg = get(a:Dict, 'ctermbg', '')
         let [fg, bg] = s:SwapColors([fg, bg])
