@@ -1607,39 +1607,18 @@ function! s:DoHlGroup(group, Dict) "{{{1
     if !empty(bg) && bg[0] !=# '#' && bg !=# 'NONE'
         let bg='#'.bg
     endif
-    if !empty(fg)
-        let hi .= printf('guifg=%s', fg)
-    endif
+    let hi .= printf('guifg=%s', fg)
     if has_key(a:Dict, "gui")
         let hi.=printf(" gui=%s ", a:Dict['gui'])
     endif
     if has_key(a:Dict, "guifg")
         let hi.=printf(" guifg=%s ", a:Dict['guifg'])
     endif
-    if !empty(bg)
-        let hi .= printf(' guibg=%s', bg)
-    endif
+    let hi .= printf(' guibg=%s', bg)
     let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
         \ (' gui='. a:Dict.special) : '')
-    if s:HasGui()
-        let fg = get(a:Dict, 'guifg', '')
-        let bg = get(a:Dict, 'guibg', '')
-        let [fg, bg] = s:SwapColors([fg, bg])
-        if !empty(bg) || bg == 0
-            let hi.= printf(' guibg=%s', bg)
-        endif
-        if !empty(fg) || fg == 0
-            let hi.= printf(' guifg=%s', fg)
-        endif
-        let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
-          \ (' gui='. a:Dict.special) : '')
-        if has_key(a:Dict, "term")
-            let hi.=printf(" term=%s ", a:Dict['term'])
-        endif
-        if has_key(a:Dict, "gui")
-            let hi.=printf(" gui=%s ", a:Dict['gui'])
-        endif
-    else
+
+    if !s:HasGui()
         let fg = get(a:Dict, 'ctermfg', '')
         let bg = get(a:Dict, 'ctermbg', '')
         let [fg, bg] = s:SwapColors([fg, bg])
