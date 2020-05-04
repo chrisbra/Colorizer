@@ -233,6 +233,12 @@ highlighted, use >
 
         let g:colorizer_hex_pattern = ['#', '\%(\x\{3}\|\x\{6}\)', '']
 
+Make sure to escape special characters (like `/`, as this is used as the
+pattern delimiter internally). E.g. This should work for XQueryColor patterns:
+>
+	rgb:/a0/a0/a0
+        let g:colorizer_hex_pattern = ['rgb:', '\%(\x\x\/\x\x\/\x\x\)', '']
+
 2.9 Colorizing Taskwarrior files                 *Colorizer-taskwarrior-files*
 --------------------------------
 
