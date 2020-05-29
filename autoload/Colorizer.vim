@@ -1439,7 +1439,7 @@ function! s:ColorInit(...) "{{{1
         elseif &t_Co == 88
             let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
         " terminal with 256 colors or gVim
-        elseif &t_Co == 256 || empty(&t_Co)
+        elseif &t_Co == 256 || empty(&t_Co) || &t_Co == 16777216
             let s:colortable = map(range(0,255), 's:Xterm2rgb256(v:val)')
         endif
         if s:debug && exists("s:colortable")
