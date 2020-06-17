@@ -133,7 +133,7 @@ new file. Note that this might slow down the loading process, especially on
 the terminal. To enable this, simply set the variable 'g:colorizer_auto_color'
 to 1, e.g. by defining it in your |.vimrc| >
 
-    :let g:colorizer_auto_color = 1
+    let g:colorizer_auto_color = 1
 <
 (Not recommended, see below at |Colorizer-hl-ft| for the preferred way)
 
@@ -144,7 +144,7 @@ If you want to have certain filetypes automatically highlighted, you can use
 the variable g:colorizer_auto_filetype, e.g. to enable highlighting for
 HTML and CSS files by default, add the following to your |.vimrc|: >
 
-    :let g:colorizer_auto_filetype='css,html'
+    let g:colorizer_auto_filetype='css,html'
 <
 After restarting Vim, the plugin will become active whenever the filetype is
 set to either html or css.
@@ -155,7 +155,7 @@ set to either html or css.
 You can skip comments from being colored by setting the variable
 g:colorizer_skip_comments to 1: >
 
-    :let g:colorizer_skip_comments = 1
+    let g:colorizer_skip_comments = 1
 <
 The plugin will skip all matches of color codes and names that appear inside
 comments (this only works when syntax highlighting is enabled |:syn-on|)
@@ -181,7 +181,7 @@ as there is the foreground color equals the background color. Use
 If for any reason you don't want the plugin to highlight colornames, you can
 prevent this by setting the g:colorizer_colornames variable to 0, e.g. put >
 
-    :let g:colorizer_colornames = 0
+    let g:colorizer_colornames = 0
 <
 into your |.vimrc|
 
@@ -292,7 +292,7 @@ variable: >
     let g:colorizer_<autocomand> = 0
 
 Where <autocommand> is the event to be disabled. So to disable the TextChanged
-autocommand, set `:let g:colorizer_textchangedi = 0`
+autocommand, set `let g:colorizer_textchangedi = 0`
 
 2.15 Rendering colors as virtual text                  *Colorizer-virtual-text*
 -------------------------------------
@@ -314,7 +314,7 @@ pollute the global mapping namespace. If you want however to have the
 following default maps set up, set the global variable g:colorizer_auto_map
 in your |.vimrc| like this: >
 
-    :let g:colorizer_auto_map = 1
+    let g:colorizer_auto_map = 1
 
 <
 This will set up the following key mappings (if they are not already taken):
@@ -358,7 +358,7 @@ Depending on your file, any of the highlighting functions might cause an
 performance decrease. This can be analyed, by setting the variable
 g:colorizer_debug to 1 in e.g. your |.vimrc| like this: >
 
-    :let g:colorizer_debug = 1
+    let g:colorizer_debug = 1
 <
 The next time, you call |:ColorHighlight|, the plugin will output runtime
 statistics, from which you can see, which function caused the slowdowns.
