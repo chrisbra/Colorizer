@@ -2380,7 +2380,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                     endif
 
                 catch
-                    " some error occured, stop when finished (and don't setup auto
+                    " some error occurred, stop when finished (and don't setup auto
                     " comands
                     let error.=" Colorize: ". string(Pat)
                     break
@@ -2421,7 +2421,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                 call s:TermConceal(s:color_patterns_special.term_conceal[0])
                 let s:color_patterns_special.term_conceal[3] = s:Reltime(start)
             catch
-                " some error occured, stop when finished (and don't setup auto
+                " some error occurred, stop when finished (and don't setup auto
                 " comands
                 let error=" ColorTerm "
                 break
@@ -2439,9 +2439,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     endif
     let s:relstop = s:Reltime(s:relstart)
     if !empty(error)
-        " Some error occured, stop trying to color the file
+        " Some error occurred, stop trying to color the file
         call Colorizer#ColorOff()
-        call s:Warn("Some error occured here: ". error)
+        call s:Warn("Some error occurred here: ". error)
         if exists("s:position")
             call s:Warn("Position: ". string(s:position))
             call matchadd('Color_Error', '\%'.s:position[1].'l\%'.s:position[2].'c.*\>')
