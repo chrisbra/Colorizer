@@ -1924,6 +1924,8 @@ function! s:Ansi2Color(chars) "{{{1
         let check[0] = 1
     elseif a:chars =~ '.*38\([:;]\)2\1'
         let check[0] = 2 " Uses True Color Support
+    elseif a:chars =~ '.*38\([:;]\)5\1'
+        let check[0] = 3 " Uses 256 Color Support
     endif
     if a:chars =~ '48;5;\d\+'
         let check[1] = 3
@@ -1948,6 +1950,9 @@ function! s:Ansi2Color(chars) "{{{1
         elseif a:pat[1] == 48 " foreground color
             let bground = printf("%.2X%.2X%.2X", pat[2], pat[3], pat[4])
         endif
+    elseif check[0] == 3
+        let nr = matchstr(a:chars, '\%x1b\[38;5;\zs\d\+\zem')
+        let fground = s:Term2RGB(nr)
     elseif check[1] == 3
         let nr = matchstr(a:chars, '\%x1b\[48;5;\zs\d\+\zem')
         let bground = s:Term2RGB(nr)
