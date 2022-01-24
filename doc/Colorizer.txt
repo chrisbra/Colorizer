@@ -350,6 +350,17 @@ highlighting, after you have been changing the file.
 The recommended way to do this is to use the g:colorizer_auto_filetype
 variable and set this to the desired filetypes. |Colorizer-hl-ft|
 
+If you happen to notice that Colorizer does not work for particular file
+types, you can use the following autocommand that will make sure that
+Colorizer is correctly called for every file type: >
+
+    augroup auto_colorize
+    autocmd!
+    autocmd FileType * :ColorHighlight
+    augroup END
+<
+Note: this may impact startup and (buffer-load) performance.
+
                                                     *Colorizer-slowdown*
 ----------------
 Slow performance
