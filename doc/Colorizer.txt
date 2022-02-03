@@ -366,7 +366,7 @@ Note: this may impact startup and (buffer-load) performance.
 Slow performance
 ----------------
 Depending on your file, any of the highlighting functions might cause an
-performance decrease. This can be analyed, by setting the variable
+performance decrease. This can be analysed, by setting the variable
 g:colorizer_debug to 1 in e.g. your |.vimrc| like this: >
 
     :let g:colorizer_debug = 1
