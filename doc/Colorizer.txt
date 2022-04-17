@@ -36,6 +36,7 @@ Contents                                                        *Colorizer*
             2.13 Disable BufLeave autocomannd........|Colorizer-BufLeave|
             2.14 Control which autocommands trigger  |Colorizer-autocommands| 
             2.15 Rendering colors as virtual text....|Colorizer-virtual-text|
+            2.16 Customizing conceal settings........|Colorizer-conceal|
     3.  Colorizer Mappings...........................|Colorizer-maps|
     4.  Colorizer Tips...............................|Colorizer-tips|
     5.  Colorizer Feedback...........................|Colorizer-feedback|
@@ -296,7 +297,6 @@ autocommand, set `:let g:colorizer_textchangedi = 0`
 
 2.15 Rendering colors as virtual text                  *Colorizer-virtual-text*
 -------------------------------------
-
 (Neovim only)
 
 Rather than matching the colors add adding the corresponding syntax rules to
@@ -304,6 +304,15 @@ them, it is possible to render the colors as swatches at the end of each line,
 leveraging Neovim's virtual text. To do this, you can set:
 
     `let g:colorizer_use_virtual_text = 1`
+
+2.16 Customizing conceal settings                      *Colorizer-conceal*
+---------------------------------
+You can customize the 'concealcursor' setting that is applied to the terminal
+coloring by setting the following variable: >
+
+    let g:colorizer_conceal_cursor_mode='nvc'
+
+Default: "nv"
 
 ==============================================================================
 3. Colorizer Mappings                                      *Colorizer-maps*
