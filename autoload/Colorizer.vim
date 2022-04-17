@@ -1047,10 +1047,6 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     endif
     let clr_Dict.fg = color[0]
     let clr_Dict.bg = color[1]
-    let clr_Dict.special = ''
-    if a:pre =~ '^\%x1b\[1m$'
-      let clr_Dict.special = 'bold'
-    endif
     let pre  = escape(a:pre,  '[]')
     let post = escape(a:post, '[]')
     let txt  = escape(a:text, '\^$.*~[]')
@@ -1757,7 +1753,7 @@ function! s:SetMatch(group, pattern, param_dict) "{{{1
     else
         call matchadd(a:group, a:pattern, s:default_match_priority)
         call add(w:match_list, a:pattern)
-  endif
+    endif
 endfunction
 function! s:Xterm2rgb16(color) "{{{1
         " 16 basic colors
@@ -1944,10 +1940,6 @@ function! s:Ansi2Color(chars) "{{{1
     let fground = ""
     let bground = ""
     let check = [0,0] " check fground and bground color
-
-    if a:chars == '\%x1b\[1m'
-      let fground = 'fg'
-    endif
 
     if a:chars =~ '48;5;\d\+'
         let check[0] = 0
