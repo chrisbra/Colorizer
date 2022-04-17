@@ -1362,8 +1362,8 @@ function! s:ColorInit(...) "{{{1
     " disable terminal coloring for all filetypes except text files
     " it's too expensive and probably does not make sense to enable it for
     " other filetypes
-    let s:colorizer_term_disable = !(empty(&filetype) || &filetype != 'text')
-    let s:colorizer_nroff_disable = !(empty(&filetype) || &filetype != 'text')
+    let s:colorizer_term_disable = !(empty(&filetype) || &filetype == 'text')
+    let s:colorizer_nroff_disable = !(empty(&filetype) || &filetype == 'text')
 
     " Debugging
     let s:debug = get(g:, 'colorizer_debug', 0)
