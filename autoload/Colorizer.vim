@@ -1047,6 +1047,10 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     endif
     let clr_Dict.fg = color[0]
     let clr_Dict.bg = color[1]
+    let clr_Dict.special = ''
+    if a:pre =~ '^\%x1b\[1m$'
+      let clr_Dict.special = 'bold'
+    endif
     let pre  = escape(a:pre,  '[]')
     let post = escape(a:post, '[]')
     let txt  = escape(a:text, '\^$.*~[]')
@@ -1058,6 +1062,29 @@ function! s:PreviewColorTerm(pre, text, post) "{{{2
     call s:SetMatcher(pattern, clr_Dict)
     if s:use_virtual_text
       return a:pre . a:text. a:post
+    endif
+endfunction
+function! s:PreviewColorTermBold(pre, txt, post) "{{{2
+    " a:pre: Ansi-Sequences determining the highlighting
+    " a:text: Text to color
+    " a:post: Ansi-Sequences resetting the coloring (might be empty)
+    let s:position = getpos('.')
+    let fg = synIDattr(synID(line("."), col("."), 1), "fg")
+    let bg = synIDattr(synID(line("."), col("."), 1), "bg")
+    " Fall-back to Normal
+    if empty(fg)
+      let fg = synIDattr(hlID('Normal'), 'fg')
+    endif
+    if empty(bg)
+      let bg = synIDattr(hlID('Normal'), 'bg')
+    endif
+    let clr_Dict = {'fg': fg, 'bg': bg, 'special': 'bold'}
+    " limit the pattern to the belonging line (should make syntax matching
+    " faster!)
+    let pattern = '\%(\%'.line('.').'l\)\%('. a:pre. '\)\@<='.a:txt. '\('.a:post.'\)\@='
+    call s:SetMatcher(pattern, clr_Dict)
+    if s:use_virtual_text
+      return a:pre . a:txt. a:post
     endif
 endfunction
 function! s:PreviewColorNroff(match) "{{{2
@@ -1510,12 +1537,13 @@ function! s:ColorInit(...) "{{{1
 
     " term_conceal: patterns to hide, currently: [K$ and the color patterns [0m[01;32m
     let s:color_patterns_special = {
-        \ 'term': ['\%(\%(\%x1b\|\\033\)\[0m\)\?\(\%(\%(\%x1b\|\\033\)\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%(\%x1b\|\\033\)\%(\[0m\|\[K\)\)\=',
+        \ 'term_bold': [ '\(\%x1b\[1m\)\(.*\)\(\%x1b\[0m\)', function("s:PreviewColorTermBold"), 'colorizer_term_bold', [] ],
+        \ 'term': [ '\%(\%(\%x1b\|\\033\)\[0m\)\?\(\%(\%(\%x1b\|\\033\)\[\d\+\%([:;]\d\+\)*m\)\+\)\([^\e]*\)\(\%(\%x1b\|\\033\)\%(\[0m\|\[K\)\)\=',
             \ function("s:PreviewColorTerm"), 'colorizer_term', [] ],
         \ 'term_nroff': ['\%(\(.\)\%u8\1\)\|\%(_\%u8.\)', function("s:PreviewColorNroff"), 'colorizer_nroff', [] ],
-        \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[\d\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
+        \ 'term_conceal': [ ['\%(\(\%(\%x1b\[0m\)\?\%x1b\[[02-9]\+\%([;:]\d\+\)*\a\)\|\%x1b\[K$\)',
           \ '\%d13', '\%(\%x1b\[K\)', '\%(\%x1b\]\d\+;\d\+;\)', '\%(\%x1b\\\)',
-          \ '\%x1b(B\%x1b\[m', '\%x1b\[m\%(\%x0f\)\?', '_\%u8.\@=', '\(.\)\%u8\%(\1\)\@='], 
+          \ '\%x1b(B\%x1b\[m', '\%x1b\[m\%(\%x0f\)\?', '_\%u8.\@=', '\(.\)\%u8\%(\1\)\@=', '\%x1b\[[0-1]m'], 
           \ '',
           \ 'colorizer_term_conceal', [] ]
         \ }
@@ -1615,8 +1643,10 @@ function! s:DoHlGroup(group, Dict) "{{{1
         let hi.=printf(" guifg=%s ", a:Dict['guifg'])
     endif
     let hi .= printf(' guibg=%s', bg)
-    let hi .= printf('%s', !empty(get(a:Dict, 'special', '')) ?
-        \ (' gui='. a:Dict.special) : '')
+    let special = get(a:Dict, 'special', '')
+    if !empty(special)
+      let hi .= printf(' gui=%s cterm=%s term=%s', special, special, special)
+    endif
 
     if !s:HasGui()
         let fg = get(a:Dict, 'ctermfg', '')
@@ -1628,8 +1658,6 @@ function! s:DoHlGroup(group, Dict) "{{{1
         if !empty(fg) || fg == 0
             let hi.= printf(' ctermfg=%s', fg)
         endif
-        let hi .= printf('%s', !empty(get(a:Dict, 'special','')) ?
-          \ (' cterm='. a:Dict.special) : '')
         if has_key(a:Dict, "term")
             let hi.=printf(" term=%s ", a:Dict['term'])
         endif
@@ -1724,13 +1752,12 @@ function! s:SetMatch(group, pattern, param_dict) "{{{1
         return
     endif
     " let 'hls' overrule our syntax highlighting
-
     if s:use_virtual_text
         call nvim_buf_set_virtual_text(0, 0, line('.')-1, [['  ', a:group]], {})
     else
         call matchadd(a:group, a:pattern, s:default_match_priority)
         call add(w:match_list, a:pattern)
-    endif
+  endif
 endfunction
 function! s:Xterm2rgb16(color) "{{{1
         " 16 basic colors
@@ -1917,6 +1944,10 @@ function! s:Ansi2Color(chars) "{{{1
     let fground = ""
     let bground = ""
     let check = [0,0] " check fground and bground color
+
+    if a:chars == '\%x1b\[1m'
+      let fground = 'fg'
+    endif
 
     if a:chars =~ '48;5;\d\+'
         let check[0] = 0
@@ -2403,7 +2434,9 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
         call s:Warn('Color configuration seems wrong, skipping colorization! Check t_Co setting!')
     endif
 
-    for Pat in [ s:color_patterns_special.term, s:color_patterns_special.term_nroff ]
+    for Pat in [ s:color_patterns_special.term,
+          \ s:color_patterns_special.term_nroff,
+          \ s:color_patterns_special.term_bold ]
         if !get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0)
             " Coloring disabled, skip
             continue

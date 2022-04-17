@@ -413,6 +413,7 @@ g:colorizer_<name>_disable and then those functions won't be called anymore
 <
 name can be any of: >
     - term
+    - term_bold
     - term_nroff
     - term_conceal
     - vimhighl_dump
