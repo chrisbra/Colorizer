@@ -411,6 +411,19 @@ g:colorizer_<name>_disable and then those functions won't be called anymore
 
     let g:colorizer_colornames_disable = 1
 <
+name can be any of: >
+    - term
+    - term_nroff
+    - term_conceal
+    - vimhighl_dump
+    - taskwarrior
+    - vimhighlight
+    - vimcolors
+    - rgba
+    - rgb
+    - hsla
+    - colornames
+
 If the slowdown is still noticeable, you might want to create
 a new issue at the plugins repository (|Colorizer-feedback|). You should
 provide a sample file, so that I will be able to reproduce the issue.
