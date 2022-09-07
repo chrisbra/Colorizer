@@ -1077,7 +1077,7 @@ function! s:PreviewColorTermBold(pre, txt, post) "{{{2
     let clr_Dict = {'fg': fg, 'bg': bg, 'special': 'bold'}
     " limit the pattern to the belonging line (should make syntax matching
     " faster!)
-    let pattern = '\%(\%'.line('.').'l\)\%('. a:pre. '\)\@<='.a:txt. '\('.a:post.'\)\@='
+    let pattern = '\%(\%'.line('.').'l\)\%(\V'. a:pre. '\m\)\@<=\(\V'.a:txt. '\m\)\(\V'.a:post.'\m\)\@='
     call s:SetMatcher(pattern, clr_Dict)
     if s:use_virtual_text
       return a:pre . a:txt. a:post
