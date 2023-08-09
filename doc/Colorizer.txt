@@ -496,6 +496,8 @@ looking at my Amazon whishlist: http://www.amazon.de/wishlist/2BKAHE8J7Z6UW
 - Make use of Neovims virtual text
   https://github.com/chrisbra/Colorizer/issues/70 and 
   https://github.com/chrisbra/Colorizer/issues/71 and 
+- Make sure, the s:x11_color_pattern does not start with the engine
+  fixes https://github.com/chrisbra/Colorizer/issues/102)
 
 0.11 Jan 15, 2015 {{{1
 - use |TextChanged| autocommand if possible

@@ -1199,7 +1199,12 @@ function! s:PreviewVimColors(submatch) "{{{2
     let color_Dict = {}
     let pat1 = '\%(\(cterm[fb]g\)\s*=\s*\)\@<=\<\(\d\+\)\>'
     let pat2 = '\%(\(gui[fb]g\)\s*=\s*\)\@<=#\(\x\{6}\)\>'
-    let pat3 = '\%#=1\%(\(gui[fb]g\)\s*=\s*\)\@<=\('.s:x11_color_pattern.'\)'
+    let x11_color_pattern = s:x11_color_pattern
+    if (s:x11_color_pattern[0:4] == '\%x=')
+      " Skip regexp engine
+      let x11_color_pattern = x11_color_patterns[5:]
+    endif
+    let pat3 = '\%#=1\%(\%(\(gui[fb]g\)\s*=\s*\)\@<=\('.x11_color_pattern.'\)\)'
 
     let cterm = matchlist(a:submatch, pat1)
     let gui   = matchlist(a:submatch, pat2)
