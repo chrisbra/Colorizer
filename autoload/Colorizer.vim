@@ -1200,9 +1200,9 @@ function! s:PreviewVimColors(submatch) "{{{2
     let pat1 = '\%(\(cterm[fb]g\)\s*=\s*\)\@<=\<\(\d\+\)\>'
     let pat2 = '\%(\(gui[fb]g\)\s*=\s*\)\@<=#\(\x\{6}\)\>'
     let x11_color_pattern = s:x11_color_pattern
-    if (s:x11_color_pattern[0:4] == '\%x=')
+    if (s:x11_color_pattern[0:3] == '\%#=')
       " Skip regexp engine
-      let x11_color_pattern = x11_color_patterns[5:]
+      let x11_color_pattern = x11_color_pattern[5:]
     endif
     let pat3 = '\%#=1\%(\%(\(gui[fb]g\)\s*=\s*\)\@<=\('.x11_color_pattern.'\)\)'
 
