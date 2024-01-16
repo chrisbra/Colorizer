@@ -18,10 +18,18 @@ Also, it can highlight terminal color sequences correctly and will hide those te
 Installation
 ---
 
-Use the plugin manager of your choice. Or download the [stable][] or [unstable][] version of the plugin, edit it with Vim (`vim Colorizer.vmb`) and simply source it (`:so %`). Restart and take a look at the help (`:h Colorizer`)
+This plugin follows the standard runtime path structure, and as such it can be installed with a variety of plugin managers:
 
-[unstable]: https://raw.github.com/chrisbra/color_highlight/master/Colorizer.vmb
-[stable]: http://www.vim.org/scripts/script.php?script_id=3963
+| Plugin Manager | Install with... |
+| ------------- | ------------- |
+| [Pathogen][1] | `git clone https://github.com/chrisbra/Colorizer ~/.vim/bundle/Colorizer `<br/>Remember to run `:Helptags` to generate help tags |
+| [Vundle][2] | `Plugin 'chrisbra/Colorizer'` |
+| [Plug][3] | `Plug 'chrisbra/Colorizer'` |
+| [Dein][4] | `call dein#add('chrisbra/Colorizer')` |
+| [minpac][5] | `call minpac#add('chrisbra/Colorizer')` |
+| pack feature (native Vim 8 package feature)| `git clone https://github.com/chrisbra/Colorizer ~/.vim/pack/dist/start/Colorizer `<br/>Remember to run `:helptags ~/.vim/pack/dist/start/Colorizer/doc` to generate help tags |
+| manual | copy all of the files into your `~/.vim` (Unix) or `~/vimfiles` (Windows) directory |
+
 
 Usage
 ---
@@ -33,6 +41,12 @@ License & Copyright
 Based on work by Nikolaus Hofer. Further developed by Christian Brabandt. 
 The Vim License applies. See `:h license`
 
-© 2009, 2010, 2011, 2012, 2013 by Christian Brabandt
+© 2009 - 2024 by Christian Brabandt
 
 __NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK__
+
+[1]: https://github.com/tpope/vim-pathogen
+[2]: https://github.com/VundleVim/Vundle.vim
+[3]: https://github.com/junegunn/vim-plug
+[4]: https://github.com/Shougo/dein.vim
+[5]: https://github.com/k-takata/minpac/
