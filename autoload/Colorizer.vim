@@ -1331,6 +1331,9 @@ function! s:GetPatternLiteral(pat) "{{{1
     return '\V'. substitute(escape(a:pat, '\\'), "\n", '\\n', 'g')
 endfu
 function! s:Term2RGB(index) "{{{1
+    if !exists("s:colortable")
+        call s:ColortableInit()
+    endif
     " Return index in colortable in RRGGBB form
     return join(map(copy(s:colortable[a:index]), 'printf("%02X", v:val)'),'')
 endfu
@@ -1349,6 +1352,24 @@ function! s:PrintColorStatistics() "{{{1
             echom printf("%15s: %ss", name, (value[-1] == [] ? '  0.000000' : reltimestr(value[-1])))
         endfor
         echohl Normal
+    endif
+endfu
+
+function! s:ColortableInit() "{{{1
+    " Only calculate the colortable when running
+    if &t_Co == 8
+        let s:colortable = map(range(0, 7), 's:Xterm2rgb16(v:val)')
+    elseif &t_Co == 16
+        let s:colortable = map(range(0, 15), 's:Xterm2rgb16(v:val)')
+    elseif &t_Co == 88
+        let s:colortable = map(range(0, 87), 's:Xterm2rgb88(v:val)')
+    " terminal with 256 colors or gVim
+    "elseif &t_Co == 256 || empty(&t_Co) || &t_Co == 16777216
+    else
+        let s:colortable = map(range(0, 255), 's:Xterm2rgb256(v:val)')
+    endif
+    if s:debug && exists("s:colortable")
+        let g:colortable = s:colortable
     endif
 endfu
 
@@ -1457,22 +1478,8 @@ function! s:ColorInit(...) "{{{1
         unlet! s:colortable
     endif
 
-    if !exists("s:init_css") || !exists("s:colortable") ||
-        \ empty(s:colortable)
-        " Only calculate the colortable when running
-        if &t_Co == 8
-            let s:colortable = map(range(0,7), 's:Xterm2rgb16(v:val)')
-        elseif &t_Co == 16
-            let s:colortable = map(range(0,15), 's:Xterm2rgb16(v:val)')
-        elseif &t_Co == 88
-            let s:colortable = map(range(0,87), 's:Xterm2rgb88(v:val)')
-        " terminal with 256 colors or gVim
-        elseif &t_Co == 256 || empty(&t_Co) || &t_Co == 16777216
-            let s:colortable = map(range(0,255), 's:Xterm2rgb256(v:val)')
-        endif
-        if s:debug && exists("s:colortable")
-            let g:colortable = s:colortable
-        endif
+    if !exists("s:init_css") || !exists("s:colortable") || empty(s:colortable)
+        call s:ColortableInit()
         let s:init_css = 1
     elseif s:force_hl
         call Colorizer#ColorOff()
@@ -2173,6 +2180,9 @@ function! s:ApplyAlphaValue(rgb) "{{{1
     if empty(bg)
         return a:rgb[0:3]
     else
+        if !exists("s:colortable")
+            call s:ColortableInit()
+        endif
         if (bg =~? '\d\{1,3}') && bg < 256
             " Xterm color code
             " (add dummy in front of it, will be split later)
@@ -2252,7 +2262,7 @@ function! s:Rgb2xterm(color) "{{{1
         return a:color
     endif
     if !exists("s:colortable")
-        call s:ColorInit('')
+        call s:ColortableInit()
     endif
     let color = (a:color[0] == '#' ? a:color[1:] : a:color)
     if ( color == '000000')
