@@ -278,7 +278,7 @@ dumps, the 'filetype' must be empty.
 ---------------------------------
 
 By default, the colorings will be deleted if you switch to a different buffer
-in the same window by using a *BufLeave* autocommand. However that might
+in the same window by using a |BufLeave| autocommand. However that might
 unintentionally uncolor the current window, so if you experience a problem
 with that, try setting the variable g:colorizer_disable_bufleave like this: >
 
