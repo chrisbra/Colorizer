@@ -1601,7 +1601,7 @@ function! s:ColorHighlight_1(force, line1, line2) "{{{1
         catch
           " some error occurred, stop when finished (and don't setup auto
           " comands
-          let error.=" Colorize: ". string(Pat)
+          let s:error.=" Colorize: ". string(Pat)
           break
         finally
           if exists("s:extension")
@@ -1645,7 +1645,7 @@ function! s:ColorHighlight_2(force, line1, line2) "{{{1
       catch
         " some error occurred, stop when finished (and don't setup auto
         " comands
-        let error=" ColorTerm "
+        let s:error=" ColorTerm "
         break
       endtry
     endif
@@ -2436,7 +2436,7 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
                     \ 'found in the current buffer!')
         return
     endtry
-    let error = ""
+    let s:error = ""
 
     let _a   = winsaveview()
     let save = s:SaveRestoreOptions(1, {},
