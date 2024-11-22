@@ -2449,16 +2449,16 @@ function! Colorizer#DoColor(force, line1, line2, ...) "{{{1
     " convert matches into synatx highlighting, so TOhtml can display it
     " correctly
     call s:SyntaxMatcher(s:color_syntax)
-    if !exists("#FTColorizer#BufWinEnter#<buffer>") && empty(error)
+    if !exists("#FTColorizer#BufWinEnter#<buffer>") && empty(s:error)
         " Initialise current window.
         call Colorizer#LocalFTAutoCmds(1)
         call Colorizer#ColorWinEnter(1, 1) " don't call DoColor recursively!
     endif
     let s:relstop = s:Reltime(s:relstart)
-    if !empty(error)
+    if !empty(s:error)
         " Some error occurred, stop trying to color the file
         call Colorizer#ColorOff()
-        call s:Warn("Some error occurred here: ". error)
+        call s:Warn("Some error occurred here: ". s:error)
         if exists("s:position")
             call s:Warn("Position: ". string(s:position))
             call matchadd('Color_Error', '\%'.s:position[1].'l\%'.s:position[2].'c.*\>')
