@@ -1622,7 +1622,7 @@ function! s:ColorHighlight_2(force, line1, line2) "{{{1
       \ s:color_patterns_special.term_nroff,
       \ s:color_patterns_special.term_bold ]
     " When force is not given, check if it is disabled
-    if empty(a:force) && (!get(g:, Pat[2], 1) || (get(s:, Pat[2]. '_disable', 0) > 0))
+    if empty(a:force) && (!get(g:, Pat[2], 1) || (get(g:, Pat[2]. '_disable', 0) > 0))
       " Coloring disabled, skip
       continue
     endif
